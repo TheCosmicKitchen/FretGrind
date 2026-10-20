@@ -23,22 +23,52 @@ if (migrateRhythm) {
   if (!S.act.length) S.act = ["staff", "fretNote"];
 }
 if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
+// Practice modes: "bag" (shuffle bag, every card equally likely) or "srs" (spaced repetition). Bag is the default.
+if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
+delete S.randomize;
 const save = () => {
   try {
     localStorage.setItem("fg1", JSON.stringify(S));
   } catch (e) {}
 };
-if (migrateRhythm) save();
+// Drop saved cards that no longer exist (e.g. open-string cards removed from the decks).
+let pruned = false;
+for (const k of Object.keys(S.it)) {
+  const d = k.slice(0, k.indexOf(":"));
+  if (DK[d] && !DK[d].includes(k)) {
+    delete S.it[k];
+    pruned = true;
+  }
+}
+if (migrateRhythm || pruned) save();
+
+const MAX_LEARNING = 20, // how many not-yet-learned cards can be in rotation at once
+  INTRO_WINDOW = 8, // new cards are drawn at random from the next N in a deck
+  FREE_GRIND_POOL = 30; // when nothing is due, practise a random one of the N weakest cards
+
+let bag = [], // cards still to be drawn in the current bag
+  bagSig = ""; // which decks the bag was built from
+
 function pick() {
   const n = Date.now(),
     ent = Object.entries(S.it).filter(([k]) => S.act.includes(k.split(":")[0]));
-  if (S.randomize) {
-    const pool = S.act.flatMap((d) => DK[d] || []).filter((k) => k !== last);
-    if (!pool.length) return null;
-    const k = pool[(Math.random() * pool.length) | 0];
+  if (S.mode === "bag") {
+    // Shuffle bag ("tetris" style): every card in the enabled decks once per round, in random order.
+    const sig = [...S.act].sort().join();
+    if (sig !== bagSig) {
+      bag = [];
+      bagSig = sig;
+    }
+    if (!bag.length) {
+      bag = shuf(S.act.flatMap((d) => DK[d] || []));
+      const e = bag.length - 1;
+      if (e > 0 && bag[e] === last) [bag[0], bag[e]] = [bag[e], bag[0]]; // no repeat across a refill
+    }
+    if (!bag.length) return null;
+    const k = bag.pop();
     if (!S.it[k]) S.it[k] = { s: 0, due: 0, seen: 0 };
     save();
-    return { k, prac: 1 };
+    return { k, prac: 1, bag: 1 };
   }
   const ri = retry.findIndex((r) => r.at <= cnt && S.it[r.k] && S.act.includes(r.k.split(":")[0]));
   if (ri >= 0) return { k: retry.splice(ri, 1)[0].k };
@@ -46,13 +76,15 @@ function pick() {
   if (un) return { k: un[0], lesson: 1 };
   const due = ent.filter(([k, v]) => v.s < 9 && v.due <= n && k !== last);
   if (due.length) return { k: due[(Math.random() * due.length) | 0][0] };
-  if (ent.filter(([k, v]) => v.s < 5).length < 10) {
+  if (ent.filter(([k, v]) => v.s < 5).length < MAX_LEARNING) {
     const c = S.act
       .map((d) => [d, DK[d].filter((k) => !S.it[k])])
       .filter((x) => x[1].length)
       .sort((a, b) => DK[a[0]].length - a[1].length - (DK[b[0]].length - b[1].length));
     if (c.length) {
-      const k = c[0][1][0];
+      // pick randomly from the next few unseen cards (still easiest-first) instead of always the first
+      const win = c[0][1].slice(0, INTRO_WINDOW),
+        k = win[(Math.random() * win.length) | 0];
       S.it[k] = { s: 0, due: 0, seen: 0 };
       save();
       return { k, lesson: 1 };
@@ -61,7 +93,7 @@ function pick() {
   const pool = ent
     .filter(([k]) => k !== last)
     .sort((a, b) => a[1].s - b[1].s)
-    .slice(0, 12);
+    .slice(0, FREE_GRIND_POOL);
   return pool.length ? { k: pool[(Math.random() * pool.length) | 0][0], prac: 1 } : null;
 }
 function next() {
@@ -74,7 +106,7 @@ function next() {
     return render();
   }
   last = p.k;
-  cur = { k: p.k, q: Q(p.k), lesson: p.lesson, prac: p.prac, sel: new Set(), done: 0 };
+  cur = { k: p.k, q: Q(p.k), lesson: p.lesson, prac: p.prac, bag: p.bag, sel: new Set(), done: 0 };
   render();
 }
 function fin(ok, tp) {
@@ -98,6 +130,8 @@ function fin(ok, tp) {
     it.s = it.s >= 5 ? it.s - 2 : Math.max(1, it.s - 1);
     it.due = n + IV[it.s];
     retry.push({ k: cur.k, at: cnt + 3 });
+    // In bag mode a miss goes back into the bag a few draws from now, so it comes around again soon.
+    if (cur.bag) bag.splice(Math.max(0, bag.length - 3 - ((Math.random() * 8) | 0)), 0, cur.k);
   }
   save();
   render();
@@ -124,7 +158,7 @@ function card() {
   if (!cur) return '<div class="card">Pick at least one deck above.</div>';
   const q = cur.q,
     d = cur.done;
-  let h = `<div class="card"><div class="tag">${q.n.toUpperCase()} · ${cur.lesson ? "NEW · TAKE A GUESS" : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase()}</div><div class="prompt">${q.p}</div>${q.vis(d, cur.tp)}`;
+  let h = `<div class="card"><div class="tag">${q.n.toUpperCase()} · ${cur.lesson ? "NEW · TAKE A GUESS" : cur.bag ? `SHUFFLE · ${bag.length} LEFT IN BAG` : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase()}</div><div class="prompt">${q.p}</div>${q.vis(d, cur.tp)}`;
 
   h += ans(q);
   if (micErr) h += `<div class="msg badm" role="alert">${micErr}</div>`;
@@ -159,5 +193,5 @@ function render() {
     )
     .join(
       "",
-    )}<button data-rand class="${S.randomize ? "a" : ""}">${S.randomize ? "🔀 Randomize on" : "↻ Spaced practice"}</button><button data-mic class="${micOn ? "a" : ""}">${micOn ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
+    )}<button data-rand class="${S.mode === "bag" ? "a" : ""}" title="Switch between a shuffle bag (every card equally likely) and spaced repetition">${S.mode === "bag" ? "🎲 Shuffle bag" : "↻ Spaced repetition"}</button><button data-mic class="${micOn ? "a" : ""}">${micOn ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
 }

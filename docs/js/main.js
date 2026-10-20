@@ -1,6 +1,6 @@
 app.onclick = (e) => {
   const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-game-tempo]",
+    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-game-tempo]",
   );
   if (!b) return;
   const D = b.dataset;
@@ -41,7 +41,7 @@ app.onclick = (e) => {
     return render();
   }
   if ("rand" in D) {
-    S.randomize = !S.randomize;
+    S.mode = S.mode === "bag" ? "srs" : "bag";
     save();
     return next();
   }

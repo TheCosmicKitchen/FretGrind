@@ -97,12 +97,16 @@ const rng = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i),
 const posAll = (m) => OPEN.map((o, s) => [s, m - o]).filter(([s, f]) => f >= 0 && f <= 24);
 const pt = ([s, f]) => `${SN[s].split(" ")[0]} string, ${f ? "fret " + f : "open"}`;
 const DK = {};
-const stv = rng(40, 88).sort((a, b) => Math.abs(a - 64) - Math.abs(b - 64));
+// Start at the lowest guitar note (written E3 = MIDI 52): lower pitches have no fretboard position.
+const stv = rng(OPEN[0], 88).sort((a, b) => Math.abs(a - 64) - Math.abs(b - 64));
 DK.staff = stv.map((m) => "staff:" + m);
 DK.staffFret = stv.map((m) => "staffFret:" + m);
-DK.fretNote = rng(0, 24).flatMap((f) => rng(0, 5).map((s) => `fretNote:${s}.${f}`));
+// No open-string cards: the string names are printed on the neck, so open notes would give themselves away.
+DK.fretNote = rng(1, 24).flatMap((f) => rng(0, 5).map((s) => `fretNote:${s}.${f}`));
 DK.findFret = [0, 2, 4, 5, 7, 9, 11, 1, 3, 6, 8, 10].flatMap((p) =>
-  rng(0, 5).map((s) => `findFret:${p}.${s}`),
+  rng(0, 5)
+    .filter((s) => OPEN[s] % 12 !== p) // skip "find E on the E string": the answer would be the open string
+    .map((s) => `findFret:${p}.${s}`),
 );
 DK.chord = Object.keys(SH).map((n) => "chord:" + n);
 DK.spellChord = CQ.flatMap((_, q) => RT.map((_, r) => `spellChord:${r}.${q}`));
