@@ -54,6 +54,7 @@ function Q(k) {
             labels: STAFF_NOTE.map((x) => x[0]),
             vis: () => staff(m),
             ok: (a) => a === m % 12,
+            mic: (x) => x % 12 === m % 12,
             rev: `${nm} — e.g. ${pt(g[0])}`,
             snd: [m],
           }
@@ -62,6 +63,7 @@ function Q(k) {
             kind: "tap",
             vis: (r, t) => staff(m) + board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t) }),
             ok: (s, f) => OPEN[s] + f === m,
+            mic: (x) => (m >= OPEN[0] && m <= OPEN[5] + 24 ? x === m : x % 12 === m % 12),
             rev: `${nm}: ${g.map(pt).join(" / ")}`,
             snd: [m],
           };
@@ -73,6 +75,7 @@ function Q(k) {
       kind: "pc12",
       vis: () => board({ nF: 24, full: true, w: 960, dots: [[s, f, AC]] }),
       ok: (a) => a === p,
+      mic: (x) => x % 12 === p,
       rev: NAMES[p],
       snd: [OPEN[s] + f],
     };
@@ -86,6 +89,7 @@ function Q(k) {
       kind: "tap",
       vis: (r, t) => board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t) }),
       ok: (s2, f) => s2 === s && (OPEN[s] + f) % 12 === p,
+      mic: (x) => x % 12 === p,
       rev: g.map((x) => (x[1] ? "fret " + x[1] : "open")).join(" / "),
       snd: [OPEN[s] + g[0][1]],
     };

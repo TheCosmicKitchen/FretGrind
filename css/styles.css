@@ -194,70 +194,6 @@ button.bad {
   fill: none;
   stroke-width: 2;
 }
-.fb-scroll {
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  border: 1px solid var(--ln);
-  border-radius: 12px;
-  background: #805638;
-  margin: 10px -4px;
-  scrollbar-width: thin;
-  scrollbar-color: #d9bd96 #805638;
-}
-.fb-neck .segment-mark {
-  fill: #fff3c833;
-  stroke: #ffe0a080;
-  stroke-width: 1;
-}
-.fb-neck .f {
-  stroke: #ddd8d0;
-}
-.fb-neck .s {
-  stroke: #eee8de;
-}
-.fb-neck .in {
-  fill: #ead7b8;
-}
-.fb-neck text {
-  fill: #f4e7d4;
-}
-.fb-neck .neck-label {
-  font-size: 11px;
-  font-weight: 700;
-}
-#app:has(.fb-scroll) {
-  max-width: 1200px;
-  padding: 12px clamp(14px, 3vw, 36px);
-}
-#app:has(.fb-scroll) .card {
-  min-height: calc(100vh - 148px);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-#app:has(.fb-scroll) .card > .prompt,
-#app:has(.fb-scroll) .card > .tag {
-  flex: none;
-}
-#app:has(.fb-scroll) .fb-scroll {
-  flex: 1;
-  display: grid;
-  place-items: center;
-  min-height: 280px;
-  padding: 8px 0;
-}
-.fb-neck .tap-zone {
-  fill: transparent;
-  pointer-events: all;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.fb-neck .tap-zone:hover {
-  fill: #ffffff24;
-}
-.fb-neck .tap-zone:active {
-  fill: #ffffff48;
-}
 .stf line {
   stroke: var(--tx);
 }
@@ -852,4 +788,132 @@ svg {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* ---------- Microphone mode ---------- */
+.mic-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--ln);
+  background: color-mix(in srgb, var(--ac) 10%, var(--card));
+  font-weight: 600;
+}
+.mic-meter {
+  flex: none;
+  width: 60px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--ln);
+  overflow: hidden;
+}
+.mic-meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--ok);
+  transition: width 0.08s;
+}
+
+/* ---------- Fretboard ---------- */
+:root {
+  --neck-a: #343b55;
+  --neck-b: #1c2133;
+  --wire: #b9c0d4;
+  --string: #dfe3ee;
+  --string-wound: #c9b48c;
+}
+#app:has(.fb-scroll) {
+  max-width: 1180px;
+  padding: clamp(14px, 3vw, 32px);
+}
+.fb-scroll {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  margin: 14px -4px 4px;
+  padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ln) transparent;
+}
+.fb-neck {
+  display: block;
+  width: 100%;
+  min-width: 880px;
+  max-width: none;
+  height: auto;
+  overflow: visible;
+}
+.fb-neck .neck-body {
+  stroke: #ffffff1a;
+  stroke-width: 1;
+  filter: drop-shadow(0 8px 14px #0a122035);
+}
+.fb-neck .inlay {
+  fill: #ffffff;
+  opacity: 0.17;
+}
+.fb-neck .fret {
+  stroke: var(--wire);
+  stroke-width: 2;
+  opacity: 0.75;
+}
+.fb-neck .nut {
+  fill: #ece6d6;
+}
+.fb-neck .string {
+  stroke: var(--string);
+  stroke-linecap: round;
+}
+.fb-neck .string.wound {
+  stroke: var(--string-wound);
+}
+.fb-neck .string.stub {
+  opacity: 0.35;
+}
+.fb-neck .string-shadow {
+  stroke: #000;
+  opacity: 0.35;
+}
+.fb-neck text.neck-label {
+  fill: var(--mu);
+  font-size: 15px;
+  font-weight: 600;
+}
+.fb-neck .dot {
+  stroke: #ffffffd9;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px #0009);
+  pointer-events: none;
+}
+.fb-neck .segment-mark {
+  fill: color-mix(in srgb, var(--ac) 24%, transparent);
+  stroke: var(--ac);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.fb-neck .tap-zone {
+  fill: transparent;
+  pointer-events: all;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.fb-neck .tap-zone:hover {
+  fill: #ffffff26;
+}
+.fb-neck .tap-zone:active {
+  fill: #ffffff45;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --neck-a: #46507a;
+    --neck-b: #2c3352;
+  }
+}
+:root[data-theme="dark"] {
+  --neck-a: #46507a;
+  --neck-b: #2c3352;
 }

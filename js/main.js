@@ -1,6 +1,6 @@
 app.onclick = (e) => {
   const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-snd],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-game-tempo]",
+    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-game-tempo]",
   );
   if (!b) return;
   const D = b.dataset;
@@ -27,6 +27,7 @@ app.onclick = (e) => {
   if ("scorePlay" in D) return beginScoreBar();
   if ("scoreAnswer" in D) return answerScore(D.scoreAnswer);
   if ("scoreAgain" in D) return launchScore();
+  if ("mic" in D) return toggleMic();
   if ("snd" in D) {
     S.mute = !S.mute;
     save();
@@ -85,6 +86,7 @@ app.onclick = (e) => {
     save();
     return next();
   }
+  if ("micskip" in D) return fin(false);
   if ("next" in D) return next();
   if (cur.done) return;
   if ("a" in D) {

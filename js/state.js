@@ -68,6 +68,7 @@ function next() {
   clearTimeout(tm);
   const p = pick();
   cnt++;
+  micHold = performance.now() + MIC_HOLD_MS;
   if (!p) {
     cur = null;
     return render();
@@ -100,7 +101,7 @@ function fin(ok, tp) {
   }
   save();
   render();
-  if (cur.q.kind !== "rhythm") play(cur.q);
+  if (cur.q.kind !== "rhythm" && !(micOn && ok && cur.q.mic)) play(cur.q);
   if (ok) tm = setTimeout(next, cur.q.kind === "rhythm" ? 2200 : 900);
 }
 function ans(q) {
@@ -126,6 +127,8 @@ function card() {
   let h = `<div class="card"><div class="tag">${q.n.toUpperCase()} · ${cur.lesson ? "NEW · TAKE A GUESS" : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase()}</div><div class="prompt">${q.p}</div>${q.vis(d, cur.tp)}`;
 
   h += ans(q);
+  if (micErr) h += `<div class="msg badm" role="alert">${micErr}</div>`;
+  if (micOn && !d && q.mic) h += micBox();
   if (d)
     h += cur.ok
       ? q.kind === "rhythm"
@@ -156,5 +159,5 @@ function render() {
     )
     .join(
       "",
-    )}<button data-rand class="${S.randomize ? "a" : ""}">${S.randomize ? "🔀 Randomize on" : "↻ Spaced practice"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
+    )}<button data-rand class="${S.randomize ? "a" : ""}">${S.randomize ? "🔀 Randomize on" : "↻ Spaced practice"}</button><button data-mic class="${micOn ? "a" : ""}">${micOn ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
 }

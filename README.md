@@ -23,6 +23,7 @@ python3 -m http.server 8000   # then open http://localhost:8000
 | `js/render.js` | SVG staff and fretboard drawing |
 | `js/questions.js` | Builds a question from a card key |
 | `js/audio.js` | Web Audio synth |
+| `js/mic.js` | Microphone pitch detection (YIN) so you can answer cards by playing |
 | `js/songs.js` | Themes for the score game |
 | `js/games.js` | Score-run game |
 | `js/state.js` | Saved progress, spaced-repetition scheduler, card UI |
