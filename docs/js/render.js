@@ -11,7 +11,10 @@ function staff(m) {
     st = (Math.floor(m / 12) - 1) * 7 + spec[1],
     y = (s) => 180 - (s - 30) * 4,
     ny = y(st);
-  let h = '<svg viewBox="0 0 260 250" class="stf" style="max-width:200px">';
+  // crop the picture to the clef, the staff and this note (plus its stem and ledger lines)
+  const minY = Math.min(110, ny - 42),
+    maxY = Math.max(196, ny + 42);
+  let h = `<svg viewBox="0 ${minY} 260 ${maxY - minY}" class="stf" style="max-width:200px">`;
   for (let i = 0; i < 5; i++) h += `<line x1="10" x2="250" y1="${y(30 + i * 2)}" y2="${y(30 + i * 2)}"/>`;
   h += `<text x="16" y="172" font-size="62" font-family="'Noto Music','Apple Symbols','Segoe UI Symbol',serif">𝄞</text>`;
   for (let s = 28; s >= st; s -= 2) h += `<line x1="150" x2="190" y1="${y(s)}" y2="${y(s)}"/>`;
@@ -43,7 +46,8 @@ function neck(o) {
     mid = top + 2.5 * gap,
     NAMES6 = ["E", "A", "D", "G", "B", "e"],
     W = [3.2, 2.6, 2.1, 1.6, 1.25, 1],
-    MARK = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
+    MARK = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
+    allow = o.allow || (() => true); // which frets may be tapped (regions being practised)
   let h = `<div class="fb-scroll"><svg viewBox="0 0 ${VW} ${bodyY + bodyH + 36}" class="fb fb-neck${R ? " zoom" : ""}"${R ? ` style="max-width:${Math.round(VW * 1.25)}px"` : ""} role="group" aria-label="Guitar fretboard${R ? `, frets ${R[0]} to ${R[1]}` : ""}">`;
   h += '<defs><linearGradient id="neckGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--neck-a)"/><stop offset="1" style="stop-color:var(--neck-b)"/></linearGradient></defs>';
   h += `<rect class="neck-body" x="${x0 - 3}" y="${bodyY}" width="${x1 - x0 + 21}" height="${bodyH}" rx="10" fill="url(#neckGrad)"/>`;
@@ -59,6 +63,14 @@ function neck(o) {
     const sx = o.segment.min === 0 ? x0 - 3 : edge(o.segment.min - 1),
       ex = edge(o.segment.max);
     h += `<rect class="segment-mark" x="${sx}" y="${bodyY}" width="${ex - sx}" height="${bodyH}" rx="8"/>`;
+  }
+  // dim the frets that are outside the practised regions
+  for (let f = b0 + 1; f <= b1; f++) {
+    if (allow(f)) continue;
+    let g = f;
+    while (g + 1 <= b1 && !allow(g + 1)) g++;
+    h += `<rect class="dim" x="${edge(f - 1)}" y="${bodyY}" width="${edge(g) - edge(f - 1)}" height="${bodyH}"/>`;
+    f = g;
   }
   // fret wires (the left edge of a zoomed view is a wire too) and the nut
   for (let f = Math.max(b0, 1); f <= b1; f++)
@@ -81,7 +93,7 @@ function neck(o) {
   // tap targets
   if (o.tap)
     for (let f = R ? b0 + 1 : 0; f <= b1; f++)
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 6 && allow(f); i++) {
         const xa = f ? edge(f - 1) : x0 - 58,
           xb = f ? edge(f) : x0 - 6;
         h += `<rect class="tap-zone" data-s="${i}" data-f="${f}" aria-label="${SN[i]}, ${f ? `fret ${f}` : "open string"}" x="${xa}" y="${Y(i) - gap / 2}" width="${xb - xa}" height="${gap}" rx="6"/>`;

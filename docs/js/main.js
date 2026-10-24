@@ -1,6 +1,6 @@
 app.onclick = (e) => {
   const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-game-tempo]",
+    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-region],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-game-tempo]",
   );
   if (!b) return;
   const D = b.dataset;
@@ -33,6 +33,17 @@ app.onclick = (e) => {
   if ("scorePlay" in D) return beginScoreBar();
   if ("scoreAnswer" in D) return answerScore(D.scoreAnswer);
   if ("scoreAgain" in D) return launchScore();
+  if ("region" in D) {
+    if (D.region === "all") S.regions = [];
+    else {
+      const set = new Set(S.regions);
+      set.has(D.region) ? set.delete(D.region) : set.add(D.region);
+      S.regions = REGIONS.filter((r) => set.has(r.id)).map((r) => r.id); // keep board order
+      if (S.regions.length === REGIONS.length) S.regions = []; // all four = the whole board
+    }
+    save();
+    return next();
+  }
   if ("mic" in D) return toggleMic();
   if ("snd" in D) {
     S.mute = !S.mute;

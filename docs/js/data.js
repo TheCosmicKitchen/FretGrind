@@ -111,13 +111,15 @@ DK.findFret = [0, 2, 4, 5, 7, 9, 11, 1, 3, 6, 8, 10].flatMap((p) =>
 DK.chord = Object.keys(SH).map((n) => "chord:" + n);
 DK.spellChord = CQ.flatMap((_, q) => RT.map((_, r) => `spellChord:${r}.${q}`));
 DK.spellScale = SQ.flatMap((_, q) => RT.map((_, r) => `spellScale:${r}.${q}`));
-const TAP_SEGMENTS = [
-  // no open strings in the first segment: the string names are printed on the neck
-  { name: "1st–5th fret", min: 1, max: 5 },
-  { name: "6th–12th fret", min: 6, max: 12 },
-  { name: "13th–17th fret", min: 13, max: 17 },
-  { name: "18th–24th fret", min: 18, max: 24 },
+// The neck is cut into four 6-fret regions. Open strings (fret 0) are left out: their names are printed on the neck.
+const REGIONS = [
+  { id: "open", name: "Open", min: 1, max: 6 },
+  { id: "mid", name: "Mid", min: 7, max: 12 },
+  { id: "high", name: "High", min: 13, max: 18 },
+  { id: "top", name: "Top", min: 19, max: 24 },
 ];
+// Tap All asks about one region at a time.
+const TAP_SEGMENTS = REGIONS.map((r) => ({ id: r.id, name: `${r.name} · frets ${r.min}–${r.max}`, min: r.min, max: r.max }));
 DK.tapAll = Array.from(
   { length: 12 * TAP_SEGMENTS.length },
   (_, i) => "tapAll:" + Math.floor(i / TAP_SEGMENTS.length) + "." + (i % TAP_SEGMENTS.length),
@@ -144,3 +146,35 @@ const CLASSICS = [
 ];
 DK.interval = CLASSICS.map((_, i) => `interval:${i}`);
 DK.rhythm = CLASSICS.map((_, i) => `rhythm:${i}`);
+
+/* ---- Practice regions ---------------------------------------------------------------------------
+   S.regions lists the region ids being practised; empty (or all four) means the whole board. */
+const activeRegions = () => {
+  const ids = (typeof S !== "undefined" && S && S.regions) || [],
+    r = REGIONS.filter((x) => ids.includes(x.id));
+  return r.length < REGIONS.length ? r : [];
+};
+const fretOk = (f) => {
+  const r = activeRegions();
+  return !r.length || r.some((x) => f >= x.min && f <= x.max);
+};
+const regionSpan = () => {
+  const r = activeRegions();
+  return r.length ? [r[0].min, r[r.length - 1].max] : null;
+};
+// Does card k fall inside the regions being practised?
+function cardInRegion(k) {
+  if (!activeRegions().length) return true;
+  const i = k.indexOf(":"),
+    d = k.slice(0, i),
+    id = k.slice(i + 1);
+  if (d === "fretNote") return fretOk(+id.split(".")[1]);
+  if (d === "findFret") {
+    const [p, s] = id.split(".").map(Number);
+    return rng(1, 24).some((f) => fretOk(f) && (OPEN[s] + f) % 12 === p);
+  }
+  if (d === "staff" || d === "staffFret") return posAll(+id).some(([, f]) => f > 0 && fretOk(f));
+  if (d === "tapAll") return activeRegions().includes(REGIONS[+id.split(".")[1]]);
+  return true;
+}
+const deckKeys = (d) => (DK[d] || []).filter(cardInRegion);

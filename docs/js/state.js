@@ -21,6 +21,8 @@ if (!S || !S.it) S = { it: {}, act: ["staff", "fretNote"], xp: 0, st: 0, best: 0
 const validAct = (Array.isArray(S.act) ? S.act : []).filter((d) => Object.values(GR).flat().includes(d));
 const migrateRhythm = !Array.isArray(S.act) || validAct.length !== S.act.length || !validAct.length;
 S.act = validAct.length ? validAct : ["staff", "fretNote"];
+// Board regions being practised (ids from REGIONS); empty means the whole board.
+S.regions = (Array.isArray(S.regions) ? S.regions : []).filter((id) => REGIONS.some((r) => r.id === id));
 if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
 // Practice modes: "bag" (shuffle bag, every card equally likely) or "srs" (spaced repetition). Bag is the default.
 if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
@@ -50,16 +52,16 @@ let bag = [], // cards still to be drawn in the current bag
 
 function pick() {
   const n = Date.now(),
-    ent = Object.entries(S.it).filter(([k]) => S.act.includes(k.split(":")[0]));
+    ent = Object.entries(S.it).filter(([k]) => S.act.includes(k.split(":")[0]) && cardInRegion(k));
   if (S.mode === "bag") {
     // Shuffle bag ("tetris" style): every card in the enabled decks once per round, in random order.
-    const sig = [...S.act].sort().join();
+    const sig = [...S.act].sort().join() + "|" + S.regions.join();
     if (sig !== bagSig) {
       bag = [];
       bagSig = sig;
     }
     if (!bag.length) {
-      bag = shuf(S.act.flatMap((d) => DK[d] || []));
+      bag = shuf(S.act.flatMap(deckKeys));
       const e = bag.length - 1;
       if (e > 0 && bag[e] === last) [bag[0], bag[e]] = [bag[e], bag[0]]; // no repeat across a refill
     }
@@ -69,7 +71,7 @@ function pick() {
     save();
     return { k, prac: 1, bag: 1 };
   }
-  const ri = retry.findIndex((r) => r.at <= cnt && S.it[r.k] && S.act.includes(r.k.split(":")[0]));
+  const ri = retry.findIndex((r) => r.at <= cnt && S.it[r.k] && S.act.includes(r.k.split(":")[0]) && cardInRegion(r.k));
   if (ri >= 0) return { k: retry.splice(ri, 1)[0].k };
   const un = ent.find(([k, v]) => !v.seen);
   if (un) return { k: un[0], lesson: 1 };
@@ -77,9 +79,9 @@ function pick() {
   if (due.length) return { k: due[(Math.random() * due.length) | 0][0] };
   if (ent.filter(([k, v]) => v.s < 5).length < MAX_LEARNING) {
     const c = S.act
-      .map((d) => [d, DK[d].filter((k) => !S.it[k])])
+      .map((d) => [d, deckKeys(d).filter((k) => !S.it[k])])
       .filter((x) => x[1].length)
-      .sort((a, b) => DK[a[0]].length - a[1].length - (DK[b[0]].length - b[1].length));
+      .sort((a, b) => deckKeys(a[0]).length - a[1].length - (deckKeys(b[0]).length - b[1].length));
     if (c.length) {
       // pick randomly from the next few unseen cards (still easiest-first) instead of always the first
       const win = c[0][1].slice(0, INTRO_WINDOW),
@@ -154,6 +156,12 @@ function ans(q) {
     );
   return "";
 }
+// "Board" chips: limit practice (and the part of the neck that is drawn) to some 6-fret regions.
+function regionChips() {
+  if (!S.act.some((d) => ["staff", "staffFret", "fretNote", "findFret", "tapAll"].includes(d))) return "";
+  const on = activeRegions();
+  return `<div class="chips regions" role="group" aria-label="Practise only part of the fretboard"><span class="tag">BOARD</span><button data-region="all" class="${on.length ? "" : "a"}" aria-pressed="${!on.length}">All</button>${REGIONS.map((r) => `<button data-region="${r.id}" class="${on.includes(r) ? "a" : ""}" aria-pressed="${on.includes(r)}">${r.name} <small>${r.min}–${r.max}</small></button>`).join("")}</div>`;
+}
 function card() {
   if (!cur) return '<div class="card">Pick at least one deck above.</div>';
   const q = cur.q,
@@ -182,16 +190,16 @@ function render() {
   let due = 0;
   for (const [k, v] of Object.entries(S.it)) {
     c[grp(v.s)]++;
-    if (S.act.includes(k.split(":")[0]) && v.seen && v.s < 9 && v.due <= n) due++;
+    if (S.act.includes(k.split(":")[0]) && cardInRegion(k) && v.seen && v.s < 9 && v.due <= n) due++;
   }
   app.innerHTML = `<header><span>🎸 Fret Grind</span><span>${S.xp} XP · 🔥${S.st} (best ${S.best})</span></header>${TOPNAV()}<div class="pills">${GN.map((g, i) => `<span style="background:${GC[i]}">${g} ${c[i]}</span>`).join("")}<span style="background:var(--mu)">Due ${due}</span></div><div class="chips">${Object.keys(
     GR,
   )
     .map(
       (g) =>
-        `<button data-g="${g}" class="${GR[g].some((x) => S.act.includes(x)) ? "a" : ""}">${g} ${GR[g].reduce((a, d) => a + DK[d].filter((k) => S.it[k]).length, 0)}/${GR[g].reduce((a, d) => a + DK[d].length, 0)}</button>`,
+        `<button data-g="${g}" class="${GR[g].some((x) => S.act.includes(x)) ? "a" : ""}">${g} ${GR[g].reduce((a, d) => a + deckKeys(d).filter((k) => S.it[k]).length, 0)}/${GR[g].reduce((a, d) => a + deckKeys(d).length, 0)}</button>`,
     )
     .join(
       "",
-    )}<button data-rand class="${S.mode === "bag" ? "a" : ""}" title="Switch between a shuffle bag (every card equally likely) and spaced repetition">${S.mode === "bag" ? "🎲 Shuffle bag" : "↻ Spaced repetition"}</button><button data-mic class="${micOn ? "a" : ""}">${micOn ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
+    )}<button data-rand class="${S.mode === "bag" ? "a" : ""}" title="Switch between a shuffle bag (every card equally likely) and spaced repetition">${S.mode === "bag" ? "🎲 Shuffle bag" : "↻ Spaced repetition"}</button><button data-mic class="${micOn ? "a" : ""}">${micOn ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${regionChips()}${card()}<button class="rs" data-reset>${rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
 }

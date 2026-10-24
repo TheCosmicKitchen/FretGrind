@@ -926,3 +926,22 @@ svg {
   /* keep the answer buttons on screen: never taller than what is left under the header */
   max-height: max(200px, calc(100vh - 560px));
 }
+
+/* ---------- Board regions ---------- */
+.chips.regions {
+  align-items: center;
+  margin: -6px 0 14px;
+}
+.chips.regions .tag {
+  margin-right: 2px;
+}
+.chips.regions button small {
+  opacity: 0.7;
+  font-size: 11px;
+  margin-left: 2px;
+}
+.fb-neck .dim {
+  fill: #080c18;
+  opacity: 0.62;
+  pointer-events: none;
+}

@@ -3,6 +3,12 @@ const segOf = (f) => {
   const g = TAP_SEGMENTS.find((x) => f >= x.min && f <= x.max) || TAP_SEGMENTS[TAP_SEGMENTS.length - 1];
   return [g.min, g.max];
 };
+// Board view for the regions being practised: zoom to their span when it is narrow enough to read,
+// otherwise show the whole neck. Frets outside the regions are dimmed and can't be tapped.
+function regionView() {
+  const sp = regionSpan();
+  return { allow: fretOk, range: sp && sp[1] - sp[0] + 1 <= 12 ? sp : undefined };
+}
 
 function Q(k) {
   const i = k.indexOf(":"),
@@ -17,7 +23,7 @@ function Q(k) {
       for (let f = seg.min; f <= seg.max; f++) if ((OPEN[st] + f) % 12 === pc) expected.push([st, f]);
     const ids = new Set(expected.map(([st, f]) => st + "." + f));
     q = {
-      p: "Tap every " + NAMES[pc] + " in the " + seg.name + " segment",
+      p: "Tap every " + NAMES[pc] + " in " + seg.name,
       kind: "tapAll",
       expected,
       vis: (r) => {
@@ -50,7 +56,7 @@ function Q(k) {
     };
   } else if (d == "staff" || d == "staffFret") {
     const m = +id,
-      g = posAll(m),
+      g = posAll(m).filter(([, f]) => fretOk(f)),
       nm = STAFF_NOTE[m % 12][0];
     q =
       d == "staff"
@@ -65,10 +71,10 @@ function Q(k) {
             snd: [m],
           }
         : {
-            p: "Tap one matching position anywhere on the fretboard",
+            p: activeRegions().length ? "Tap one matching position in the lit part of the fretboard" : "Tap one matching position anywhere on the fretboard",
             kind: "tap",
-            vis: (r, t) => staff(m) + board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t) }),
-            ok: (s, f) => OPEN[s] + f === m,
+            vis: (r, t) => staff(m) + board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t), ...regionView() }),
+            ok: (s, f) => OPEN[s] + f === m && fretOk(f),
             mic: (x) => (m >= OPEN[0] && m <= OPEN[5] + 24 ? x === m : x % 12 === m % 12),
             rev: `${nm}: ${g.map(pt).join(" / ")}`,
             snd: [m],
@@ -88,13 +94,13 @@ function Q(k) {
   } else if (d == "findFret") {
     const [p, s] = id.split(".").map(Number),
       g = rng(0, 24)
-        .filter((f) => (OPEN[s] + f) % 12 === p)
+        .filter((f) => (OPEN[s] + f) % 12 === p && fretOk(f))
         .map((f) => [s, f]);
     q = {
       p: `Find <b>${NAMES[p]}</b> on the ${SN[s]} string`,
       kind: "tap",
-      vis: (r, t) => board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t) }),
-      ok: (s2, f) => s2 === s && (OPEN[s] + f) % 12 === p,
+      vis: (r, t) => board({ nF: 24, full: true, tap: !r, w: 960, dots: dots(r, g, t), ...regionView() }),
+      ok: (s2, f) => s2 === s && (OPEN[s] + f) % 12 === p && fretOk(f),
       mic: (x) => x % 12 === p,
       rev: g.map((x) => (x[1] ? "fret " + x[1] : "open")).join(" / "),
       snd: [OPEN[s] + g[0][1]],

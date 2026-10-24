@@ -5,6 +5,8 @@ notes, chord shapes, chord/scale spelling, ear training) plus a "follow the scor
 
 Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabled decks once per round in random order; **Spaced repetition** schedules cards by how well you know them.
 
+**Board regions** (the BOARD chips) cut the neck into Open 1–6, Mid 7–12, High 13–18 and Top 19–24. Pick one or more to practise only those frets: cards are limited to notes that live there, and the fretboard is drawn zoomed to the region (or dimmed outside it if you pick far-apart regions). Open strings are never quizzed.
+
 Static site: no build step, no dependencies. Progress is stored in your browser's `localStorage`.
 
 ## Run locally
