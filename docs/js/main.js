@@ -1,6 +1,6 @@
 app.onclick = (e) => {
   const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-region],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-game-tempo]",
+    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-region],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-pr],[data-game-tempo]",
   );
   if (!b) return;
   const D = b.dataset;
@@ -9,8 +9,10 @@ app.onclick = (e) => {
     scoreRun = null;
     return render();
   }
+  if ("pr" in D) return practiceClick(D.pr, D.v);
   if ("page" in D) {
     if (D.page !== "cards" && micOn) micStop(); // never leave the mic running out of sight
+    if (D.page !== "practice" && met) metStop();
     if (D.page === "cards" && page === "games" && scoreRun) {
       clearTimeout(scoreRun.timer);
       scoreRun = null;
@@ -137,6 +139,13 @@ app.onclick = (e) => {
   }
 };
 document.onkeydown = (e) => {
+  if (page === "practice") {
+    if (e.key === " " && !/^(BUTTON|INPUT)$/.test(e.target.tagName)) {
+      e.preventDefault();
+      practiceClick("play");
+    }
+    return;
+  }
   if (e.key == "Enter") {
     const b = app.querySelector("[data-next],[data-got],[data-check]");
     b && b.click();

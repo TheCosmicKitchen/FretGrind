@@ -27,6 +27,24 @@ if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
 // Practice modes: "bag" (shuffle bag, every card equally likely) or "srs" (spaced repetition). Bag is the default.
 if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
 delete S.randomize;
+// Practice library settings (chord/scale pick, view, metronome).
+{
+  const p = S.prac && typeof S.prac === "object" ? S.prac : {},
+    ok = (v, a, d) => (a.includes(v) ? v : d);
+  S.prac = {
+    kind: ok(p.kind, ["chord", "scale"], "scale"),
+    chord: SH[p.chord] ? p.chord : "G",
+    root: Number.isInteger(p.root) && RT[p.root] ? p.root : 0,
+    scale: Number.isInteger(p.scale) && SQ[p.scale] ? p.scale : 0,
+    view: ok(p.view, ["staff", "tab", "both"], "both"),
+    bpm: Number.isFinite(p.bpm) ? Math.max(40, Math.min(200, Math.round(p.bpm))) : 80,
+    sub: p.sub === 2 ? 2 : 1,
+    click: p.click !== false,
+    notes: p.notes !== false,
+    countIn: p.countIn !== false,
+    updown: p.updown === true,
+  };
+}
 const save = () => {
   try {
     localStorage.setItem("fg1", JSON.stringify(S));
@@ -180,6 +198,7 @@ function card() {
   return h + "</div>";
 }
 function render() {
+  if (page === "practice") return renderPractice();
   if (page === "games") {
     if (scoreRun) renderScore();
     else renderGames();

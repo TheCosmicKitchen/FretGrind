@@ -7,6 +7,8 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **Board regions** (the BOARD chips) cut the neck into Open 1–6, Mid 7–12, High 13–18 and Top 19–24. Pick one or more to practise only those frets: cards are limited to notes that live there, and the fretboard is drawn zoomed to the region (or dimmed outside it if you pick far-apart regions). Open strings are never quizzed.
 
+**Practice library** (the Practice tab) has every chord shape and 7 scale types in all 12 keys, shown as sheet music, tab or both, with a metronome (click, count-in, eighths, up & down) that highlights each note in time.
+
 Static site: no build step, no dependencies. Progress is stored in your browser's `localStorage`.
 
 ## Run locally
