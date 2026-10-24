@@ -4,7 +4,6 @@ const SONGS = [
     title: "Ode to Joy",
     composer: "Beethoven · Symphony No. 9",
     scale: "C major",
-    scaleOptions: ["G major", "A natural minor", "D natural minor", "F major"],
     bars: [
       { notes: [64, 64, 65, 67], chord: "C major", harmony: [60, 64, 67] },
       { notes: [67, 65, 64, 62], chord: "G7", harmony: [67, 71, 74, 77] },
@@ -17,7 +16,7 @@ const SONGS = [
     title: "Symphony No. 5",
     composer: "Beethoven · Symphony No. 5",
     scale: "C minor",
-    scaleOptions: ["C major", "G minor", "E♭ major", "F minor"],
+    flats: true, // key signature has flats: spell E♭, not D♯
     bars: [
       { notes: [67, 67, 67, 63], chord: "G7", harmony: [67, 71, 74, 77] },
       { notes: [65, 65, 65, 62], chord: "C minor", harmony: [60, 63, 67] },
@@ -30,7 +29,6 @@ const SONGS = [
     title: "Eine kleine Nachtmusik",
     composer: "Mozart · Serenade No. 13",
     scale: "G major",
-    scaleOptions: ["C major", "D major", "E natural minor", "A minor"],
     bars: [
       { notes: [67, 74, 67, 74], chord: "G major", harmony: [67, 71, 74] },
       { notes: [67, 74, 67, 71], chord: "D7", harmony: [62, 66, 69, 72] },

@@ -41,6 +41,28 @@ function optionsFor(correct, pool) {
   const rest = shuf([...new Set(pool.filter((x) => x !== correct))]).slice(0, 3);
   return shuf([correct, ...rest]);
 }
+// Notation maps: pitch class -> [staff step above C, accidental]. Songs in flat keys spell E♭ not D♯, etc.
+const SHARP_MAP = [[0, ""], [0, "♯"], [1, ""], [1, "♯"], [2, ""], [3, ""], [3, "♯"], [4, ""], [4, "♯"], [5, ""], [5, "♯"], [6, ""]],
+  FLAT_MAP = [[0, ""], [1, "♭"], [1, ""], [2, "♭"], [2, ""], [3, ""], [4, "♭"], [4, ""], [5, "♭"], [5, ""], [6, "♭"], [6, ""]];
+const SCALE_TYPES = [
+  ["major", [0, 2, 4, 5, 7, 9, 11]],
+  ["minor", [0, 2, 3, 5, 7, 8, 10]],
+];
+// Wrong answers must NOT contain every melody note, otherwise relative keys (C major / A minor / F major...) are also right.
+function scaleChoices(song) {
+  const need = new Set(song.bars.flatMap((b) => b.notes).map((m) => m % 12)),
+    wrong = [];
+  for (const R of RT)
+    for (const [nm, iv] of SCALE_TYPES) {
+      const label = `${R.n} ${nm}`,
+        pcs = new Set(iv.map((x) => (R.pc + x) % 12));
+      if (label !== song.scale && ![...need].every((p) => pcs.has(p))) wrong.push(label);
+    }
+  return optionsFor(song.scale, wrong);
+}
+const chordPool = () => [
+  ...new Set(["C major", "G7", "G major", "F major", "A minor", "D minor", ...SONGS.flatMap((s) => s.bars.map((b) => b.chord))]),
+];
 function makeScoreChallenge(barIndex) {
   const type = scoreTypes()[(Math.random() * scoreTypes().length) | 0],
     bar = scoreBars()[barIndex],
@@ -74,12 +96,12 @@ function makeScoreChallenge(barIndex) {
     correct = bar.chord;
     highlight = [base, base + 1, base + 2, base + 3];
     prompt = "Which chord accompanies this bar?";
-    choices = optionsFor(correct, ["C major", "G7", "G major", "F major", "A minor", "D minor"]);
+    choices = optionsFor(correct, chordPool());
   } else {
     correct = song.scale;
     highlight = Array.from({ length: scoreNotes().length }, (_, i) => i);
     prompt = "Which scale is this theme centered around?";
-    choices = optionsFor(correct, song.scaleOptions);
+    choices = scaleChoices(song);
   }
   return { type, correct, choices, highlight, prompt };
 }
@@ -97,20 +119,7 @@ function scoreStaff() {
           : type === "chord"
             ? "mark-chord"
             : "mark-scale",
-    pmap = [
-      [0, ""],
-      [0, "♯"],
-      [1, ""],
-      [1, "♯"],
-      [2, ""],
-      [3, ""],
-      [3, "♯"],
-      [4, ""],
-      [4, "♯"],
-      [5, ""],
-      [5, "♯"],
-      [6, ""],
-    ],
+    pmap = selectedSong().flats ? FLAT_MAP : SHARP_MAP,
     pos = (m) => {
       const [di] = pmap[m % 12],
         oct = Math.floor(m / 12) - 1;
@@ -150,7 +159,7 @@ function scoreStaff() {
     if (acc) h += `<text class="accidental ${active ? cls : ""}" x="${x(i) - 15}" y="${y + 4}">${acc}</text>`;
     h += `<ellipse class="score-note ${active ? cls : ""}" cx="${x(i)}" cy="${y}" rx="8" ry="5.5"/>`;
     h += `<line class="stem ${active ? cls : ""}" x1="${x(i) + 7}" x2="${x(i) + 7}" y1="${y}" y2="${y - 34}"/>`;
-    if (m % 12 === 0)
+    if (m === 60) // middle C is the only melody note below the staff
       h += `<line class="staff-line ledger" x1="${x(i) - 12}" x2="${x(i) + 12}" y1="${y}" y2="${y}"/>`;
   });
   if (r.phase === "playing") {
@@ -251,7 +260,7 @@ function renderScore() {
     : "";
   app.innerHTML =
     scoreHeader() +
-    `<div class="card score-card"><div class="tag">SCORE RUN · BAR ${Math.min(r.bar + 1, total)} / ${total} · ${r.tempo} BPM ${typeName ? " · " + typeName : ""}</div><div class="prompt">${text}</div><div class="score-scroll">${scoreStaff()}</div><div class="score-legend"><span class="legend-note">Note</span><span class="legend-interval">Interval · START → END</span><span class="legend-chord">Chord</span><span class="legend-scale">Scale</span></div><div class="score-meta">${song.title} · ${song.composer} · ${r.audioError || "Cursor follows the notes; a short lead-in and tail play around each prompt."}</div>${controls}<button class="sound-toggle" data-snd>${S.mute ? "🔇 Sound off · click to enable" : "🔊 Sound on · click to mute"}</button><button class="rs" data-page="games">← Games</button></div>`;
+    `<div class="card score-card"><div class="tag">SCORE RUN · BAR ${Math.min(r.bar + 1, total)} / ${total} · ${r.tempo} BPM ${typeName ? " · " + typeName : ""}</div><div class="prompt">${text}</div><div class="score-scroll">${scoreStaff()}</div><div class="score-legend"><span class="legend-note">Note</span><span class="legend-interval">Interval · START → END</span><span class="legend-chord">Chord</span><span class="legend-scale">Scale</span></div><div class="score-meta">${song.title} · ${song.composer} · ${r.audioError || "Cursor follows the notes; a short lead-in and tail play around each prompt."}</div>${controls}<button class="sound-toggle" data-snd>${S.mute ? "🔇 Sound off · click to enable" : "🔊 Sound on · click to mute"}</button><button class="rs" data-score-exit>← Games</button></div>`;
   const sc = app.querySelector(".score-scroll");
   if (sc) {
     let left = r.scrollLeft || 0;

@@ -17,11 +17,10 @@ try {
   S = JSON.parse(localStorage.getItem("fg1"));
 } catch (e) {}
 if (!S || !S.it) S = { it: {}, act: ["staff", "fretNote"], xp: 0, st: 0, best: 0 };
-const migrateRhythm = S.act.includes("rhythm");
-if (migrateRhythm) {
-  S.act = S.act.filter((x) => x !== "rhythm");
-  if (!S.act.length) S.act = ["staff", "fretNote"];
-}
+// Keep only decks that exist (old saves may list retired ones like "rhythm", or be damaged).
+const validAct = (Array.isArray(S.act) ? S.act : []).filter((d) => Object.values(GR).flat().includes(d));
+const migrateRhythm = !Array.isArray(S.act) || validAct.length !== S.act.length || !validAct.length;
+S.act = validAct.length ? validAct : ["staff", "fretNote"];
 if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
 // Practice modes: "bag" (shuffle bag, every card equally likely) or "srs" (spaced repetition). Bag is the default.
 if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
@@ -98,6 +97,7 @@ function pick() {
 }
 function next() {
   clearTimeout(tm);
+  rs = 0; // any new card cancels a pending "tap again to erase"
   const p = pick();
   cnt++;
   micHold = performance.now() + MIC_HOLD_MS;

@@ -155,3 +155,11 @@ async function toggleMic() {
   }
   render();
 }
+
+// Release the microphone when the tab is hidden.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && micOn) {
+    micStop();
+    if (page === "cards") render();
+  }
+});

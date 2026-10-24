@@ -1,10 +1,16 @@
 app.onclick = (e) => {
   const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-game-tempo]",
+    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-game-tempo]",
   );
   if (!b) return;
   const D = b.dataset;
+  if ("scoreExit" in D) {
+    if (scoreRun) clearTimeout(scoreRun.timer);
+    scoreRun = null;
+    return render();
+  }
   if ("page" in D) {
+    if (D.page !== "cards" && micOn) micStop(); // never leave the mic running out of sight
     if (D.page === "cards" && page === "games" && scoreRun) {
       clearTimeout(scoreRun.timer);
       scoreRun = null;
@@ -69,9 +75,10 @@ app.onclick = (e) => {
       rs = 1;
       return render();
     }
-    S = { it: {}, act: S.act, xp: 0, st: 0, best: 0 };
+    S = { ...S, it: {}, xp: 0, st: 0, best: 0 }; // keep decks and preferences (mode, sound, tempo, song)
     rs = 0;
     retry = [];
+    bag = [];
     save();
     return next();
   }

@@ -112,7 +112,8 @@ DK.chord = Object.keys(SH).map((n) => "chord:" + n);
 DK.spellChord = CQ.flatMap((_, q) => RT.map((_, r) => `spellChord:${r}.${q}`));
 DK.spellScale = SQ.flatMap((_, q) => RT.map((_, r) => `spellScale:${r}.${q}`));
 const TAP_SEGMENTS = [
-  { name: "open–5th fret", min: 0, max: 5 },
+  // no open strings in the first segment: the string names are printed on the neck
+  { name: "1st–5th fret", min: 1, max: 5 },
   { name: "6th–12th fret", min: 6, max: 12 },
   { name: "13th–24th fret", min: 13, max: 24 },
 ];

@@ -3,6 +3,8 @@
 A guitar fretboard and music sight-reading trainer. Spaced-repetition flash cards (staff reading, fretboard
 notes, chord shapes, chord/scale spelling, ear training) plus a "follow the score" game. Installable and works offline.
 
+Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabled decks once per round in random order; **Spaced repetition** schedules cards by how well you know them.
+
 Static site: no build step, no dependencies. Progress is stored in your browser's `localStorage`.
 
 ## Run locally
