@@ -7,7 +7,7 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **Board regions** (the BOARD chips) cut the neck into Open 1–6, Mid 7–12, High 13–18 and Top 19–24. Pick one or more to practise only those frets: cards are limited to notes that live there, and the fretboard is drawn zoomed to the region (or dimmed outside it if you pick far-apart regions). Open strings are never quizzed.
 
-**Practice library** (the Practice tab) has every chord shape and 7 scale types in all 12 keys, shown as sheet music, tab or both, with a metronome (click, count-in, eighths, up & down) that highlights each note in time.
+**Library** tab: every chord type in all 12 keys (about 500 chords, up to 4 voicings each, with fingering diagrams) and 21 scales/modes, shown as sheet music, tab or both, with a Hear-it button. **Practice** tab: play the chosen chord or scale along with a metronome (click, count-in, eighths, up & down) that highlights each note in time. Chord voicings come from [chords-db](https://github.com/tombatossals/chords-db) (MIT, (c) tombatossals), stored in `docs/js/chorddb.js`.
 
 Static site: no build step, no dependencies. Progress is stored in your browser's `localStorage`.
 

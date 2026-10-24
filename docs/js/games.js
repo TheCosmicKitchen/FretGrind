@@ -8,7 +8,7 @@ function scoreNotes() {
   return scoreBars().flatMap((b) => b.notes);
 }
 const TOPNAV = () =>
-  `<nav class="topnav"><button data-page="cards" class="${page === "cards" ? "on" : ""}">Flash Cards</button><button data-page="games" class="${page === "games" ? "on" : ""}">Games</button><button data-page="practice" class="${page === "practice" ? "on" : ""}">Practice</button></nav>`;
+  `<nav class="topnav"><button data-page="cards" class="${page === "cards" ? "on" : ""}">Flash Cards</button><button data-page="games" class="${page === "games" ? "on" : ""}">Games</button><button data-page="library" class="${page === "library" ? "on" : ""}">Library</button><button data-page="practice" class="${page === "practice" ? "on" : ""}">Practice</button></nav>`;
 function scoreTypes() {
   const a = [];
   if (S.act.some((x) => ["staff", "staffFret", "fretNote", "findFret"].includes(x))) a.push("note");

@@ -27,15 +27,18 @@ if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
 // Practice modes: "bag" (shuffle bag, every card equally likely) or "srs" (spaced repetition). Bag is the default.
 if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
 delete S.randomize;
-// Practice library settings (chord/scale pick, view, metronome).
+// Library / Practice settings (chord or scale pick, view, metronome).
 {
   const p = S.prac && typeof S.prac === "object" ? S.prac : {},
-    ok = (v, a, d) => (a.includes(v) ? v : d);
+    ok = (v, a, d) => (a.includes(v) ? v : d),
+    cr = Number.isInteger(p.cRoot) && KEYS[p.cRoot] ? p.cRoot : 7;
   S.prac = {
-    kind: ok(p.kind, ["chord", "scale"], "scale"),
-    chord: SH[p.chord] ? p.chord : "G",
+    kind: ok(p.kind, ["chord", "scale"], "chord"),
+    cRoot: cr,
+    cSuf: (CHORDDB[KEYS[cr]] || {})[p.cSuf] ? p.cSuf : "major",
+    cVoice: Number.isInteger(p.cVoice) && p.cVoice >= 0 ? p.cVoice : 0,
     root: Number.isInteger(p.root) && RT[p.root] ? p.root : 0,
-    scale: Number.isInteger(p.scale) && SQ[p.scale] ? p.scale : 0,
+    scale: Number.isInteger(p.scale) && PR_SCALES[p.scale] ? p.scale : 0,
     view: ok(p.view, ["staff", "tab", "both"], "both"),
     bpm: Number.isFinite(p.bpm) ? Math.max(40, Math.min(200, Math.round(p.bpm))) : 80,
     sub: p.sub === 2 ? 2 : 1,
@@ -44,6 +47,7 @@ delete S.randomize;
     countIn: p.countIn !== false,
     updown: p.updown === true,
   };
+  if (!(CHORDDB[KEYS[S.prac.cRoot]][S.prac.cSuf] || [])[S.prac.cVoice]) S.prac.cVoice = 0;
 }
 const save = () => {
   try {
@@ -199,6 +203,7 @@ function card() {
 }
 function render() {
   if (page === "practice") return renderPractice();
+  if (page === "library") return renderLibrary();
   if (page === "games") {
     if (scoreRun) renderScore();
     else renderGames();

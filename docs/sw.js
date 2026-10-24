@@ -1,9 +1,9 @@
 // Offline cache. Bump CACHE when you deploy changes so users get the new files.
-const CACHE = "fret-grind-v9";
+const CACHE = "fret-grind-v10";
 const ASSETS = [
   "./", "index.html", "css/styles.css", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
-  ...["data", "render", "questions", "audio", "mic", "songs", "games", "practice", "state", "main"].map((n) => `js/${n}.js`),
+  ...["data", "render", "questions", "audio", "mic", "songs", "games", "chorddb", "practice", "state", "main"].map((n) => `js/${n}.js`),
 ];
 
 self.addEventListener("install", (e) => {

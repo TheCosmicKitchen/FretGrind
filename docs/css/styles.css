@@ -427,7 +427,7 @@ svg {
 }
 .topnav {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 5px;
   background: color-mix(in srgb, var(--ln) 42%, transparent);
@@ -982,3 +982,20 @@ svg {
 .bpm label b { font-size: 20px; color: var(--tx); }
 .bpm input { width: 100%; accent-color: var(--ac); }
 .pr-opts { margin: 4px 0 10px; }
+
+.topnav button { font-size: 13px; padding: 0 2px; }
+.pr-sel { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; color: var(--mu); font-size: 13px; font-weight: 700; }
+.pr-sel select { flex: 1; min-height: 38px; border-radius: 10px; border: 1px solid var(--ln); background: var(--card); color: var(--tx); padding: 0 10px; font: inherit; font-weight: 600; }
+.pr-now { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.pr-now .tg { white-space: nowrap; margin-top: 6px; }
+.pr-boxwrap { display: flex; justify-content: center; margin: 4px 0 10px; }
+.pr-box { width: 170px; height: auto; }
+.pr-box .g { stroke: var(--mu); }
+.pr-box .dt { fill: var(--ac); }
+.pr-box .barre { fill: var(--ac); opacity: .85; }
+.pr-box .fg { fill: #fff; font-size: 11px; font-weight: 800; }
+.pr-box .mk { fill: var(--mu); font-size: 15px; }
+.pr-box .op { fill: none; stroke: var(--tx); stroke-width: 1.6; }
+.pr-box .bf { fill: var(--mu); font-size: 11px; font-weight: 700; }
+.go.alt { background: var(--card); color: var(--ac); border: 2px solid var(--ac); }
+.pr-now .tg { border: 1px solid var(--ln); background: var(--card); color: var(--ac); border-radius: 999px; min-height: 34px; padding: 0 12px; font-weight: 700; }
