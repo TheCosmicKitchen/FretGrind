@@ -917,3 +917,12 @@ svg {
   --neck-a: #46507a;
   --neck-b: #2c3352;
 }
+
+/* Zoomed fretboard: shows one chunk of the neck, fills the card, never scrolls sideways. */
+.fb-neck.zoom {
+  min-width: 0;
+  width: 100%;
+  margin: 0 auto;
+  /* keep the answer buttons on screen: never taller than what is left under the header */
+  max-height: max(200px, calc(100vh - 560px));
+}

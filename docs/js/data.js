@@ -115,9 +115,13 @@ const TAP_SEGMENTS = [
   // no open strings in the first segment: the string names are printed on the neck
   { name: "1st–5th fret", min: 1, max: 5 },
   { name: "6th–12th fret", min: 6, max: 12 },
-  { name: "13th–24th fret", min: 13, max: 24 },
+  { name: "13th–17th fret", min: 13, max: 17 },
+  { name: "18th–24th fret", min: 18, max: 24 },
 ];
-DK.tapAll = Array.from({ length: 36 }, (_, i) => "tapAll:" + Math.floor(i / 3) + "." + (i % 3));
+DK.tapAll = Array.from(
+  { length: 12 * TAP_SEGMENTS.length },
+  (_, i) => "tapAll:" + Math.floor(i / TAP_SEGMENTS.length) + "." + (i % TAP_SEGMENTS.length),
+);
 const CLASSICS = [
   {
     title: "Symphony No. 5 · Beethoven",

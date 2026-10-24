@@ -1,3 +1,9 @@
+// The chunk of the neck that holds fret f (see TAP_SEGMENTS): zoomed views show only this part.
+const segOf = (f) => {
+  const g = TAP_SEGMENTS.find((x) => f >= x.min && f <= x.max) || TAP_SEGMENTS[TAP_SEGMENTS.length - 1];
+  return [g.min, g.max];
+};
+
 function Q(k) {
   const i = k.indexOf(":"),
     d = k.slice(0, i),
@@ -22,7 +28,7 @@ function Q(k) {
                 ...chosen.filter(([st, f]) => !ids.has(st + "." + f)).map(([st, f]) => [st, f, BAD]),
               ]
             : chosen.map(([st, f]) => [st, f, AC]);
-        return board({ nF: 24, full: true, tap: !r, w: 960, segment: seg, dots: marks });
+        return board({ nF: 24, full: true, tap: !r, w: 960, range: [seg.min, seg.max], dots: marks });
       },
       rev: expected.map(pt).join(" · "),
       snd: expected.map(([st, f]) => OPEN[st] + f),
@@ -73,7 +79,7 @@ function Q(k) {
     q = {
       p: "Which note is this?",
       kind: "pc12",
-      vis: () => board({ nF: 24, full: true, w: 960, dots: [[s, f, AC]] }),
+      vis: () => board({ nF: 24, full: true, w: 960, dots: [[s, f, AC]], range: segOf(f) }),
       ok: (a) => a === p,
       mic: (x) => x % 12 === p,
       rev: NAMES[p],
