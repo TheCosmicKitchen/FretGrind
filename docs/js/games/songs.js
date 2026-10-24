@@ -1,4 +1,5 @@
-const SONGS = [
+/* Short public-domain themes for the "Follow the score" game: 4 bars of 4 notes each, with chord and key. */
+export const SONGS = [
   {
     id: "joy",
     title: "Ode to Joy",

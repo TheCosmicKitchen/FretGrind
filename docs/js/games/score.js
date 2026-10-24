@@ -1,4 +1,20 @@
-function selectedSong() {
+/* "Follow the score": a classical theme plays with a moving cursor, then a question about what you just heard. */
+import { S, save } from "../core/store.js";
+import { NAMES, RT, shuf } from "../core/theory.js";
+import { audioReady, ctx, tone } from "../core/audio.js";
+import { action, render } from "../core/bus.js";
+import { app } from "../core/dom.js";
+import { header, soundToggle } from "../view/chrome.js";
+import { SONGS } from "./songs.js";
+
+let run = null; // the game in progress (null when not playing)
+export const scoreActive = () => !!run;
+export function stopScore() {
+  if (run) clearTimeout(run.timer);
+  run = null;
+}
+
+export function selectedSong() {
   return SONGS.find((x) => x.id === S.song) || SONGS[0];
 }
 function scoreBars() {
@@ -7,9 +23,7 @@ function scoreBars() {
 function scoreNotes() {
   return scoreBars().flatMap((b) => b.notes);
 }
-const TOPNAV = () =>
-  `<nav class="topnav"><button data-page="cards" class="${page === "cards" ? "on" : ""}">Flash Cards</button><button data-page="games" class="${page === "games" ? "on" : ""}">Games</button><button data-page="library" class="${page === "library" ? "on" : ""}">Library</button><button data-page="practice" class="${page === "practice" ? "on" : ""}">Practice</button></nav>`;
-function scoreTypes() {
+export function scoreTypes() {
   const a = [];
   if (S.act.some((x) => ["staff", "staffFret", "fretNote", "findFret"].includes(x))) a.push("note");
   if (S.act.includes("interval")) a.push("interval");
@@ -106,7 +120,7 @@ function makeScoreChallenge(barIndex) {
   return { type, correct, choices, highlight, prompt };
 }
 function scoreStaff() {
-  const r = scoreRun,
+  const r = run,
     notes = scoreNotes(),
     bars = scoreBars(),
     hi = new Set(r.challenge?.highlight || []),
@@ -169,12 +183,12 @@ function scoreStaff() {
   return h + "</svg>";
 }
 function animateScoreCursor() {
-  const r = scoreRun,
+  const r = run,
     line = document.getElementById("score-cursor"),
     sc = document.querySelector(".score-scroll");
   if (!r || !line || !sc) return;
   function tick(now) {
-    if (scoreRun !== r || r.phase !== "playing") return;
+    if (run !== r || r.phase !== "playing") return;
     const elapsed = Math.max(0, now - r.started),
       beatMs = 60000 / r.tempo,
       beat = Math.min(r.clipSequence.length * 4 - 0.001, elapsed / beatMs),
@@ -199,7 +213,7 @@ function playScoreClip(r) {
   }
   audioReady()
     .then(() => {
-      if (scoreRun !== r) return;
+      if (run !== r) return;
       r.started = performance.now() + 100;
       const t = ctx.currentTime + 0.1,
         beat = 60 / r.tempo;
@@ -211,29 +225,14 @@ function playScoreClip(r) {
       });
     })
     .catch(() => {
-      if (scoreRun === r) {
+      if (run === r) {
         r.audioError = "Audio could not start. Check browser audio permissions, then press Play again.";
         render();
       }
     });
 }
-function scoreHeader() {
-  return `<header><span>🎸 Fret Grind</span><span>${S.xp} XP · 🔥${S.st} (best ${S.best})</span></header>${TOPNAV()}`;
-}
-function renderGames() {
-  app.innerHTML =
-    scoreHeader() +
-    `<div class="card game-library"><div class="tag">GAMES</div><h2>Follow the score</h2><p>Choose a classical theme. The score follows the playback, then a random prompt comes from your enabled Flash Card lessons.</p><div class="song-picker">${SONGS.map((s) => `<button data-song="${s.id}" class="${selectedSong().id === s.id ? "on" : ""}"><b>${s.title}</b><small>${s.composer}</small></button>`).join("")}</div><div class="game-tags">${scoreTypes()
-      .map(
-        (x) =>
-          `<span>${x === "note" ? "Notes" : x === "interval" ? "Intervals" : x === "chord" ? "Chords" : "Scales"}</span>`,
-      )
-      .join(
-        "",
-      )}</div><div class="tempo"><button data-game-tempo="80" class="${(S.tempo || 100) === 80 ? "on" : ""}">80 BPM</button><button data-game-tempo="100" class="${(S.tempo || 100) === 100 ? "on" : ""}">100 BPM</button><button data-game-tempo="120" class="${(S.tempo || 100) === 120 ? "on" : ""}">120 BPM</button></div><button class="sound-toggle" data-snd>${S.mute ? "🔇 Sound off · click to enable" : "🔊 Sound on · click to mute"}</button><button class="go" data-score-start>Start Score Run</button><small>Short synthesized themes based on public-domain compositions. No recordings or downloads.</small></div>`;
-}
-function renderScore() {
-  const r = scoreRun,
+export function renderScore() {
+  const r = run,
     total = scoreBars().length,
     song = selectedSong();
   let text =
@@ -259,8 +258,8 @@ function renderScore() {
     ? { note: "NOTE", interval: "INTERVAL", chord: "CHORD", scale: "SCALE" }[r.challenge.type] || ""
     : "";
   app.innerHTML =
-    scoreHeader() +
-    `<div class="card score-card"><div class="tag">SCORE RUN · BAR ${Math.min(r.bar + 1, total)} / ${total} · ${r.tempo} BPM ${typeName ? " · " + typeName : ""}</div><div class="prompt">${text}</div><div class="score-scroll">${scoreStaff()}</div><div class="score-legend"><span class="legend-note">Note</span><span class="legend-interval">Interval · START → END</span><span class="legend-chord">Chord</span><span class="legend-scale">Scale</span></div><div class="score-meta">${song.title} · ${song.composer} · ${r.audioError || "Cursor follows the notes; a short lead-in and tail play around each prompt."}</div>${controls}<button class="sound-toggle" data-snd>${S.mute ? "🔇 Sound off · click to enable" : "🔊 Sound on · click to mute"}</button><button class="rs" data-score-exit>← Games</button></div>`;
+    header() +
+    `<div class="card score-card"><div class="tag">SCORE RUN · BAR ${Math.min(r.bar + 1, total)} / ${total} · ${r.tempo} BPM ${typeName ? " · " + typeName : ""}</div><div class="prompt">${text}</div><div class="score-scroll">${scoreStaff()}</div><div class="score-legend"><span class="legend-note">Note</span><span class="legend-interval">Interval · START → END</span><span class="legend-chord">Chord</span><span class="legend-scale">Scale</span></div><div class="score-meta">${song.title} · ${song.composer} · ${r.audioError || "Cursor follows the notes; a short lead-in and tail play around each prompt."}</div>${controls}${soundToggle(true)}<button class="rs" data-score-exit>← Games</button></div>`;
   const sc = app.querySelector(".score-scroll");
   if (sc) {
     let left = r.scrollLeft || 0;
@@ -277,14 +276,17 @@ function renderScore() {
   }
   if (r.phase === "playing") animateScoreCursor();
 }
-function launchScore() {
+export function setScoreTempo(t) {
+  if (run) run.tempo = t;
+}
+export function launchScore() {
   S.mute = false;
   save();
-  scoreRun = { bar: 0, phase: "intro", tempo: S.tempo || 100, correct: 0, audioError: "" };
+  run = { bar: 0, phase: "intro", tempo: S.tempo || 100, correct: 0, audioError: "" };
   render();
 }
-function beginScoreBar() {
-  const r = scoreRun;
+export function beginScoreBar() {
+  const r = run;
   if (!r) return;
   r.challenge = makeScoreChallenge(r.bar);
   r.phase = "playing";
@@ -297,13 +299,13 @@ function beginScoreBar() {
   playScoreClip(r);
   clearTimeout(r.timer);
   r.timer = setTimeout(() => {
-    if (scoreRun !== r || r.phase !== "playing") return;
+    if (run !== r || r.phase !== "playing") return;
     r.phase = "question";
     render();
   }, r.clipMs + 700);
 }
-function answerScore(a) {
-  const r = scoreRun;
+export function answerScore(a) {
+  const r = run;
   if (!r || r.phase !== "question") return;
   r.lastCorrect = a === r.challenge.correct;
   if (r.lastCorrect) {
@@ -314,7 +316,7 @@ function answerScore(a) {
   r.phase = "feedback";
   render();
   r.timer = setTimeout(() => {
-    if (scoreRun !== r) return;
+    if (run !== r) return;
     if (r.bar + 1 >= scoreBars().length) {
       r.phase = "complete";
       render();
@@ -323,4 +325,35 @@ function answerScore(a) {
       beginScoreBar();
     }
   }, 1050);
+}
+
+/* The menu card that starts this game (shown on the Games page). */
+export function scoreMenu() {
+  const types = scoreTypes()
+    .map((x) => `<span>${{ note: "Notes", interval: "Intervals", chord: "Chords", scale: "Scales" }[x]}</span>`)
+    .join("");
+  const tempo = [80, 100, 120].map((t) => `<button data-game-tempo="${t}" class="${(S.tempo || 100) === t ? "on" : ""}">${t} BPM</button>`).join("");
+  return `<div class="card game-library"><div class="tag">GAME · LISTEN AND ANSWER</div><h2>Follow the score</h2><p>Choose a classical theme. The score follows the playback, then a random prompt comes from your enabled Flash Card lessons.</p><div class="song-picker">${SONGS.map((s) => `<button data-song="${s.id}" class="${selectedSong().id === s.id ? "on" : ""}"><b>${s.title}</b><small>${s.composer}</small></button>`).join("")}</div><div class="game-tags">${types}</div><div class="tempo">${tempo}</div>${soundToggle(true)}<button class="go" data-score-start>Start Score Run</button><small>Short synthesized themes based on public-domain compositions. No recordings or downloads.</small></div>`;
+}
+
+export function mountScore() {
+  action("song", (D) => {
+    S.song = D.song;
+    save();
+    render();
+  });
+  action("gameTempo", (D) => {
+    S.tempo = +D.gameTempo;
+    save();
+    setScoreTempo(S.tempo);
+    render();
+  });
+  action("scoreStart", launchScore);
+  action("scorePlay", beginScoreBar);
+  action("scoreAnswer", (D) => answerScore(D.scoreAnswer));
+  action("scoreAgain", launchScore);
+  action("scoreExit", () => {
+    stopScore();
+    render();
+  });
 }

@@ -1,154 +1,65 @@
-app.onclick = (e) => {
-  const b = e.target.closest(
-    "[data-a],[data-t],[data-check],[data-next],[data-got],[data-d],[data-g],[data-rand],[data-region],[data-snd],[data-mic],[data-micskip],[data-reset],[data-s],[data-play],[data-tempo],[data-page],[data-song],[data-score-start],[data-score-play],[data-score-answer],[data-score-again],[data-score-exit],[data-pr],[data-game-tempo]",
-  );
-  if (!b) return;
-  const D = b.dataset;
-  if ("scoreExit" in D) {
-    if (scoreRun) clearTimeout(scoreRun.timer);
-    scoreRun = null;
-    return render();
-  }
-  if ("pr" in D) return practiceClick(D.pr, D.v);
-  if ("page" in D) {
-    if (D.page !== "cards" && micOn) micStop(); // never leave the mic running out of sight
-    if (D.page !== "practice" && met) metStop();
-    if (D.page === "cards" && page === "games" && scoreRun) {
-      clearTimeout(scoreRun.timer);
-      scoreRun = null;
-    }
-    page = D.page;
-    return render();
-  }
-  if ("song" in D) {
-    S.song = D.song;
-    save();
-    return render();
-  }
-  if ("gameTempo" in D) {
-    S.tempo = +D.gameTempo;
-    save();
-    if (scoreRun) scoreRun.tempo = S.tempo;
-    return render();
-  }
-  if ("scoreStart" in D) return launchScore();
-  if ("scorePlay" in D) return beginScoreBar();
-  if ("scoreAnswer" in D) return answerScore(D.scoreAnswer);
-  if ("scoreAgain" in D) return launchScore();
-  if ("region" in D) {
-    if (D.region === "all") S.regions = [];
-    else {
-      const set = new Set(S.regions);
-      set.has(D.region) ? set.delete(D.region) : set.add(D.region);
-      S.regions = REGIONS.filter((r) => set.has(r.id)).map((r) => r.id); // keep board order
-      if (S.regions.length === REGIONS.length) S.regions = []; // all four = the whole board
-    }
-    save();
-    return next();
-  }
-  if ("mic" in D) return toggleMic();
-  if ("snd" in D) {
-    S.mute = !S.mute;
-    save();
-    return render();
-  }
-  if ("play" in D) return play(cur.q);
-  if ("tempo" in D) {
-    S.tempo = +D.tempo;
-    save();
-    if (cur.q.kind == "rhythm") cur.q.tempo = S.tempo;
-    return render();
-  }
-  if ("rand" in D) {
-    S.mode = S.mode === "bag" ? "srs" : "bag";
-    save();
-    return next();
-  }
-  if ("g" in D) {
-    const ds = GR[D.g],
-      on = ds.some((x) => S.act.includes(x));
-    if (on) {
-      const r = S.act.filter((x) => !ds.includes(x));
-      if (!r.length) return;
-      S.act = r;
-    } else S.act.push(...ds);
-    save();
-    return next();
-  }
-  if ("d" in D) {
-    const i = S.act.indexOf(D.d);
-    if (i >= 0) {
-      if (S.act.length > 1) S.act.splice(i, 1);
-    } else S.act.push(D.d);
-    save();
-    return next();
-  }
-  if ("reset" in D) {
-    if (!rs) {
-      rs = 1;
-      return render();
-    }
-    S = { ...S, it: {}, xp: 0, st: 0, best: 0 }; // keep decks and preferences (mode, sound, tempo, song)
-    rs = 0;
-    retry = [];
-    bag = [];
-    save();
-    return next();
-  }
-  if (!cur) return;
-  rs = 0;
-  const q = cur.q;
-  if ("got" in D) {
-    const it = S.it[cur.k];
-    it.seen = 1;
-    it.due = Date.now();
-    retry.push({ k: cur.k, at: cnt + 2 });
-    save();
-    return next();
-  }
-  if ("micskip" in D) return fin(false);
-  if ("next" in D) return next();
-  if (cur.done) return;
-  if ("a" in D) {
-    cur.ch = D.a;
-    return fin(q.ok(q.kind == "mc" ? D.a : +D.a));
-  }
-  if ("t" in D) {
-    const i = +D.t;
-    cur.sel.has(i) ? cur.sel.delete(i) : cur.sel.add(i);
-    return render();
-  }
-  if ("check" in D) {
-    if (q.kind == "tapAll") {
-      const got = new Set(cur.sel);
-      return fin(got.size === q.expected.length && q.expected.every(([st, f]) => got.has(st + "." + f)), [
-        ...got,
-      ]);
-    }
-    return fin(cur.sel.size == q.exp.size && [...cur.sel].every((x) => q.exp.has(x)));
-  }
-  if ("s" in D && q.kind == "tapAll") {
-    const key = D.s + "." + D.f;
-    cur.sel.has(key) ? cur.sel.delete(key) : cur.sel.add(key);
-    return render();
-  }
-  if ("s" in D && q.kind == "tap") {
-    const s = +D.s,
-      f = +D.f;
-    fin(q.ok(s, f), [s, f]);
-  }
-};
-document.onkeydown = (e) => {
-  if (page === "practice") {
-    if (e.key === " " && !/^(BUTTON|INPUT)$/.test(e.target.tagName)) {
+/* Fret Grind: entry point. Loads saved state, registers every page and click handler, and starts the app.
+   Plain ES modules, no build step: this file is loaded straight from index.html. */
+import { S, ui, load, save } from "./core/store.js";
+import { action, mountClicks, render } from "./core/bus.js";
+import { app } from "./core/dom.js";
+import { mic, micStop } from "./core/mic.js";
+import { mountCards, sanitizeCards } from "./cards/page.js";
+import { next } from "./cards/scheduler.js";
+import { mountGames, stopGames } from "./games/page.js";
+import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
+import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
+import { metBusy, metStop } from "./library/metronome.js";
+
+/* Saved state: read it, then let each feature tidy its own part. */
+const found = load(),
+  tidied = sanitizeCards();
+sanitizeLibrary();
+sanitizeRhythm();
+if (!found || tidied) save();
+
+/* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
+function openPage(id) {
+  if (id !== "cards" && mic.on) micStop(); // never leave the mic running out of sight
+  if (id !== "practice" && metBusy()) metStop();
+  if (id !== "games") stopGames();
+  ui.page = id;
+  render();
+}
+
+mountCards();
+mountGames();
+mountLibrary(openPage);
+action("page", (D) => openPage(D.page));
+action("snd", () => {
+  S.mute = !S.mute;
+  save();
+  render();
+});
+mountClicks(app);
+
+document.addEventListener("keydown", (e) => {
+  if (rhythmKey(e)) return; // taps in the rhythm game
+  if (ui.page === "practice") {
+    if (e.key === " " && !/^(BUTTON|INPUT|SELECT)$/.test(e.target.tagName)) {
       e.preventDefault();
-      practiceClick("play");
+      togglePlay();
     }
     return;
   }
-  if (e.key == "Enter") {
-    const b = app.querySelector("[data-next],[data-got],[data-check]");
+  if (e.key === "Enter") {
+    const b = app.querySelector("[data-next],[data-check]");
     b && b.click();
   }
-};
-next();
+});
+// A hidden tab can't keep time for the rhythm game: end the round.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopRhythm();
+    if (ui.page === "games") render();
+  }
+});
+
+if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug };
+
+next(); // draws the first card

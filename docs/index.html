@@ -14,17 +14,7 @@
   <body>
     <main id="app"></main>
     <noscript>Fret Grind needs JavaScript enabled to run.</noscript>
-    <script src="js/data.js"></script>
-    <script src="js/render.js"></script>
-    <script src="js/questions.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/mic.js"></script>
-    <script src="js/songs.js"></script>
-    <script src="js/games.js"></script>
-    <script src="js/chorddb.js"></script>
-    <script src="js/practice.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

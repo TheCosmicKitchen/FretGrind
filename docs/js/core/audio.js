@@ -1,11 +1,18 @@
-let ctx;
-function audioReady() {
+/* Web Audio: a shared AudioContext, one-note synth, and the card/prompt player. */
+import { S } from "./store.js";
+import { emit } from "./bus.js";
+
+export let ctx; // the AudioContext, created on first use (live binding: importers always see the current value)
+
+export function audioReady() {
   const C = window.AudioContext || window.webkitAudioContext;
   if (!C) return Promise.reject(new Error("Web Audio unavailable"));
   ctx = ctx || new C();
   return (ctx.state === "suspended" ? ctx.resume() : Promise.resolve()).then(() => ctx);
 }
-function tone(m, st, d, v = 0.2, type = "triangle", pluck = false) {
+
+/* One note at MIDI number m, starting at audio time st for d seconds. */
+export function tone(m, st, d, v = 0.2, type = "triangle", pluck = false) {
   const o = ctx.createOscillator(),
     g = ctx.createGain();
   o.type = type;
@@ -25,7 +32,24 @@ function tone(m, st, d, v = 0.2, type = "triangle", pluck = false) {
   o.start(st);
   o.stop(st + d + 0.02);
 }
-function play(q, when) {
+
+/* A short metronome tick (accent = higher pitch). */
+export function click(t, accent) {
+  const o = ctx.createOscillator(),
+    g = ctx.createGain();
+  o.type = "square";
+  o.frequency.value = accent ? 1760 : 1175;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(accent ? 0.16 : 0.1, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+  o.connect(g);
+  g.connect(ctx.destination);
+  o.start(t);
+  o.stop(t + 0.06);
+}
+
+/* Play a card/prompt: q.snd = MIDI notes (chord when q.gap is small), or q.seq/q.onsets = a tune in beats. */
+export function play(q, when) {
   if (S.mute || (!q.snd && !q.seq)) return;
   audioReady()
     .then(() => {
@@ -40,10 +64,5 @@ function play(q, when) {
       const dur = q.snd.length === 1 ? 0.45 : (q.gap || 0) >= 0.2 ? 0.35 : 0.7;
       q.snd.forEach((m, i) => tone(m, t + i * (q.gap || 0), dur, v * 1.6, "triangle", true));
     })
-    .catch(() => {
-      if (cur) {
-        cur.audioError = "Audio could not start. Check browser sound settings.";
-        render();
-      }
-    });
+    .catch(() => emit("audio-error", "Audio could not start. Check browser sound settings."));
 }

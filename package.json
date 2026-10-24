@@ -1,0 +1,10 @@
+{
+  "name": "fret-grind",
+  "private": true,
+  "type": "module",
+  "description": "Guitar fretboard and sight-reading trainer: a static site served from docs/ (no build step).",
+  "scripts": {
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "serve": "python3 -m http.server 8765 --directory docs"
+  }
+}

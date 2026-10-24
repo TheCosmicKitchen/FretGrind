@@ -1,12 +1,12 @@
-function spell(r, st, se) {
-  return st.map((s, i) => {
-    const li = (r.l + s) % 7;
-    let d = (((r.pc + se[i] - LSEM[li]) % 12) + 12) % 12;
-    if (d > 6) d -= 12;
-    return { pc: (r.pc + se[i]) % 12, t: LET[li] + (d > 0 ? "♯".repeat(d) : d < 0 ? "♭".repeat(-d) : "") };
-  });
-}
-function staff(m) {
+/* Drawing: the staff, the fretboard and the chord diagram, as SVG strings. No state, no DOM. */
+import { STAFF_NOTE, SN } from "../core/theory.js";
+
+// Colours used for answer marks (CSS variables, so they follow the light/dark theme).
+export const OK = "var(--ok)",
+  BAD = "var(--bad)",
+  AC = "var(--ac)";
+
+export function staff(m) {
   const spec = STAFF_NOTE[m % 12],
     st = (Math.floor(m / 12) - 1) * 7 + spec[1],
     y = (s) => 180 - (s - 30) * 4,
@@ -25,7 +25,7 @@ function staff(m) {
 }
 /* Horizontal fretboard (24 frets). Frets are spaced like a real neck.
    Pass o.range = [lo, hi] to show only those frets, scaled up to fill the width (no sideways scrolling). */
-function neck(o) {
+export function neck(o) {
   const nF = o.nF,
     R = o.range,
     b0 = R ? (R[0] > 1 ? R[0] - 1 : 0) : 0, // fret boundary at the left edge (0 = the nut)
@@ -102,7 +102,7 @@ function neck(o) {
 }
 
 /* Small 5-fret chord diagram. */
-function chordBox(o) {
+export function chordBox(o) {
   const nF = o.nF,
     H = 40 + nF * 28,
     X = (i) => 36 + i * 48,
@@ -121,8 +121,8 @@ function chordBox(o) {
   );
   return h + "</svg>";
 }
-const board = (o) => (o.full || o.tap ? neck(o) : chordBox(o));
-const dots = (r, g, t) =>
+export const board = (o) => (o.full || o.tap ? neck(o) : chordBox(o));
+export const dots = (r, g, t) =>
   r
     ? [
         ...g.map(([s, f]) => [s, f, OK]),

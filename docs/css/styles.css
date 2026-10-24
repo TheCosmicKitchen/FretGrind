@@ -999,3 +999,41 @@ svg {
 .pr-box .bf { fill: var(--mu); font-size: 11px; font-weight: 700; }
 .go.alt { background: var(--card); color: var(--ac); border: 2px solid var(--ac); }
 .pr-now .tg { border: 1px solid var(--ln); background: var(--card); color: var(--ac); border-radius: 999px; min-height: 34px; padding: 0 12px; font-weight: 700; }
+
+/* ---------- Rhythm game ---------- */
+.rhythm-card { text-align: center; }
+.rh-big { font-size: 56px; font-weight: 800; line-height: 64px; min-height: 64px; color: var(--ac); }
+.rh-svg { display: block; width: 100%; max-width: 640px; height: auto; margin: 4px auto 12px; }
+.rh-svg .rh-line, .rh-svg .rh-bar { stroke: var(--tx); stroke-width: 1.6; opacity: .7; }
+.rh-svg .rh-grid { stroke: var(--ln); stroke-width: 1.5; }
+.rh-svg .rh-count { fill: var(--mu); font-size: 15px; font-weight: 700; }
+.rh-svg .rh-head { fill: var(--tx); stroke: var(--tx); stroke-width: 1.5; }
+.rh-svg .rh-head.open { fill: var(--card); stroke-width: 2.4; }
+.rh-svg .rh-stem, .rh-svg .rh-beam { stroke: var(--tx); stroke-width: 2.4; }
+.rh-svg .rh-beam { stroke-width: 6; }
+.rh-svg .rh-flag, .rh-svg .rh-rest { fill: none; stroke: var(--tx); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.rh-svg .rh-dot, .rh-svg .rh-restdot { fill: var(--tx); }
+.rh-svg :is(.rh-perfect, .rh-good, .rh-ok, .rh-miss, .rh-extra) { --c: var(--mu); }
+.rh-svg .rh-perfect { --c: var(--ok); }
+.rh-svg .rh-good { --c: #19a0c9; }
+.rh-svg .rh-ok { --c: #e0a62b; }
+.rh-svg .rh-miss { --c: var(--bad); }
+.rh-svg :is(.rh-head, .rh-stem, .rh-beam, .rh-flag):is(.rh-perfect, .rh-good, .rh-ok, .rh-miss) { stroke: var(--c); }
+.rh-svg .rh-head:not(.open):is(.rh-perfect, .rh-good, .rh-ok, .rh-miss), .rh-svg .rh-dot:is(.rh-perfect, .rh-good, .rh-ok, .rh-miss) { fill: var(--c); }
+.rh-svg .rh-label { font-size: 14px; font-weight: 800; fill: var(--c); }
+.rh-svg .rh-tap { fill: var(--c); }
+.rh-svg .rh-head-line { stroke: var(--ac); stroke-width: 3; stroke-linecap: round; }
+.rh-svg .rh-head-line.listen { stroke: var(--mu); }
+.rh-pad { display: block; width: 100%; min-height: 150px; border: 0; border-radius: 22px; background: var(--ac); color: #fff; font-size: 30px; font-weight: 800; letter-spacing: .08em; touch-action: manipulation; user-select: none; -webkit-user-select: none; opacity: .55; transition: transform .06s, opacity .15s; }
+.rh-pad small { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0; opacity: .85; margin-top: 4px; }
+.rh-pad.live { opacity: 1; box-shadow: 0 0 0 4px color-mix(in srgb, var(--ac) 30%, transparent); }
+.rh-pad.hit { transform: scale(.975); }
+.rh-result { margin: 4px 0 8px; }
+.rh-stars { font-size: 38px; letter-spacing: .12em; color: #e0a62b; line-height: 1.1; }
+.rh-acc { font-size: 20px; font-weight: 800; margin: 4px 0; }
+.rh-actions { display: grid; gap: 8px; margin-top: 10px; }
+.rh-actions button:not(.go) { min-height: 44px; border-radius: 12px; border: 1px solid var(--ln); background: var(--card); color: var(--tx); font-weight: 700; }
+.rhythm-menu .rh-bpm { justify-content: center; margin: 12px 0 6px; flex: none; }
+.rhythm-menu .rh-bpm label { flex: none; min-width: 160px; }
+.rhythm-menu small { display: block; margin: 8px 0; }
+.song-picker button.on small { color: color-mix(in srgb, currentColor 78%, transparent); }

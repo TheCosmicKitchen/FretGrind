@@ -1,3 +1,9 @@
+/* Builds the question for a card key ("deck:id"): prompt, picture, how to check the answer, what to play. */
+import { ui } from "../core/store.js";
+import { NAMES, OPEN, RT, SN, SH, CQ, SQ, STAFF_NOTE, pt, posAll, rng, shuf, spell } from "../core/theory.js";
+import { CLASSICS, DN, TAP_SEGMENTS, activeRegions, fretOk, regionSpan } from "../core/decks.js";
+import { AC, BAD, OK, board, dots, staff } from "../view/notation.js";
+
 // The chunk of the neck that holds fret f (see TAP_SEGMENTS): zoomed views show only this part.
 const segOf = (f) => {
   const g = TAP_SEGMENTS.find((x) => f >= x.min && f <= x.max) || TAP_SEGMENTS[TAP_SEGMENTS.length - 1];
@@ -10,7 +16,7 @@ function regionView() {
   return { allow: fretOk, range: sp && sp[1] - sp[0] + 1 <= 12 ? sp : undefined };
 }
 
-function Q(k) {
+export function Q(k) {
   const i = k.indexOf(":"),
     d = k.slice(0, i),
     id = k.slice(i + 1);
@@ -27,7 +33,7 @@ function Q(k) {
       kind: "tapAll",
       expected,
       vis: (r) => {
-        const chosen = [...(cur?.sel || [])].map((v) => v.split(".").map(Number)),
+        const chosen = [...(ui.cur?.sel || [])].map((v) => v.split(".").map(Number)),
           marks = r
             ? [
                 ...expected.map(([st, f]) => [st, f, OK]),
@@ -138,11 +144,3 @@ function Q(k) {
   q.n = DN[d];
   return q;
 }
-const GR = {
-  Reading: ["staff"],
-  Fretboard: ["staffFret", "fretNote", "findFret"],
-  "Tap all": ["tapAll"],
-  Chords: ["chord", "spellChord"],
-  Scales: ["spellScale"],
-  Listening: ["interval"],
-};
