@@ -1076,3 +1076,61 @@ svg {
 .sg-t.hot .sg-tbg { fill: var(--ac); }
 .sg-t.hot .sg-fret { fill: #fff; }
 .sg-bpm { display: block; margin: 0 0 6px; }
+
+/* ---------- Listening panel (rhythm game, songs) ---------- */
+.ls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--ln);
+  background: color-mix(in srgb, var(--ac) 8%, var(--card));
+}
+.ls-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ls-row b {
+  min-width: 3.2em;
+  text-align: center;
+}
+.ls-meter {
+  width: 110px;
+  height: 10px;
+}
+.ls-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ln);
+}
+.ls-dot.on {
+  background: var(--ok);
+}
+.ls-msg {
+  color: var(--mut, inherit);
+}
+.rh-listen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.sg-say { margin: 8px 0; }
+.sg-res { margin: 8px 0; }
+.sg-key { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
+.sg-key i { font-style: normal; padding: 2px 8px; border-radius: 99px; border: 2px solid; }
+.res-ok { --rc: var(--ok); } .res-early, .res-late { --rc: #d99a1c; } .res-wrong { --rc: var(--bad); } .res-miss { --rc: var(--mu); }
+.sg-key i.res-ok, .sg-key i.res-early, .sg-key i.res-late, .sg-key i.res-wrong, .sg-key i.res-miss { border-color: var(--rc); }
+.sg-n[class*="res-"] .sg-head { fill: var(--rc); stroke: var(--rc); }
+.sg-n[class*="res-"] .sg-head.open { fill: var(--card); }
+.sg-n[class*="res-"] .sg-ln, .sg-n[class*="res-"] .sg-stem { stroke: var(--rc); }
+.sg-n[class*="res-"] .sg-dot { fill: var(--rc); }
+.sg-t[class*="res-"] .sg-tbg { fill: var(--rc); }
+.sg-t[class*="res-"] .sg-fret { fill: #fff; }
+.sg-n.res-miss .sg-head, .sg-n.res-miss .sg-head.open { fill: none; stroke-dasharray: 3 2; }

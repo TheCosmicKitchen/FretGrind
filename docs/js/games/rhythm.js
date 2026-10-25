@@ -6,6 +6,8 @@ import { audioReady, click, ctx, tone } from "../core/audio.js";
 import { action, render } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
+import { listen, listenStart, onNote } from "../core/listen-io.js";
+import { listenPanel } from "../core/listen-ui.js";
 import { LEVELS, bias, gradeTaps, onsets, parse, pickPattern, stars, windowFor } from "./rhythm-patterns.js";
 import { rhythmSvg, slotX } from "./rhythm-view.js";
 
@@ -25,6 +27,7 @@ export function sanitizeRhythm() {
     countIn: r.countIn !== false, // the optional count-in
     click: r.click !== false, // metronome click while you play
     listen: r.listen !== false, // hear the bar once before you tap it
+    input: r.input === "mic" ? "mic" : "tap", // tap on the screen/Space, or play/clap into the microphone
     offset: Number.isFinite(r.offset) ? clamp(Math.round(r.offset / 10) * 10, -150, 150) : 0, // ms taken off every tap (device delay)
     best,
   };
@@ -33,7 +36,10 @@ export function sanitizeRhythm() {
 let run = null; // the game in progress
 export const rhythmActive = () => !!run;
 export function stopRhythm() {
-  if (run) cancelAnimationFrame(run.raf);
+  if (run) {
+    cancelAnimationFrame(run.raf);
+    if (run.off) run.off(); // the microphone itself stays on until you leave the Games tab
+  }
   run = null;
 }
 
@@ -47,6 +53,8 @@ function syncClock() {
   return { perf: performance.now(), audio: ctx.currentTime, lat: (ctx.outputLatency || ctx.baseLatency || 0) * 1000 };
 }
 const toPerf = (t) => run.sync.perf + (t - run.sync.audio) * 1000 + run.sync.lat;
+/* Times are graded in milliseconds. Taps use the browser clock; the microphone reports on the audio clock itself. */
+const at = (t) => (run.mic ? t * 1000 : toPerf(t));
 
 /* ---- one round ---- */
 function schedule() {
@@ -55,8 +63,9 @@ function schedule() {
     bar = 4 * spb,
     segs = [];
   let t = ctx.currentTime + (P.countIn || P.listen ? 0.25 : 1);
-  const beatClicks = (from) => {
-    if (P.click) for (let i = 0; i < 4; i++) click(from + i * spb, i === 0);
+  const quiet = run.mic && !S.listen.phones; // on speakers the click would be heard by the microphone
+  const beatClicks = (from, playing) => {
+    if (P.click && !(playing && quiet)) for (let i = 0; i < 4; i++) click(from + i * spb, i === 0);
   };
   if (!P.countIn && !P.listen) segs.push({ phase: "ready", start: t - 1, end: t });
   if (P.countIn) {
@@ -68,11 +77,11 @@ function schedule() {
     parse(run.pattern)
       .filter((e) => e.type === "note")
       .forEach((e) => tone(81, t + (e.slot * spb) / 2, Math.min(0.28, (e.len * spb) / 2), 0.3, "triangle", true));
-    beatClicks(t);
+    beatClicks(t, false);
     segs.push({ phase: "listen", start: t, end: t + bar });
     t += bar;
   }
-  beatClicks(t);
+  beatClicks(t, true);
   segs.push({ phase: "play", start: t, end: t + bar });
   Object.assign(run, { spb, segs, playStart: t, playEnd: t + bar, finishAt: t + bar + 0.45, sync: syncClock(), taps: [], result: null, phase: segs[0].phase });
 }
@@ -89,7 +98,7 @@ function frame() {
     head = document.getElementById("rh-head"),
     pad = document.getElementById("rh-pad");
   if (status)
-    status.textContent = { ready: "Get ready…", countin: "Count in…", listen: "Listen…", play: "Your turn: tap it!", tail: "…" }[phase] || "";
+    status.textContent = { ready: "Get ready…", countin: "Count in…", listen: "Listen…", play: run.mic ? "Your turn: play or clap it!" : "Your turn: tap it!", tail: "…" }[phase] || "";
   if (count) count.textContent = phase === "countin" ? String(Math.min(4, Math.floor((now - seg.start) / run.spb) + 1)) : phase === "play" ? "Go" : "";
   if (pad) pad.classList.toggle("live", phase === "play");
   if (head) {
@@ -118,12 +127,15 @@ function beginRound(again) {
 
 /* A tap (perf = the event's time stamp, on the same clock as performance.now()). */
 function tapAt(perf) {
-  if (!run || run.result) return;
+  if (!run || run.result || run.mic) return;
   const lo = toPerf(run.playStart) - run.spb * 450,
     hi = toPerf(run.playEnd) + 250;
   if (perf < lo || perf > hi) return;
   run.taps.push(perf - S.rhythm.offset);
   if (ctx) tone(88, ctx.currentTime, 0.1, 0.22, "triangle", true);
+  flashPad();
+}
+function flashPad() {
   const pad = document.getElementById("rh-pad");
   if (pad) {
     pad.classList.add("hit");
@@ -131,8 +143,18 @@ function tapAt(perf) {
   }
 }
 
+/* A note heard by the microphone (e.t = when it was played, on the audio clock, with the device delay taken off). */
+function heardAt(e) {
+  if (!run || run.result || !run.mic || !run.segs) return;
+  const early = S.listen.phones ? run.spb * 0.45 : Math.min(0.2, run.spb * 0.3), // on speakers, keep clear of the listen bar's tail
+    ms = e.t * 1000;
+  if (e.t < run.playStart - early || e.t > run.playEnd + 0.25) return;
+  run.taps.push(ms);
+  flashPad();
+}
+
 function finishRound() {
-  const exp = onsets(run.pattern).map((s) => toPerf(run.playStart + (s * run.spb) / 2)),
+  const exp = onsets(run.pattern).map((s) => at(run.playStart + (s * run.spb) / 2)),
     win = windowFor(exp),
     g = gradeTaps(exp, run.taps, win);
   run.result = { g, win, stars: stars(g.accuracy), bias: bias(g.notes), pattern: run.pattern };
@@ -168,7 +190,7 @@ function marksFor() {
       cls: cls[n.pts],
       label: n.delta === null ? "miss" : (n.delta > 0 ? "+" : "") + Math.round(n.delta),
     })),
-    t0 = toPerf(run.playStart),
+    t0 = at(run.playStart),
     taps = run.taps.map((tp, i) => {
       const hit = r.g.notes.find((n) => n.tap === i);
       return { slot: (tp - t0) / (run.spb * 500), cls: hit ? cls[hit.pts] : "rh-extra" };
@@ -194,28 +216,34 @@ export function renderRhythm() {
   app.innerHTML = `${header()}<div class="card rhythm-card"><div class="tag">TAP THE RHYTHM · LEVEL ${run.level} · PATTERN ${run.round} / ${run.rounds} · ${P.bpm} BPM</div><div class="prompt" id="rh-status">${res ? "Here is how you did" : "Get ready…"}</div>${res ? "" : '<div class="rh-big" id="rh-count" aria-live="polite"></div>'}${rhythmSvg(run.pattern, view.marks, view.taps)}${
     res
       ? resultBlock()
-      : `<button class="rh-pad" id="rh-pad" data-rh-pad aria-label="Tap here, or press Space">TAP<small>or press Space</small></button>`
+      : run.mic
+        ? `<div class="rh-pad rh-listen" id="rh-pad" role="status">🎤 LISTENING<small>play or clap on the notes</small></div>`
+        : `<button class="rh-pad" id="rh-pad" data-rh-pad aria-label="Tap here, or press Space">TAP<small>or press Space</small></button>`
   }<button class="rs" data-rh-exit>← Games</button></div>`;
 }
 
 export async function startRhythm() {
   S.mute = false; // the clock is the audio, so sound must be on
   save();
-  run = { level: S.rhythm.level, round: 0, rounds: ROUNDS, results: [], pattern: "", phase: "loading", result: null, error: "" };
+  run = { level: S.rhythm.level, round: 0, rounds: ROUNDS, results: [], pattern: "", phase: "loading", result: null, error: "", mic: S.rhythm.input === "mic" };
+  const mine = run;
   try {
     await audioReady();
+    if (mine.mic && !listen.on && !(await listenStart())) throw new Error(listen.err);
   } catch (e) {
-    run.error = "Audio could not start. Check your browser's sound settings and try again.";
-    return render();
+    mine.error = mine.mic && listen.err ? listen.err : "Audio could not start. Check your browser's sound settings and try again.";
+    return run === mine && render();
   }
-  if (!run) return;
+  if (run !== mine) return;
+  if (mine.mic) mine.off = onNote(heardAt);
   beginRound(false);
 }
 
 export function rhythmMenu() {
   const P = S.rhythm,
     tog = (k, label) => `<button data-rh-opt="${k}" class="tg ${P[k] ? "a" : ""}" aria-pressed="${P[k]}">${label}</button>`;
-  return `<div class="card game-library rhythm-menu"><div class="tag">GAME · TAP ALONG</div><h2>Tap the rhythm</h2><p>A bar of rhythm is shown on one line. Tap it back in time: tap on every note, stay silent on rests. Every tap is graded in milliseconds.</p><div class="song-picker">${LEVELS.map((l) => `<button data-rh-level="${l.id}" class="${P.level === l.id ? "on" : ""}"><b>Level ${l.id} · ${l.name}</b><small>${l.hint}${P.best[l.id] ? " · best " + pct(P.best[l.id]) : ""}</small></button>`).join("")}</div><div class="bpm rh-bpm"><button data-rh-bpm="-5" aria-label="Slower">−</button><label><b>${P.bpm}</b> BPM</label><button data-rh-bpm="5" aria-label="Faster">+</button></div><div class="chips">${tog("countIn", "Count-in (one bar of clicks)")}${tog("click", "Click while I tap")}${tog("listen", "Hear it first")}</div><div class="bpm rh-bpm"><button data-rh-offset="-10" aria-label="Less compensation">−</button><label><b>${P.offset} ms</b> tap delay compensation</label><button data-rh-offset="10" aria-label="More compensation">+</button></div><small>If every tap is marked late, raise the compensation: wireless headphones and some phones add delay between a tap and the sound.</small><button class="go" data-rh-start>Start (${ROUNDS} patterns)</button></div>`;
+  const mic = P.input === "mic";
+  return `<div class="card game-library rhythm-menu"><div class="tag">GAME · TAP ALONG</div><h2>Tap the rhythm</h2><p>A bar of rhythm is shown on one line. Play it back in time: on every note, silent on rests. Every note is graded in milliseconds.</p><div class="chips"><button data-rh-input="tap" class="tg ${mic ? "" : "a"}" aria-pressed="${!mic}">Tap the screen or Space</button><button data-rh-input="mic" class="tg ${mic ? "a" : ""}" aria-pressed="${mic}">Play or clap (microphone)</button></div>${mic ? listenPanel() : ""}<div class="song-picker">${LEVELS.map((l) => `<button data-rh-level="${l.id}" class="${P.level === l.id ? "on" : ""}"><b>Level ${l.id} · ${l.name}</b><small>${l.hint}${P.best[l.id] ? " · best " + pct(P.best[l.id]) : ""}</small></button>`).join("")}</div><div class="bpm rh-bpm"><button data-rh-bpm="-5" aria-label="Slower">−</button><label><b>${P.bpm}</b> BPM</label><button data-rh-bpm="5" aria-label="Faster">+</button></div><div class="chips">${tog("countIn", "Count-in (one bar of clicks)")}${tog("click", "Click while I tap")}${tog("listen", "Hear it first")}</div>${mic ? "" : `<div class="bpm rh-bpm"><button data-rh-offset="-10" aria-label="Less compensation">−</button><label><b>${P.offset} ms</b> tap delay compensation</label><button data-rh-offset="10" aria-label="More compensation">+</button></div><small>If every tap is marked late, raise the compensation: wireless headphones and some phones add delay between a tap and the sound.</small>`}<button class="go" data-rh-start>Start (${ROUNDS} patterns)</button></div>`;
 }
 
 export function mountRhythm() {
@@ -228,6 +256,7 @@ export function mountRhythm() {
   action("rhLevel", change((D) => (S.rhythm.level = +D.rhLevel)));
   action("rhBpm", change((D) => (S.rhythm.bpm = clamp(S.rhythm.bpm + +D.rhBpm, BPM_MIN, BPM_MAX))));
   action("rhOffset", change((D) => (S.rhythm.offset = clamp(S.rhythm.offset + +D.rhOffset, -150, 150))));
+  action("rhInput", change((D) => (S.rhythm.input = D.rhInput === "mic" ? "mic" : "tap")));
   action("rhOpt", change((D) => (S.rhythm[D.rhOpt] = !S.rhythm[D.rhOpt])));
   action("rhExit", () => {
     stopRhythm();

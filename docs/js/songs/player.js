@@ -5,6 +5,11 @@ import { audioReady, click, ctx, tone } from "../core/audio.js";
 let run = null; // null = stopped, { starting: true } = waiting for audio, otherwise running
 export const songBusy = () => !!run;
 export const songRunning = () => !!run && !run.starting;
+/* Where the song sits on the audio clock: note i is due at start[i]. Only while a pass is running. */
+export function songClock(song) {
+  if (!run || run.starting) return null;
+  return { c0: run.c0, usec: run.usec, due: song.sounding.map((n) => run.c0 + (n.start + run.pass * song.total) * run.usec), first: run.c0 };
+}
 
 /* The events of one pass through the song, in sixteenth-note units: notes and beat clicks. */
 export function timeline(song) {
@@ -27,7 +32,7 @@ export function countIn(song) {
   return out;
 }
 
-/* opts: {pct, click, notes, countIn, loop}; hooks: {note(i), beat(b), end()} */
+/* opts: {pct, click, clickIn (count-in clicks even when click is off), notes, countIn, loop}; hooks: {note(i), beat(b), end()} */
 export function songStart(song, opts, hooks) {
   if (run) return;
   run = { starting: true };
@@ -51,7 +56,7 @@ export function songStart(song, opts, hooks) {
             if (opts.notes) tone(n.midi - 12, t, Math.min(1.8, Math.max(0.35, n.dur * run.usec * 1.3)), 0.3, "triangle", true);
             run.q.push({ t, note: ev.note });
           } else {
-            if (opts.click) click(t, ev.beat === 0);
+            if (opts.click || (run.i < 0 && opts.clickIn)) click(t, ev.beat === 0);
             run.q.push({ t, beat: ev.beat });
           }
           run.i++;

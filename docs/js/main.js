@@ -3,14 +3,17 @@
 import { S, ui, load, save } from "./core/store.js";
 import { action, mountClicks, render } from "./core/bus.js";
 import { app } from "./core/dom.js";
+import { ctx } from "./core/audio.js";
 import { mic, micStop } from "./core/mic.js";
+import { sanitizeListen, listenStop } from "./core/listen-io.js";
+import { mountListenUi } from "./core/listen-ui.js";
 import { mountCards, sanitizeCards } from "./cards/page.js";
 import { next } from "./cards/scheduler.js";
 import { mountGames, stopGames } from "./games/page.js";
 import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
 import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
 import { metBusy, metStop } from "./library/metronome.js";
-import { mountSongs, sanitizeSongs, songKey, stopSongs } from "./songs/page.js";
+import { mountSongs, sanitizeSongs, songKey, songsDebug, stopSongs } from "./songs/page.js";
 
 /* Saved state: read it, then let each feature tidy its own part. */
 const found = load(),
@@ -18,6 +21,7 @@ const found = load(),
 sanitizeLibrary();
 sanitizeRhythm();
 sanitizeSongs();
+sanitizeListen();
 if (!found || tidied) save();
 
 /* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
@@ -26,6 +30,7 @@ function openPage(id) {
   if (id !== "practice" && metBusy()) metStop();
   if (id !== "games") stopGames();
   if (id !== "songs") stopSongs();
+  if (id !== "games" && id !== "songs") listenStop(); // the microphone only runs where it is used
   ui.page = id;
   render();
 }
@@ -34,6 +39,7 @@ mountCards();
 mountGames();
 mountLibrary(openPage);
 mountSongs();
+mountListenUi();
 action("page", (D) => openPage(D.page));
 action("snd", () => {
   S.mute = !S.mute;
@@ -66,6 +72,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug };
+if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug, songsDebug, audioCtx: () => ctx };
 
 next(); // draws the first card

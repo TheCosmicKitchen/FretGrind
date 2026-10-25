@@ -6,6 +6,7 @@ import { NAMES } from "./theory.js";
 import { ui } from "./store.js";
 import { ctx, audioReady } from "./audio.js";
 import { render } from "./bus.js";
+import { listenStop } from "./listen-io.js";
 import { yinPitch, freqToWritten } from "./pitch.js";
 
 export const mic = { on: false, err: "" }; // read by the cards page
@@ -94,6 +95,7 @@ export async function toggleMic() {
     return render();
   }
   mic.err = "";
+  listenStop(); // only one thing listens at a time
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     mic.err = "Microphone access needs a secure (https) page and a browser that supports it.";
     return render();

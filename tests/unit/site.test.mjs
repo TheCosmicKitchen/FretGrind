@@ -29,7 +29,7 @@ test("every import in the app resolves to a file (static hosting needs exact pat
 });
 
 test("pure modules do not touch the DOM at import time", () => {
-  for (const f of ["core/theory.js", "core/decks.js", "core/pitch.js", "games/rhythm-patterns.js", "library/catalog.js", "songs/format.js", "songs/tabify.js", "songs/draw.js", "songs/data.js"]) {
+  for (const f of ["core/theory.js", "core/decks.js", "core/pitch.js", "games/rhythm-patterns.js", "library/catalog.js", "songs/format.js", "songs/tabify.js", "songs/draw.js", "songs/data.js", "songs/grade.js", "core/listen.js"]) {
     const src = readFileSync(join(docs, "js", f), "utf8");
     assert.ok(!/\bdocument\.|\bwindow\.|localStorage/.test(src), f);
   }
