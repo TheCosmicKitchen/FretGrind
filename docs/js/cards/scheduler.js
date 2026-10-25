@@ -18,20 +18,24 @@ const MAX_LEARNING = 20, // how many not-yet-learned cards can be in rotation at
   INTRO_WINDOW = 8, // new cards are drawn at random from the next N in a deck
   FREE_GRIND_POOL = 30; // when nothing is due, practise a random one of the N weakest cards
 
+/* Is this card in what is being practised: My deck, or the chosen decks and board regions? */
+export const scoped = (k) => (S.onlyMine ? Array.isArray(S.mine) && S.mine.includes(k) : S.act.includes(k.slice(0, k.indexOf(":"))) && cardInRegion(k));
+
 export const bag = { cards: [], sig: "" }; // cards still to be drawn in this round, and which decks it was built from
 
 export function pick() {
-  const n = Date.now(),
-    ent = Object.entries(S.it).filter(([k]) => S.act.includes(k.split(":")[0]) && cardInRegion(k));
+  const n = Date.now();
+  if (S.onlyMine) for (const k of S.mine || []) if (!S.it[k]) S.it[k] = { s: 0, due: 0, seen: 0 };
+  const ent = Object.entries(S.it).filter(([k]) => scoped(k));
   if (S.mode === "bag") {
     // Shuffle bag ("tetris" style): every card in the enabled decks once per round, in random order.
-    const sig = [...S.act].sort().join() + "|" + S.regions.join();
+    const sig = S.onlyMine ? "mine|" + S.mine.join() : [...S.act].sort().join() + "|" + S.regions.join();
     if (sig !== bag.sig) {
       bag.cards = [];
       bag.sig = sig;
     }
     if (!bag.cards.length) {
-      bag.cards = shuf(S.act.flatMap(deckKeys));
+      bag.cards = shuf(S.onlyMine ? S.mine.slice() : S.act.flatMap(deckKeys));
       const e = bag.cards.length - 1;
       if (e > 0 && bag.cards[e] === ui.last) [bag.cards[0], bag.cards[e]] = [bag.cards[e], bag.cards[0]]; // no repeat across a refill
     }
@@ -41,13 +45,13 @@ export function pick() {
     save();
     return { k, prac: 1, bag: 1 };
   }
-  const ri = ui.retry.findIndex((r) => r.at <= ui.cnt && S.it[r.k] && S.act.includes(r.k.split(":")[0]) && cardInRegion(r.k));
+  const ri = ui.retry.findIndex((r) => r.at <= ui.cnt && S.it[r.k] && scoped(r.k));
   if (ri >= 0) return { k: ui.retry.splice(ri, 1)[0].k };
   const un = ent.find(([, v]) => !v.seen);
   if (un) return { k: un[0], lesson: 1 };
   const due = ent.filter(([k, v]) => v.s < 9 && v.due <= n && k !== ui.last);
   if (due.length) return { k: due[(Math.random() * due.length) | 0][0] };
-  if (ent.filter(([, v]) => v.s < 5).length < MAX_LEARNING) {
+  if (!S.onlyMine && ent.filter(([, v]) => v.s < 5).length < MAX_LEARNING) {
     const c = S.act
       .map((d) => [d, deckKeys(d).filter((k) => !S.it[k])])
       .filter((x) => x[1].length)

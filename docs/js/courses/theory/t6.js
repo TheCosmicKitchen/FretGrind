@@ -1,4 +1,4 @@
-/* Theory 6: Keys, transposing and the capo. */
+/* Theory 6: Keys and transposing. */
 import { ask, course, lesson, quiz, read } from "../dsl.js";
 
 const SEMI = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
@@ -13,8 +13,8 @@ const MAJOR_CHORDS = {
 
 export const T6 = course(
   "T6",
-  "Keys, transposing and the capo",
-  "What a key is, finding the key of a song, moving a progression, capo maths and the Nashville number system.",
+  "Keys and transposing",
+  "What a key is, finding the key of a song, moving a progression, transposing instruments and the Nashville number system.",
   [
     lesson(
       "T6.1",
@@ -61,7 +61,7 @@ export const T6 = course(
         ask("Transpose G – Em – C – D into the key of D. (I – vi – IV – V)", ["D – Bm – G – A", "D – Em – G – A", "D – Bm – A – G", "D – F♯m – G – A"], 0),
         ask("Transpose C – Am – F – G into the key of G.", ["G – Em – C – D", "G – Am – C – D", "G – Em – D – C", "G – Bm – C – D"], 0),
         ask("When you transpose, you move every note by…", ["The same interval", "A different interval each time", "One octave", "Nothing"], 0),
-        ask("What is the first step of transposing by numerals?", ["Write the chords as Roman numerals", "Change the tempo", "Choose a capo fret", "Lower the volume"], 0),
+        ask("What is the first step of transposing by numerals?", ["Write the chords as Roman numerals", "Change the tempo", "Choose a new time signature", "Lower the volume"], 0),
       ),
     ),
     lesson(
@@ -83,18 +83,20 @@ export const T6 = course(
     ),
     lesson(
       "T6.5",
-      "The capo as a transposer",
-      7,
-      read("The capo does the maths", [
-        "A capo on fret <i>n</i> moves every open-string pitch up <i>n</i> half steps. If you play C-shape chords with a capo on fret 2, the sound is a <b>D</b> (two half steps above C). The shapes stay the same; the key moves up.",
-        "To play a song in a key you can’t easily play, pick the open-chord key that is <b>n half steps below</b> it and put the capo on fret <i>n</i>. A song in A♭ major? Play in G with the capo on fret 1. Song in B♭? G with capo 3, or F with capo 5, or even D with capo 8.",
-      ], { fig: { table: { head: ["Song key", "Shapes", "Capo fret"], rows: [["A", "G", "2"], ["B♭", "G", "3"], ["B", "G", "4"], ["C", "G", "5"], ["D", "C", "2"], ["E", "C", "4"], ["F", "C", "5"]] } } }),
+      "Transposing instruments",
+      8,
+      read("Written pitch vs concert pitch", [
+        "Some instruments are <b>transposing instruments</b>: the note they read is not the note you hear. <b>Concert pitch</b> is what actually sounds (a piano in C is the reference). A <b>B♭ trumpet or clarinet</b> reading a written <b>C</b> sounds <b>B♭</b>, a major 2nd lower. An <b>E♭ alto saxophone</b> reading C sounds <b>E♭</b>, a major 6th lower. A <b>horn in F</b> reading C sounds <b>F</b>, a perfect 5th lower. Guitar is also a (mild) transposing instrument: its music is written an octave above where it sounds.",
+        "Why? So that players can switch between family members (clarinet in B♭ and A, saxes) and use the same fingerings. The cost: to play together in a concert key, each part must be transposed. A song in concert C needs a B♭ trumpet to <b>read in D</b> (up a whole step), and an E♭ alto sax to read in <b>A</b> (up a major 6th).",
+      ], { fig: { table: { head: ["Instrument", "Written C sounds as", "Interval below"], rows: [["B♭ trumpet / clarinet", "B♭", "Major 2nd"], ["E♭ alto sax", "E♭", "Major 6th"], ["F horn", "F", "Perfect 5th"], ["Guitar (octave)", "C an octave lower", "Octave"]] } }, hear: [{ l: "▶ Written C", snd: [72] }, { l: "▶ B♭ trumpet sounds", snd: [70] }] }),
       quiz(
-        ask("You play C shapes with the capo on fret 2. The key sounds like…", ["D", "B♭", "C", "E"], 0),
-        ask("A song in B♭. Which capo + shape works?", ["G shapes, capo 3", "G shapes, capo 5", "C shapes, capo 2", "D shapes, capo 1"], 0, "G up 3 half steps = B♭."),
-        ask("A song in E. Which capo + shape works?", ["C shapes, capo 4", "C shapes, capo 5", "G shapes, capo 2", "A shapes, capo 1"], 0),
-        ask("A song in A. Which capo + shape works?", ["G shapes, capo 2", "G shapes, capo 4", "C shapes, capo 3", "E shapes, capo 1"], 0),
-        ask("What does a capo on fret 5 do to the open strings?", ["Raises them by 5 half steps", "Lowers them by 5 half steps", "Raises by 5 whole steps", "Nothing"], 0),
+        ask("A B♭ trumpet reads a written C. What sounds?", ["B♭", "D", "C", "A"], 0),
+        ask("A song is in concert C. A B♭ trumpet player should read in…", ["D", "B♭", "C", "A"], 0, "Written pitch is a whole step higher than concert."),
+        ask("An E♭ alto sax reads a written C. What sounds?", ["E♭", "E", "A", "F"], 0),
+        ask("A horn in F reads a written C. What sounds?", ["F", "G", "E", "A"], 0),
+        ask("Concert pitch means…", ["The pitch that actually sounds", "The written pitch", "A pitch of 440 Hz only", "The loudest pitch"], 0),
+        ask("Why do transposing instruments exist?", ["Players of one family can share fingerings", "To make music harder", "They have no written music", "To tune the audience"], 0),
+        ask("Guitar music is written…", ["An octave above where it sounds", "Exactly as it sounds", "A fifth above", "A tone below"], 0),
       ),
     ),
     lesson(

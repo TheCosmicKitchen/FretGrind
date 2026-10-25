@@ -9,7 +9,7 @@ const two = (a, b, tempo = 70) => ({ seq: [a, b], onsets: [0, 1], tempo });
 export const T4 = course(
   "T4",
   "Intervals",
-  "The distance between two notes: counting, quality, semitones, the tritone, the guitar neck and hearing intervals.",
+  "The distance between two notes: counting, quality, semitones, the tritone and hearing intervals.",
   [
     lesson(
       "T4.1",
@@ -88,14 +88,11 @@ export const T4 = course(
       read("Twelve sizes", [
         "Every interval up to an octave is a certain number of half steps. Learn them in this order, the first one is the smallest.",
       ], { fig: { table: { head: ["Half steps", "Interval", "From C"], rows: [["1", "Minor 2nd", "C♯/D♭"], ["2", "Major 2nd", "D"], ["3", "Minor 3rd", "E♭"], ["4", "Major 3rd", "E"], ["5", "Perfect 4th", "F"], ["6", "Tritone", "F♯/G♭"], ["7", "Perfect 5th", "G"], ["8", "Minor 6th", "A♭"], ["9", "Major 6th", "A"], ["10", "Minor 7th", "B♭"], ["11", "Major 7th", "B"], ["12", "Octave", "C"]] } } }),
-      read("On the guitar", ["On a single string, <b>one fret = one half step</b>, so you can count intervals directly on the fretboard: a perfect 5th is 7 frets up, a major 3rd is 4 frets up, an octave is 12 frets up."]),
       quiz(
         ask("7 half steps is…", ["Perfect 5th", "Perfect 4th", "Major 6th", "Minor 7th"], 0),
         ask("4 half steps is…", ["Major 3rd", "Minor 3rd", "Perfect 4th", "Major 2nd"], 0),
         ask("9 half steps is…", ["Major 6th", "Minor 6th", "Minor 7th", "Perfect 5th"], 0),
         ask("10 half steps is…", ["Minor 7th", "Major 7th", "Major 6th", "Octave"], 0),
-        ask("What is the interval 5 frets up on one string?", ["Perfect 4th", "Perfect 5th", "Major 3rd", "Minor 6th"], 0),
-        ask("What is the interval 12 frets up on one string?", ["Octave", "Perfect 5th", "Major 7th", "Perfect 4th"], 0),
       ),
     ),
     lesson(
@@ -116,22 +113,6 @@ export const T4 = course(
     ),
     lesson(
       "T4.7",
-      "Intervals on the guitar neck",
-      6,
-      read("Shapes you can see", [
-        "The guitar turns intervals into <b>shapes</b>. Between neighbouring strings: the same fret on the next string up is a <b>perfect 4th</b> (e.g. low E open → A open) except between the G and B strings, where the same fret is a <b>major 3rd</b> (G open → B open).",
-        "Other handy shapes: a <b>perfect 5th</b> is two frets up on the next string up (the power-chord shape: low E fret 3 → A fret 5). An <b>octave</b> is two strings up and two frets higher (or three frets, if the G–B pair is crossed). A <b>major 3rd</b> on one string is four frets.",
-      ], { fig: { neck: { range: [1, 7], dots: [[0, 3], [1, 5]] }, cap: "A perfect 5th: G (low E, fret 3) up to D (A string, fret 5)." } }),
-      quiz(
-        ask("The same fret on two neighbouring strings (not G–B) is…", ["A perfect 4th", "A perfect 5th", "A major 3rd", "An octave"], 0),
-        ask("From the G string to the B string, the same fret is…", ["A major 3rd", "A perfect 4th", "A minor 3rd", "A perfect 5th"], 0),
-        ask("A perfect 5th is two frets up on…", ["The next string up", "The same string", "The string below", "Two strings up"], 0),
-        ask("How many frets is a major 3rd on one string?", ["4", "3", "5", "7"], 0),
-        ask("Low E open to A open is a…", ["Perfect 4th", "Perfect 5th", "Major 3rd", "Octave"], 0),
-      ),
-    ),
-    lesson(
-      "T4.8",
       "Hearing intervals",
       7,
       read("Songs as reference", [

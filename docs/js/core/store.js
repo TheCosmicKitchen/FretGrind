@@ -14,7 +14,7 @@ export const ui = {
 };
 
 const KEY = "fg1";
-const fresh = () => ({ it: {}, act: ["staff", "fretNote"], xp: 0, st: 0, best: 0 });
+const fresh = () => ({ it: {}, act: ["staff", "fretNote"], xp: 0, st: 0, best: 0, mine: [], onlyMine: 0 });
 const replace = (o) => {
   for (const k of Object.keys(S)) delete S[k];
   Object.assign(S, o);

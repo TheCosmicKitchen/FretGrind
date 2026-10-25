@@ -17,57 +17,32 @@ const beat = { head: ["1", "&", "2", "&", "3", "&", "4", "&"] };
 export const T2 = course(
   "T2",
   "Rhythm",
-  "The beat, note lengths, rests, time signatures, dots and ties, off-beats and compound time.",
+  "The beat, note values and bars, rests, eighths and sixteenths, dots and ties, time signatures, syncopation, compound and odd meters, triplets and swing.",
   [
     lesson(
       "T2.1",
-      "Beat and tempo",
-      4,
-      read("Feel the pulse", [
-        "Most music has a <b>beat</b>: a steady pulse you can tap your foot to. The beat doesn’t change speed, even when the notes on top of it do.",
-        "How fast the beat goes is the <b>tempo</b>, usually measured in <b>beats per minute (BPM)</b>. 60 BPM = one beat each second (like a clock). 120 BPM = two beats a second, a brisk walking pace.",
+      "Beat, note values and bars",
+      8,
+      read("The pulse and how fast it goes", [
+        "Most music has a <b>beat</b>: a steady pulse you could tap a foot to. Its speed is the <b>tempo</b>, measured in <b>beats per minute (BPM)</b>: at 60 BPM a beat lasts one second, at 120 BPM half a second. The beat doesn’t change when the notes on top of it do.",
       ], { hear: [{ l: "60 BPM", seq: [60, 60, 60, 60], onsets: [0, 1, 2, 3], tempo: 60 }, { l: "120 BPM", seq: [60, 60, 60, 60, 60, 60, 60, 60], onsets: [0, 1, 2, 3, 4, 5, 6, 7], tempo: 120 }] }),
+      read("Note values: each is half the one before", [
+        "A <b>whole note</b> (open head, no stem) lasts four beats in 4/4, a <b>half note</b> (open head, stem) two, a <b>quarter note</b> (filled head, stem) one, and an <b>eighth note</b> (a flag or beam) half a beat. Halve again for sixteenths. So one whole note = two halves = four quarters = eight eighths.",
+        "Music is cut into equal <b>bars</b> by bar lines. The <b>time signature</b> says how: the <b>top</b> number is how many beats per bar, the <b>bottom</b> number says which note gets the beat (4 = a quarter, 8 = an eighth). So <b>4/4</b> (common time, also written <b>C</b>) is four quarter-note beats per bar.",
+      ], { figs: [{ rhythm: "x-x-x-x-", cap: "Four quarter notes: one beat each." }, { rhythm: "x---x---", cap: "Two half notes: two beats each." }, { rhythm: "x-------", cap: "One whole note: four beats." }], hear: [{ l: "▶ Quarters", seq: [60, 60, 60, 60], onsets: [0, 1, 2, 3], tempo: 80 }, { l: "▶ Halves", seq: [60, 60], onsets: [0, 2], tempo: 80 }, { l: "▶ Whole", seq: [60], onsets: [0], tempo: 80 }] }),
       quiz(
-        ask("The beat is…", ["A steady pulse", "The loudest note", "The melody", "The key"], 0),
-        ask("How long is one beat at 60 BPM?", ["1 second", "½ second", "2 seconds", "¼ second"], 0),
-        ask("How long is one beat at 120 BPM?", ["½ second", "1 second", "2 seconds", "1½ seconds"], 0, "120 beats in 60 seconds: two a second."),
-        ask("Tempo is…", ["How fast the beat is", "How high the notes are", "How loud the music is", "How many chords there are"], 0),
+        ask("How long is one beat at 90 BPM?", ["⅔ second", "1 second", "½ second", "1½ seconds"], 0, "60 ÷ 90 = ⅔ of a second."),
+        ask("How long is one beat at 120 BPM?", ["½ second", "1 second", "2 seconds", "¼ second"], 0),
+        ask("How many beats does a half note last in 4/4?", ["2", "1", "4", "3"], 0),
+        ask("How many eighth notes make one whole note?", ["8", "4", "2", "16"], 0),
+        ask("In 4/4, what does the bottom 4 mean?", ["A quarter note gets one beat", "Four bars", "Four beats per minute", "Four sharps"], 0),
+        ask("How many beats are in this bar?", ["4", "2", "3", "8"], 0, "Two half notes: 2 + 2.", { rhythm: "x---x---" }),
+        ask("What fills one bar of 4/4?", ["Two half notes", "Three quarter notes", "One half note", "Five quarter notes"], 0),
+        ask("In 2/2 (cut time) the half note gets the beat. How many beats does a whole note last?", ["2", "4", "1", "½"], 0, "The half note is the beat, so a whole note is two beats."),
       ),
     ),
     lesson(
       "T2.2",
-      "Quarter, half and whole notes",
-      6,
-      read("How long does a note last?", [
-        "Notes show <b>how long</b> to play as well as which pitch. The most common length is the <b>quarter note</b>: a filled-in head with a stem. In music in 4/4 it gets <b>one beat</b>. A <b>half note</b> has an open head and a stem and lasts <b>two beats</b>. A <b>whole note</b> has an open head and no stem: <b>four beats</b>.",
-        "Each is half as long as the one before: a whole note is two half notes, and a half note is two quarter notes.",
-      ], { figs: [{ rhythm: "x-x-x-x-", cap: "Four quarter notes: one beat each." }, { rhythm: "x---x---", cap: "Two half notes: two beats each." }, { rhythm: "x-------", cap: "One whole note: four beats." }], hear: [{ l: "▶ Quarters", seq: [60, 60, 60, 60], onsets: [0, 1, 2, 3], tempo: 80 }, { l: "▶ Halves", seq: [60, 60], onsets: [0, 2], tempo: 80 }, { l: "▶ Whole", seq: [60], onsets: [0], tempo: 80 }] }),
-      quiz(
-        ask("How many beats does a half note last in 4/4?", ["2", "1", "4", "3"], 0),
-        ask("How many beats does a whole note last in 4/4?", ["4", "2", "1", "8"], 0),
-        ask("How many quarter notes make one whole note?", ["4", "2", "8", "3"], 0),
-        ask("Which note has an open head and no stem?", ["Whole note", "Half note", "Quarter note", "Eighth note"], 0),
-        ask("How many beats are in this bar?", ["4", "2", "3", "8"], 0, "Two half notes: 2 + 2.", { rhythm: "x---x---" }),
-      ),
-    ),
-    lesson(
-      "T2.3",
-      "Bars and 4/4 time",
-      6,
-      read("Bars and time signatures", [
-        "Music is divided into equal chunks called <b>bars</b> (or measures), separated by vertical <b>bar lines</b>. Each bar holds the same number of beats.",
-        "The two numbers at the start, the <b>time signature</b>, say how. The <b>top number</b> is how many beats are in each bar. The <b>bottom number</b> says which note gets one beat (4 = a quarter note). So <b>4/4</b> means four quarter-note beats in every bar. It is so common that it is also written <b>C</b> (common time).",
-      ], { fig: { staff: { notes: ["C5", "D5", "E5", "F5"], ts: [4, 4], gap: 46 }, cap: "4/4: four quarter notes fill one bar." } }),
-      quiz(
-        ask("In 4/4, the top number 4 means…", ["Four beats per bar", "Four bars", "Quarter notes only", "Fourth fret"], 0),
-        ask("In 4/4, the bottom number 4 means…", ["A quarter note gets one beat", "Four beats per minute", "Four notes per beat", "The key of four"], 0),
-        ask("What fills one bar of 4/4?", ["Two half notes", "Three quarter notes", "One half note", "Five quarter notes"], 0),
-        ask("Another name for 4/4 is…", ["Common time", "Waltz time", "March time", "Free time"], 0),
-        ask("Bar lines divide music into…", ["Equal groups of beats", "Verses", "Keys", "Voices"], 0),
-      ),
-    ),
-    lesson(
-      "T2.4",
       "Rests",
       6,
       read("Silence counts", [
@@ -83,7 +58,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.5",
+      "T2.3",
       "Eighth notes and counting",
       6,
       read("Splitting the beat", [
@@ -100,7 +75,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.6",
+      "T2.4",
       "Dots and ties",
       7,
       read("A dot adds half", [
@@ -118,7 +93,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.7",
+      "T2.5",
       "3/4 and 2/4",
       6,
       read("Other time signatures", [
@@ -134,7 +109,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.8",
+      "T2.6",
       "Off-beats and syncopation",
       7,
       read("On the beat, off the beat", [
@@ -150,7 +125,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.9",
+      "T2.7",
       "Sixteenth notes",
       6,
       read("Four to a beat", [
@@ -165,7 +140,7 @@ export const T2 = course(
       ),
     ),
     lesson(
-      "T2.10",
+      "T2.8",
       "Compound time: 6/8",
       7,
       read("Beats in threes", [
@@ -178,6 +153,75 @@ export const T2 = course(
         ask("In 6/8 the accents usually fall on counts…", ["1 and 4", "1 and 3", "2 and 5", "Every count"], 0),
         ask("Compound time means each beat divides into…", ["Three", "Two", "Four", "Five"], 0),
         ask("Which time signature is a ‘two big beats in threes’ feel?", ["6/8", "4/4", "3/4", "2/4"], 0),
+      ),
+    ),
+    lesson(
+      "T2.9",
+      "Triplets and tuplets",
+      8,
+      read("Three in the space of two", [
+        "A <b>triplet</b> squeezes <b>three</b> equal notes into the time that would normally hold <b>two</b> of the same kind. An <b>eighth-note triplet</b> fits three notes into one beat, counted <b>1-trip-let, 2-trip-let</b>… (or “1 la li, 2 la li”). It is marked with a small <b>3</b> over a bracket or beam.",
+        "More generally a <b>tuplet</b> fits <i>n</i> notes into the space of a different usual number: a <b>quintuplet</b> puts five in the space of four, a <b>sextuplet</b> six, and so on. A <b>quarter-note triplet</b> fits three quarter notes into two beats and sounds like a slow, rolling cross-rhythm.",
+        "Triplets give 12/8 and 6/8 their lilt, and shuffle blues is built from triplets with the middle one left out.",
+      ], { fig: { table: { head: ["1", "trip", "let", "2", "trip", "let"], rows: [["3 in 1 beat", "", "", "3 in 1 beat", "", ""]] }, cap: "Two beats of eighth-note triplets: six notes where we normally play four." }, hear: [{ l: "▶ Straight eighths", seq: [60, 60, 60, 60], onsets: [0, 0.5, 1, 1.5], tempo: 90 }, { l: "▶ Triplets", seq: [60, 60, 60, 60, 60, 60], onsets: [0, 1 / 3, 2 / 3, 1, 4 / 3, 5 / 3], tempo: 90 }] }),
+      quiz(
+        ask("A triplet fits three notes into the time of…", ["Two of the same kind", "Four of the same kind", "Three of the same kind", "One bar"], 0),
+        ask("How many eighth-note triplet notes fit in one beat?", ["3", "2", "4", "6"], 0),
+        ask("How many eighth-note triplet notes in one bar of 4/4?", ["12", "8", "6", "16"], 0, "Three per beat, four beats."),
+        ask("A quintuplet normally puts five notes in the space of…", ["Four", "Three", "Six", "Two"], 0),
+        ask("The small 3 over a group of notes marks a…", ["Triplet", "Third", "Three-bar rest", "Time change"], 0),
+        ask("Listen. Which is playing?", ["Triplets", "Straight eighths", "Sixteenths", "Quarter notes"], 0, "", null, { seq: [60, 60, 60, 60, 60, 60], onsets: [0, 1 / 3, 2 / 3, 1, 4 / 3, 5 / 3], tempo: 90 }),
+      ),
+    ),
+    lesson(
+      "T2.10",
+      "Odd meters: 5/4 and 7/8",
+      8,
+      read("Counting in fives and sevens", [
+        "Not every bar splits into twos and threes evenly. <b>5/4</b> has five quarter beats, almost always felt as <b>3 + 2</b> or <b>2 + 3</b>. <b>7/8</b> has seven eighths, usually <b>2 + 2 + 3</b>, <b>3 + 2 + 2</b> or <b>2 + 3 + 2</b>. These <b>asymmetric</b> meters feel like a limp or a lilt rather than a march.",
+        "To count them, don’t count to 7: count the <b>groups</b>: “1-2, 1-2, 1-2-3” for 2+2+3. Famous examples: Take Five (5/4, 3+2), Mission: Impossible (5/4), and many Balkan dances (7/8, 9/8).",
+      ], { fig: { table: { head: ["1", "2", "3", "4", "5", "6", "7"], rows: [["▶", "·", "▶", "·", "▶", "·", "·"]] }, cap: "7/8 as 2 + 2 + 3: accents on 1, 3 and 5." }, hear: [{ l: "▶ 7/8 as 2+2+3", seq: [60, 55, 60, 55, 60, 55, 55], onsets: [0, 1, 2, 3, 4, 5, 6], tempo: 260 }] }),
+      quiz(
+        ask("How many beats are in a bar of 5/4?", ["5", "4", "3", "10"], 0),
+        ask("5/4 is usually felt as…", ["3 + 2 or 2 + 3", "4 + 1", "5 single beats", "2 + 2 + 1 only"], 0),
+        ask("7/8 is often grouped as…", ["2 + 2 + 3", "4 + 4", "3 + 3", "5 + 2 + 1"], 0),
+        ask("How many eighth notes fill one bar of 7/8?", ["7", "8", "14", "4"], 0),
+        ask("A bar of 5/4 contains the same duration as…", ["Five quarter notes", "Four quarter notes", "Three half notes", "Eight eighths"], 0),
+        ask("Why are 5/4 and 7/8 called asymmetric?", ["Their beats group unequally", "They have no beat", "They use rests only", "They are always slow"], 0),
+      ),
+    ),
+    lesson(
+      "T2.11",
+      "Pickups, swing and feel",
+      8,
+      read("Starting before the bar", [
+        "A tune often starts <b>before</b> the first full bar: that short bar is the <b>pickup</b> or <b>anacrusis</b> (the first two syllables of “Happy Birthday”, “Hap-py”, are a pickup). The missing beats are usually found at the very end, so the first and last bars together add up to one full bar.",
+        "Written rhythms are only half the story: <b>feel</b> matters. In <b>swing</b> (jazz, blues), pairs of eighths are played long–short, roughly like the first and third parts of a triplet, even though they are written as straight eighths. A <b>shuffle</b> is the same idea at blues tempos. <b>Straight</b> feel plays them evenly.",
+      ], { hear: [{ l: "▶ Straight eighths", seq: [60, 67, 60, 67, 60, 67, 60, 67], onsets: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5], tempo: 100 }, { l: "▶ Swung eighths", seq: [60, 67, 60, 67, 60, 67, 60, 67], onsets: [0, 2 / 3, 1, 5 / 3, 2, 8 / 3, 3, 11 / 3], tempo: 100 }] }),
+      quiz(
+        ask("A pickup bar (anacrusis) is…", ["A short opening bar before the first full bar", "The last bar", "A bar of rests", "A repeated bar"], 0),
+        ask("In swing, a pair of written eighths is played…", ["Long, then short", "Short, then long", "Equally", "As a chord"], 0),
+        ask("A straight feel plays eighth notes…", ["Evenly", "Long–short", "As triplets", "As sixteenths"], 0),
+        ask("If a song starts with a one-beat pickup in 4/4, its last bar typically has…", ["Three beats", "Four beats", "One beat", "Five beats"], 0, "Pickup + last bar = one full bar."),
+        ask("A shuffle feel is related to…", ["Triplets", "Sixteenths", "Whole notes", "Fermatas"], 0),
+      ),
+    ),
+    lesson(
+      "T2.12",
+      "Rhythm reading workout",
+      8,
+      read("Count it, then name it", [
+        "Mixed practice. Strategy: find the time signature, count a bar out loud (“1 & 2 & 3 & 4 &”), then place each note on its count. Rests take up their share of the bar, ties add, a dot adds half.",
+      ]),
+      quiz(
+        ask("How many beats does this bar contain?", ["4", "3", "5", "6"], 0, "A quarter, two eighths, a half: 1 + 1 + 2.", { rhythm: "x-xxx---" }),
+        ask("How many beats of rest are in this bar?", ["2", "1", "0", "4"], 0, "Two quarter rests.", { rhythm: "x-x-...." }),
+        ask("A dotted quarter note lasts…", ["1½ beats", "2 beats", "¾ of a beat", "1 beat"], 0),
+        ask("A quarter note tied to an eighth note lasts…", ["1½ beats", "2 beats", "1 beat", "¾ of a beat"], 0),
+        ask("A dotted half note plus a quarter note fills a bar of…", ["4/4", "3/4", "2/4", "6/8"], 0),
+        ask("Which time signature has three beats per bar?", ["3/4", "4/4", "2/2", "6/8 felt in two"], 0),
+        ask("How many sixteenths equal a dotted quarter note?", ["6", "4", "8", "3"], 0, "Quarter = 4, dot adds 2."),
+        ask("A bar of 6/8 holds the same length as…", ["Three quarter notes", "Four quarter notes", "Two quarter notes", "Six quarter notes"], 0, "Six eighths = three quarters."),
       ),
     ),
   ],

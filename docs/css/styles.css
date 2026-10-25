@@ -1280,3 +1280,13 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .fg-circle g.hi .cr-maj, .fg-circle g.hi .cr-min { fill: var(--ac); }
 .fg-circle g.hi .cr-maj { font-size: 20px; }
 @media (max-width: 380px) { .ln-courses button { max-width: 150px; } .ln-h { font-size: 20px; } }
+
+/* My review deck: save buttons, the deck panel on Learn, links between cards and lessons */
+.ln-save, .cd-tools button { min-height: 40px; padding: 6px 14px; border-radius: 99px; font-weight: 650; font-size: 14px; }
+.ln-save { margin-top: 10px; width: 100%; }
+.ln-save.on, .cd-tools .mine.on { background: var(--ac, #5b5bd6); color: #fff; border-color: transparent; }
+.cd-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cd-tools .lessonlink { text-align: left; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ln-deck { margin: 12px 0; text-align: left; }
+.ln-deck button { min-height: 44px; padding: 8px 18px; border-radius: 12px; font-weight: 700; flex: none; }
+.ln-result > button:not(.go) { display: block; width: 100%; margin-top: 8px; }

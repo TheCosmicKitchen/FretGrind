@@ -51,7 +51,7 @@ export const T5 = course(
       6,
       read("Lower the third", [
         "A <b>minor triad</b> is the major triad with its third lowered by a half step: root, <b>minor 3rd</b> (3 half steps), perfect 5th. It sounds darker. A minor: A C E. E minor: E G B. D minor: D F A. G minor: G B♭ D.",
-        "On the guitar, the open Em and Am are the same idea: they differ from E and A by one note moved down a fret.",
+        "Compare E major (E G♯ B) with E minor (E G B): only the third moved down a half step. Every major chord and its minor twin differ in just that one note.",
       ], { figs: [{ staff: { notes: ["A3", "C4", "E4"], stack: true, names: ["A C E"] } }, { staff: { notes: ["D4", "F4", "A4"], stack: true, names: ["D F A"] } }], hear: [ch("C major", [60, 64, 67]), ch("C minor", [60, 63, 67]), ch("Am", [57, 60, 64])] }),
       quiz(
         ask("What are the notes of A minor?", ["A C E", "A C♯ E", "A B E", "A C F"], 0),

@@ -89,6 +89,45 @@ export function validIds() {
 /* All the question specs a set of lessons asks: the pool that tests and reviews draw from. */
 export const poolOf = (lessons) => lessons.flatMap((l) => l.steps.filter((s) => s.t === "quiz").flatMap((s) => s.qs));
 
+/* Review-deck keys. A flash-card question is saved under its card key ("staff:64"); a question written in a lesson is saved
+   as "lq:<track>|<lesson>|<n>", n = its place in that lesson's questions. These maps are built once, on first use. */
+let REFS = null;
+function refs() {
+  if (REFS) return REFS;
+  const spec = new Map(),
+    key = new Map(),
+    cardLesson = new Map(),
+    deckLesson = new Map();
+  for (const t of TRACKS)
+    for (const c of t.courses)
+      for (const l of c.lessons)
+        poolOf([l]).forEach((q, i) => {
+          if (q.card) {
+            const d = q.card.slice(0, q.card.indexOf(":"));
+            if (!cardLesson.has(q.card)) cardLesson.set(q.card, { track: t.id, id: l.id });
+            if (!deckLesson.has(d)) deckLesson.set(d, { track: t.id, id: l.id });
+          } else {
+            const k = `lq:${t.id}|${l.id}|${i}`;
+            spec.set(q, k);
+            key.set(k, q);
+          }
+        });
+  return (REFS = { spec, key, cardLesson, deckLesson });
+}
+export const specKey = (q) => (q && (q.card || refs().spec.get(q))) || "";
+export const specOfKey = (k) => (String(k).startsWith("lq:") ? refs().key.get(k) || null : null);
+/* Which lesson teaches this review-deck card? (the lesson that asks it, else the first lesson that uses its deck) */
+export function lessonOfCard(k) {
+  if (k.startsWith("lq:")) {
+    const [track, id] = k.slice(3).split("|");
+    return findLesson(track, id) ? { track, id } : null;
+  }
+  const r = refs();
+  return r.cardLesson.get(k) || r.deckLesson.get(k.slice(0, k.indexOf(":"))) || null;
+}
+/* The flash-card decks a lesson asks about, e.g. ["staff"] */
+export const decksOfLesson = (l) => [...new Set(poolOf([l]).filter((q) => q.card).map((q) => q.card.slice(0, q.card.indexOf(":"))))];
+
 /* The question pool for a test node: its lessons' questions, plus the course's own generated ones when it has them. */
 export function testSpecs(course, node, n, pick = (a) => a) {
   const lessons = course.lessons.slice(node.from, node.to + 1),

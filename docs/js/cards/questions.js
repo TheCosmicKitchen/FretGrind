@@ -3,6 +3,8 @@ import { ui } from "../core/store.js";
 import { NAMES, OPEN, RT, SN, SH, CQ, SQ, STAFF_NOTE, pt, posAll, rng, shuf, spell } from "../core/theory.js";
 import { CLASSICS, DN, TAP_SEGMENTS, activeRegions, fretOk, regionSpan } from "../core/decks.js";
 import { AC, BAD, OK, board, dots, staff } from "../view/notation.js";
+import { specOfKey } from "../courses/curriculum.js";
+import { figure } from "../courses/figures.js";
 
 // The chunk of the neck that holds fret f (see TAP_SEGMENTS): zoomed views show only this part.
 const segOf = (f) => {
@@ -44,6 +46,20 @@ export function Q(k) {
       },
       rev: expected.map(pt).join(" · "),
       snd: expected.map(([st, f]) => OPEN[st] + f),
+    };
+  } else if (d == "lq") {
+    // a question written in a lesson, kept in "My deck"
+    const sp = specOfKey(k);
+    if (!sp) throw new Error("unknown lesson question " + k);
+    const hr = sp.hear;
+    q = {
+      p: sp.p,
+      kind: "mc",
+      ch: shuf(sp.a.slice()),
+      vis: () => (sp.fig ? figure(sp.fig) : "") + (hr ? '<div class="ln-hear"><button data-play>▶ Listen</button></div>' : ""),
+      ok: (a) => a === sp.a[sp.c],
+      rev: sp.why ? `${sp.a[sp.c]} — ${sp.why}` : sp.a[sp.c],
+      ...(hr ? (hr.snd ? { snd: hr.snd, gap: hr.gap } : { seq: hr.seq, onsets: hr.onsets, tempo: hr.tempo }) : {}),
     };
   } else if (d == "interval") {
     const c = CLASSICS[+id],

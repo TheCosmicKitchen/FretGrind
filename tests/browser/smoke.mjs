@@ -42,6 +42,20 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await drive();
   check(await page.evaluate(() => /Lesson|learned|done|Nice|score|%/i.test(document.body.textContent)), "a lesson can be walked from first step to result");
   check(await page.evaluate(() => Object.keys(__fg.S.courses.guitar.les).length + Object.keys(__fg.S.courses.theory.les).length >= 1), "finishing a lesson is saved");
+  // review deck: save a lesson question, review it on the Cards tab, and jump back to its lesson
+  await page.evaluate(() => (__fg.S.mine = [], __fg.S.onlyMine = 0));
+  await page.evaluate(() => { const e = document.createElement("button"); e.setAttribute("data-ln-start", "theory:T1.1"); document.querySelector(".topnav").parentElement.appendChild(e); e.click(); e.remove(); });
+  for (let i = 0; i < 40 && !(await page.$("[data-ln-ans]:not([disabled])")); i++) await page.evaluate(() => document.querySelector("[data-ln-next]")?.click());
+  await page.click("[data-ln-ans]");
+  await page.click("[data-ln-save]");
+  check(await page.evaluate(() => __fg.S.mine.length === 1), "a lesson question can be saved to my review deck");
+  await page.click("[data-page=cards]");
+  await page.click("[data-mine-mode]");
+  check(await page.evaluate(() => /MY DECK/.test(document.querySelector(".card .tag")?.textContent || "")), "my deck mode shows saved cards");
+  await page.click("[data-learn-lesson]");
+  check(await page.evaluate(() => document.querySelector("[data-page=learn]").classList.contains("on") && !!document.querySelector(".ln-card")), "a card links back to its lesson");
+  await page.click("[data-ln-quit]");
+  await page.evaluate(() => (__fg.S.onlyMine = 0));
   await page.click("[data-ln-home]").catch(() => {});
   await page.click("[data-page=cards]");
   await page.waitForSelector(".card .prompt");

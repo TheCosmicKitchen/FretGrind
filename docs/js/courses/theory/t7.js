@@ -31,7 +31,7 @@ export const T7 = course(
       5,
       read("Loud and soft", [
         "<b>Dynamics</b> tell you how loud to play, using Italian words abbreviated to letters: <b>p</b> (piano, soft), <b>f</b> (forte, loud), <b>m</b> (mezzo, “medium”). Combined: <b>pp</b> very soft, <b>p</b> soft, <b>mp</b> medium-soft, <b>mf</b> medium-loud, <b>f</b> loud, <b>ff</b> very loud.",
-        "A <b>crescendo</b> (a widening wedge ‘&lt;’) means gradually louder; a <b>decrescendo</b> or <b>diminuendo</b> (a closing wedge ‘&gt;’) gradually softer. On guitar you get dynamics from how hard you pluck or strum.",
+        "A <b>crescendo</b> (a widening wedge ‘&lt;’) means gradually louder; a <b>decrescendo</b> or <b>diminuendo</b> (a closing wedge ‘&gt;’) gradually softer. Every instrument makes dynamics differently: breath, bow speed, how hard a key or string is struck.",
       ], { fig: { table: { head: ["pp", "p", "mp", "mf", "f", "ff"], rows: [["very soft", "soft", "medium soft", "medium loud", "loud", "very loud"]] } } }),
       quiz(
         ask("What does f stand for?", ["Forte: loud", "Fine: end", "Fast", "Flat"], 0),
@@ -63,13 +63,13 @@ export const T7 = course(
       5,
       read("How the note starts and ends", [
         "<b>Articulation</b> says how to play each note, not just how long. <b>Staccato</b> (a dot above or below the notehead): short and detached. <b>Legato</b>: smooth and connected, shown by a curved line called a <b>slur</b> over a group of notes: play them as one flowing phrase. <b>Accent</b> (&gt; over the note): attack it harder. <b>Tenuto</b> (a short line): hold it for its full value.",
-        "On guitar, a slur over two notes on the same string often means a <b>hammer-on</b> (going up) or <b>pull-off</b> (going down): sound the first note with the pick, and the second with only your fretting finger.",
+        "What a slur means physically depends on the instrument: a string player plays the notes in one bow, a wind player in one breath without re-tonguing, a singer on one syllable. (On guitar, a slur between two notes is typically played as a hammer-on or pull-off.) A <b>tie</b>, by contrast, joins two notes of the <i>same</i> pitch into one longer note.",
       ]),
       quiz(
         ask("Staccato means…", ["Short and detached", "Smooth and connected", "Louder", "Slower"], 0),
         ask("A slur over several notes means…", ["Play them smoothly (legato)", "Play them short", "Repeat them", "Skip them"], 0),
         ask("An accent (>) means…", ["Play that note harder", "Play it quietly", "Hold it forever", "Rest"], 0),
-        ask("On guitar, a slur on the same string often means a…", ["Hammer-on or pull-off", "Barre", "Palm mute", "Capo"], 0),
+        ask("A tie joins…", ["Two notes of the same pitch into one long note", "Any two notes smoothly", "A note and a rest", "Two bars"], 0),
         ask("Legato is the opposite of…", ["Staccato", "Forte", "Piano", "Allegro"], 0),
       ),
     ),
@@ -94,7 +94,7 @@ export const T7 = course(
       "Lead sheets and chord charts",
       6,
       read("Melody plus chords", [
-        "A <b>lead sheet</b> is the common way guitarists see music: just the melody on a staff, with <b>chord symbols above</b> it (and lyrics underneath). A <b>chord chart</b> drops the melody and shows only the chords bar by bar, like the charts in the guitar course.",
+        "A <b>lead sheet</b> is a very common way musicians see a song: just the melody on a staff, with <b>chord symbols above</b> it (and lyrics underneath). A <b>chord chart</b> drops the melody and shows only the chords bar by bar.",
         "Handy signs: a <b>slash /</b> in a bar means keep playing the same chord and rhythm; <b>%</b> means repeat the previous bar; <b>N.C.</b> means no chord (play nothing, or just rhythm); a letter or number in a box is a <b>rehearsal mark</b> to help the band find a place.",
       ], { fig: { chart: { rows: [["G", "%", "C", "G"], ["Em", "Am", "D7", "G"]] }, cap: "A chord chart: one chord per bar. % repeats the bar." } }),
       quiz(

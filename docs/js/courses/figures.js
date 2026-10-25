@@ -24,11 +24,13 @@ const label = (n) => n.letter + accGlyph(n);
 const SHARP_STEPS = [38, 35, 39, 36, 33, 37, 34], // F C G D A E B on the treble staff
   FLAT_STEPS = [34, 37, 33, 36, 32, 35, 31]; // B E A D G C F
 
-/* Notes on a treble staff. o = { notes: [...], names: bool | [labels], hi: [indices], stack: bool, ks: {sharps:n}|{flats:n}, ts: [n, d] } */
+/* Notes on a treble (or, with clef: "bass", bass) staff. o = { notes: [...], names: bool | [labels], hi: [indices], stack: bool, ks: {sharps:n}|{flats:n}, ts: [n, d] } */
 function staffSvg(o) {
-  const ns = o.notes.map(parseNote),
+  const bass = o.clef === "bass",
+    sh = bass ? 12 : 0, // the bass staff is drawn like the treble one, 12 letter steps lower
+    ns = o.notes.map(parseNote).map((n) => ({ ...n, step: n.step + sh })),
     y = (s) => 180 - (s - 30) * 4,
-    ks = o.ks ? (o.ks.sharps ? SHARP_STEPS.slice(0, o.ks.sharps) : FLAT_STEPS.slice(0, o.ks.flats || 0)) : [],
+    ks = o.ks && !bass ? (o.ks.sharps ? SHARP_STEPS.slice(0, o.ks.sharps) : FLAT_STEPS.slice(0, o.ks.flats || 0)) : [],
     ksGlyph = o.ks && o.ks.sharps ? "♯" : "♭",
     x0 = 78 + ks.length * 13 + (o.ts ? 28 : 0),
     gap = o.stack ? 0 : o.gap || 46,
@@ -42,7 +44,9 @@ function staffSvg(o) {
     H = maxY - minY + (labels ? 24 : 0);
   let h = `<svg viewBox="0 ${minY} ${W} ${H}" class="stf fg-staff" style="max-width:${Math.min(520, Math.max(220, W * 1.3))}px" role="img" aria-label="Music staff">`;
   for (let i = 0; i < 5; i++) h += `<line x1="10" x2="${W - 8}" y1="${y(30 + i * 2)}" y2="${y(30 + i * 2)}"/>`;
-  h += `<text x="16" y="172" font-size="62" font-family="'Noto Music','Apple Symbols','Segoe UI Symbol',serif">𝄞</text>`;
+  h += bass
+    ? `<text x="16" y="${y(36) + 14}" font-size="62" font-family="'Noto Music','Apple Symbols','Segoe UI Symbol',serif">𝄢</text>`
+    : `<text x="16" y="172" font-size="62" font-family="'Noto Music','Apple Symbols','Segoe UI Symbol',serif">𝄞</text>`;
   ks.forEach((s, i) => (h += `<text class="st-acc" x="${72 + i * 13}" y="${y(s) + 6}">${ksGlyph}</text>`));
   if (o.ts) h += `<text class="fg-ts" x="${x0 - 26}" y="${y(36) + 2}">${o.ts[0]}</text><text class="fg-ts" x="${x0 - 26}" y="${y(32) + 2}">${o.ts[1]}</text>`;
   const hiSet = new Set(o.hi || []);
@@ -152,6 +156,8 @@ export function badFigure(f) {
     const bad = o.notes.find((n) => !parseNote(n));
     if (bad) return "bad note " + bad;
     if (Array.isArray(o.names) && o.names.length > o.notes.length) return "staff has more labels than notes";
+    if (o.clef && o.clef !== "bass" && o.clef !== "treble") return "unknown clef " + o.clef;
+    if (o.clef === "bass" && o.ks) return "key signatures are only drawn on the treble staff";
   }
   if (k[0] === "rhythm" && !isValid(v)) return "bad rhythm " + v;
   if (k[0] === "chords" && (!Array.isArray(v) || v.some((c) => !SH[c]))) return "unknown chord in " + JSON.stringify(v);

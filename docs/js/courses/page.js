@@ -8,8 +8,10 @@ import { shuf } from "../core/theory.js";
 import { header } from "../view/chrome.js";
 import {
   CHECKPOINT_PASS, CHECKPOINT_Q, COURSE_PASS, COURSE_Q, TRACKS, courseOf, courseOfLesson, courseStats, findLesson, lessonsOf, nextLesson, nodesOf, track, validIds, written,
-  testSpecs,
+  testSpecs, decksOfLesson, specKey,
 } from "./curriculum.js";
+import { addMine, isMine, toggleMine } from "../cards/mine.js";
+import { next as nextCard } from "../cards/scheduler.js";
 import { PASS_LESSON, addDays, clearPending, dayKey, dueReviews, exportCode, importCode, pendingPractice, recordLesson, recordReview, recordTest, recordTestedOut, sanitize, streakNow, touch } from "./progress.js";
 import { figure } from "./figures.js";
 import { mapSvg } from "./map.js";
@@ -66,7 +68,9 @@ function home() {
   const q = queue.length
     ? `<section class="card ln-queue"><div class="tag">PRACTICE AT HOME</div><p class="ln-sub">You studied these away from the guitar. Play them when you have it with you:</p>${queue.map((x) => `<div class="ln-qrow"><span>${x.id} · ${x.l ? x.l.title : ""}</span><button data-ln-practiced="${x.tr}:${x.id}">Done ✓</button></div>`).join("")}</section>`
     : "";
-  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">🔥 ${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">🚆 No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${q}${backup()}`;
+  const mineN = (S.mine || []).length,
+    deck = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">★ MY REVIEW DECK</div><p class="ln-sub">${mineN ? `${mineN} saved card${mineN > 1 ? "s" : ""} and lesson question${mineN > 1 ? "s" : ""}.` : "Save any question with ☆ during a lesson or on a card, and it will wait for you here."}</p></div><button ${mineN ? "" : "disabled"} data-ln-mydeck>Review →</button></div></section>`;
+  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">🔥 ${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">🚆 No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${deck}${q}${backup()}`;
 }
 
 function backup() {
@@ -147,7 +151,7 @@ function startLesson(trackId, id, planIdx) {
   const L = LN(),
     lesson = findLesson(trackId, id);
   if (!lesson) return;
-  L.les = { track: trackId, id, lesson, si: -1, right: 0, total: 0, pending: 0, run: null, planIdx: planIdx ?? null, state: "play", rec: false, xp: 0 };
+  L.les = { track: trackId, id, lesson, si: -1, right: 0, total: 0, missed: [], pending: 0, run: null, planIdx: planIdx ?? null, state: "play", rec: false, xp: 0 };
   goStep(L.les, 0);
   go("lesson");
 }
@@ -198,6 +202,15 @@ function lessonView() {
   }
   return h + "</div>";
 }
+/* Buttons that tie a finished lesson or quiz to the Cards tab: keep what you missed, practise the matching card decks. */
+function deckTools(missed, lessonRef) {
+  const keys = missed.map((g) => specKey(g.spec)).filter((k) => k && !isMine(k));
+  let h = "";
+  if (keys.length) h += `<button data-ln-savemissed>☆ Add the ${keys.length} you missed to my review deck</button>`;
+  const l = lessonRef && findLesson(lessonRef.track, lessonRef.id);
+  if (l && decksOfLesson(l).length) h += `<button data-ln-drill="${lessonRef.track}:${lessonRef.id}">🃏 Practise these cards</button>`;
+  return h;
+}
 function lessonResult(s) {
   const L = LN(),
     ok = s.pct >= PASS_LESSON,
@@ -206,8 +219,9 @@ function lessonResult(s) {
   if (s.total) h += `<p class="ln-score">${s.right} of ${s.total} correct · ${s.pct}%</p>`;
   if (ok) {
     h += `<p class="ln-sub">+${s.xp} XP · it comes back for a quick review in ${s.pct >= PASS_LESSON ? "3 days" : "1 day"}.${s.pending ? " <b>The guitar part is saved in “Practice at home”.</b>" : ""}</p>`;
-    h += nextButtons(s);
+    h += deckTools(s.missed || [], s) + nextButtons(s);
   } else {
+    h += deckTools(s.missed || [], s);
     h += `<p class="ln-sub">You need ${PASS_LESSON}% to count this lesson as learned. Look it over again, or move on and it will come back tomorrow.</p><button class="go" data-ln-qagain data-ln-go>Try the questions again</button><button data-ln-redo>Read the lesson again</button><button class="ln-skip" data-ln-anyway>Move on anyway</button>`;
   }
   return h + "</div>";
@@ -236,6 +250,8 @@ function qCard(run, mode) {
     const g = run.got[run.got.length - 1];
     h += g.ok ? '<div class="msg good" role="status">✓ Correct</div>' : `<div class="msg badm" role="status">✗ ${q.rev}</div>`;
     if (q.snd) h += `<button class="ln-listen" data-ln-qplay>🔊 Hear it</button>`;
+    const key = specKey(q.spec);
+    if (key) h += `<button class="ln-save${isMine(key) ? " on" : ""}" data-ln-save="${key}">${isMine(key) ? "★ In my review deck" : "☆ Add to my review deck"}</button>`;
     h += `<button class="go" data-ln-next data-ln-go>${run.i + 1 >= n ? "Finish" : "Next →"}</button>`;
   }
   return h;
@@ -318,6 +334,7 @@ function quizView() {
   if (graded) h += `<p class="ln-sub">${ok ? "" : `You needed ${z.need}. `}${z.kind === "review" ? (ok ? "This lesson goes further out in your review schedule." : "It will come back tomorrow.") : ""}</p>`;
   if (z.skipped) h += `<p class="ln-sub"><b>${z.skipped} lesson${z.skipped > 1 ? "s" : ""} in this course now count as done.</b></p>`;
   if (missed.length) h += `<details class="ln-missed" open><summary>${missed.length} to look at again</summary>${missed.map((m) => `<p><span>${m.p}</span><br><b>${m.rev}</b></p>`).join("")}</details>`;
+  h += deckTools(missed, z.kind === "review" || z.kind === "drill" ? { track: z.track, id: z.id } : null);
   h += nextButtons({ track: z.track, kind: z.kind, pass: z.pass });
   if (graded && !ok && (z.kind === "cp" || z.kind === "test")) h = h.replace('<button data-ln-back>', '<button class="go" data-ln-retake data-ln-go>Try the test again</button><button data-ln-back>');
   return `${header()}${top}${h}</div>`;
@@ -420,6 +437,41 @@ export function mountLearn() {
     save();
     render();
   });
+  action("lnSave", (D) => {
+    toggleMine(D.lnSave);
+    render();
+  });
+  action("lnSavemissed", live((D, el, L) => {
+    const got = L.view === "quiz" && L.qz ? L.qz.run.got.filter((g) => !g.ok) : L.les ? L.les.missed || [] : [];
+    addMine(got.map((g) => specKey(g.spec)).filter(Boolean));
+    render();
+  }));
+  action("lnDrill", (D) => {
+    const [t, id] = D.lnDrill.split(":"),
+      l = findLesson(t, id);
+    if (!l) return;
+    const decks = decksOfLesson(l);
+    if (!decks.length) return;
+    S.act = decks;
+    S.onlyMine = 0;
+    save();
+    ui.page = "cards";
+    nextCard();
+    window.scrollTo(0, 0);
+  });
+  action("lnMydeck", () => {
+    if (!(S.mine || []).length) return;
+    S.onlyMine = 1;
+    save();
+    ui.page = "cards";
+    nextCard();
+    window.scrollTo(0, 0);
+  });
+  action("learnLesson", (D) => {
+    const [t, id] = D.learnLesson.split(":");
+    ui.page = "learn";
+    startLesson(t, id);
+  });
   action("lnHear", (D) => hears[+D.lnHear] && play(hears[+D.lnHear]));
   action("lnQplay", live((D, el, L) => {
     const q = L.qz ? cur(L.qz.run) : L.les && L.les.run ? cur(L.les.run) : null;
@@ -483,6 +535,7 @@ export function mountLearn() {
       const sc = score(s.run);
       s.right += sc.right;
       s.total += sc.total;
+      s.missed.push(...s.run.got.filter((g) => !g.ok));
     }
     goStep(s, s.si + 1);
     render();
@@ -507,6 +560,7 @@ export function mountLearn() {
     const s = L.les;
     if (!s) return;
     s.right = s.total = 0;
+    s.missed = [];
     s.state = "play";
     goStep(s, Math.max(0, s.lesson.steps.findIndex((x) => x.t === "quiz")));
     render();
@@ -515,6 +569,7 @@ export function mountLearn() {
     const s = L.les;
     if (!s) return;
     s.right = s.total = 0;
+    s.missed = [];
     s.state = "play";
     goStep(s, 0);
     render();

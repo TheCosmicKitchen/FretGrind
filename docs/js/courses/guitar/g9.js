@@ -77,5 +77,23 @@ export const G9 = course(
         ask("Which major pentatonic uses the same notes as A minor pentatonic?", ["C major pentatonic", "A major pentatonic", "G major pentatonic", "E major pentatonic"], 0),
       ),
     ),
+    lesson(
+      "G9.5",
+      "Interval shapes on the neck",
+      7,
+      read("Distances you can see", [
+        "An <b>interval</b> is the distance between two notes. On one string every fret is one half step, so the distance is just the number of frets: <b>4 frets</b> up is a <b>major third</b>, <b>7 frets</b> up is a <b>perfect fifth</b>, <b>12 frets</b> is an <b>octave</b>.",
+        "Across strings the neck turns intervals into <b>shapes</b>. The strings are tuned a perfect <b>fourth</b> apart (low E to A, A to D, D to G, and B to high e), so the <b>same fret</b> on neighbouring strings is a perfect fourth, except between G and B, where the same fret is a <b>major third</b>. A perfect <b>fifth</b> is the next string up and <b>two frets higher</b>: the power-chord shape. An <b>octave</b> is two strings up and two frets higher (three frets, if the G–B pair is crossed).",
+      ], { fig: { neck: { range: [1, 7], dots: [[0, 3], [1, 5]] }, cap: "A perfect fifth: G (low E, fret 3) up to D (A string, fret 5)." } }),
+      quiz(
+        ask("The same fret on two neighbouring strings (not G–B) is…", ["A perfect 4th", "A perfect 5th", "A major 3rd", "An octave"], 0),
+        ask("From the G string to the B string, the same fret is…", ["A major 3rd", "A perfect 4th", "A minor 3rd", "A perfect 5th"], 0),
+        ask("A perfect 5th is two frets up on…", ["The next string up", "The same string", "The string below", "Two strings up"], 0),
+        ask("How many frets is a major 3rd on one string?", ["4", "3", "5", "7"], 0),
+        ask("How many frets is a perfect 5th on one string?", ["7", "5", "6", "9"], 0),
+        ask("How many frets is an octave on one string?", ["12", "7", "8", "10"], 0),
+        ask("Low E open to A open is a…", ["Perfect 4th", "Perfect 5th", "Major 3rd", "Octave"], 0),
+      ),
+    ),
   ],
 );

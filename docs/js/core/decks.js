@@ -12,6 +12,7 @@ export const DN = {
   chord: "Chord shapes",
   spellChord: "Chord spelling",
   spellScale: "Scale spelling",
+  lq: "Lesson question",
 };
 export const DK = {};
 // Start at the lowest guitar note (written E3 = MIDI 52): lower pitches have no fretboard position.
@@ -77,7 +78,7 @@ export const drillScope = (fn) => {
   }
 };
 export const activeRegions = () => {
-  if (drill.on) return [];
+  if (drill.on || S.onlyMine) return []; // lessons and "My deck" ask about the whole neck
   const ids = S.regions || [],
     r = REGIONS.filter((x) => ids.includes(x.id));
   return r.length < REGIONS.length ? r : [];

@@ -7,7 +7,9 @@ import { mic, micBox, micHooks, toggleMic } from "../core/mic.js";
 import { action, render, screen } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
-import { GC, GN, bag, fin, grp, next } from "./scheduler.js";
+import { GC, GN, bag, fin, grp, next, scoped } from "./scheduler.js";
+import { isMine, sanitizeMine, toggleMine } from "./mine.js";
+import { findLesson, lessonOfCard } from "../courses/curriculum.js";
 
 /* Make a saved state safe to use: keep only decks that exist, valid regions and a valid mode.
    Returns true when something was dropped so the caller can save the cleaned state. */
@@ -22,10 +24,11 @@ export function sanitizeCards() {
   // "bag" = shuffle bag, every card equally likely (default); "srs" = spaced repetition
   if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
   delete S.randomize;
+  if (sanitizeMine()) changed = true;
   // Drop saved cards that no longer exist (e.g. open-string cards removed from the decks).
   for (const k of Object.keys(S.it)) {
     const d = k.slice(0, k.indexOf(":"));
-    if (!DK[d] || !DK[d].includes(k)) {
+    if (d === "lq" ? !S.mine.includes(k) : !DK[d] || !DK[d].includes(k)) {
       delete S.it[k];
       changed = true;
     }
@@ -35,9 +38,10 @@ export function sanitizeCards() {
 
 function answers(q) {
   const c = ui.cur,
+    attr = (v) => String(v).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"),
     b = (cls, att, t, dis) => `<button class="${cls}" ${att} ${dis ? "disabled" : ""}>${t}</button>`,
     dn = c.done;
-  const A = (v, t) => b(dn ? (q.ok(v) ? "ok" : c.ch === String(v) ? "bad" : "") : "", `data-a="${v}"`, t, dn);
+  const A = (v, t) => b(dn ? (q.ok(v) ? "ok" : c.ch === String(v) ? "bad" : "") : "", `data-a="${attr(v)}"`, t, dn);
   if (q.kind == "let") return `<div class="g7">${LET.map((l, i) => A(LSEM[i], l)).join("")}</div>`;
   if (q.kind == "tapAll") return `<button class="go" data-check>Check all ${c.sel.size} selected</button>`;
   if (q.kind == "pc12") return `<div class="g4">${(q.labels || NAMES).map((n, i) => A(i, n)).join("")}</div>`;
@@ -52,7 +56,7 @@ function answers(q) {
 
 // "Board" chips: limit practice (and the part of the neck that is drawn) to some 6-fret regions.
 function regionChips() {
-  if (!S.act.some((d) => ["staff", "staffFret", "fretNote", "findFret", "tapAll"].includes(d))) return "";
+  if (S.onlyMine || !S.act.some((d) => ["staff", "staffFret", "fretNote", "findFret", "tapAll"].includes(d))) return "";
   const on = activeRegions();
   return `<div class="chips regions" role="group" aria-label="Practise only part of the fretboard"><span class="tag">BOARD</span><button data-region="all" class="${on.length ? "" : "a"}" aria-pressed="${!on.length}">All</button>${REGIONS.map((r) => `<button data-region="${r.id}" class="${on.includes(r) ? "a" : ""}" aria-pressed="${on.includes(r)}">${r.name} <small>${r.min}–${r.max}</small></button>`).join("")}</div>`;
 }
@@ -62,13 +66,21 @@ function card() {
   if (!cur) return '<div class="card">Pick at least one deck above.</div>';
   const q = cur.q,
     d = cur.done,
-    tag = cur.lesson ? "NEW · TAKE A GUESS" : cur.bag ? `SHUFFLE · ${bag.cards.length} LEFT IN BAG` : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase();
+    tag = S.onlyMine ? "MY DECK" : cur.lesson ? "NEW · TAKE A GUESS" : cur.bag ? `SHUFFLE · ${bag.cards.length} LEFT IN BAG` : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase();
   let h = `<div class="card"><div class="tag">${q.n.toUpperCase()} · ${tag}</div><div class="prompt">${q.p}</div>${q.vis(d, cur.tp)}`;
   h += answers(q);
   if (mic.err) h += `<div class="msg badm" role="alert">${mic.err}</div>`;
   if (mic.on && !d && q.mic) h += micBox();
   if (d) h += cur.ok ? '<div class="msg good" role="status">✓ Correct</div>' : `<div class="msg badm" role="status">✗ ${q.rev}</div><button class="go" data-next>Next →</button>`;
-  return h + "</div>";
+  return h + tools(cur) + "</div>";
+}
+
+/* Under every card: keep it in My deck, and jump to the lesson that teaches it. */
+function tools(cur) {
+  const inDeck = isMine(cur.k),
+    ls = lessonOfCard(cur.k),
+    l = ls && findLesson(ls.track, ls.id);
+  return `<div class="cd-tools"><button class="mine${inDeck ? " on" : ""}" data-mine-save="${cur.k}" aria-pressed="${inDeck}">${inDeck ? "★ In my deck" : "☆ Save to my deck"}</button>${l ? `<button class="lessonlink" data-learn-lesson="${ls.track}:${ls.id}">📘 ${l.id} · ${l.title}</button>` : ""}</div>`;
 }
 
 function renderCards() {
@@ -77,7 +89,7 @@ function renderCards() {
   let due = 0;
   for (const [k, v] of Object.entries(S.it)) {
     c[grp(v.s)]++;
-    if (S.act.includes(k.split(":")[0]) && cardInRegion(k) && v.seen && v.s < 9 && v.due <= n) due++;
+    if (scoped(k) && v.seen && v.s < 9 && v.due <= n) due++;
   }
   const chips = Object.keys(GR)
     .map((g) => {
@@ -86,7 +98,7 @@ function renderCards() {
       return `<button data-g="${g}" class="${GR[g].some((x) => S.act.includes(x)) ? "a" : ""}">${g} ${have}/${all}</button>`;
     })
     .join("");
-  app.innerHTML = `${header()}<div class="pills">${GN.map((g, i) => `<span style="background:${GC[i]}">${g} ${c[i]}</span>`).join("")}<span style="background:var(--mu)">Due ${due}</span></div><div class="chips">${chips}<button data-rand class="${S.mode === "bag" ? "a" : ""}" title="Switch between a shuffle bag (every card equally likely) and spaced repetition">${S.mode === "bag" ? "🎲 Shuffle bag" : "↻ Spaced repetition"}</button><button data-mic class="${mic.on ? "a" : ""}">${mic.on ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${regionChips()}${card()}<button class="rs" data-reset>${ui.rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
+  app.innerHTML = `${header()}<div class="pills">${GN.map((g, i) => `<span style="background:${GC[i]}">${g} ${c[i]}</span>`).join("")}<span style="background:var(--mu)">Due ${due}</span></div><div class="chips"><button data-mine-mode class="${S.onlyMine ? "a" : ""}" ${S.mine.length ? "" : "disabled"} title="Practise only the cards and lesson questions you saved">★ My deck ${S.mine.length}</button>${chips.replace(/class="a"/g, S.onlyMine ? 'class=""' : 'class="a"')}<button data-rand class="${S.mode === "bag" ? "a" : ""}" title="Switch between a shuffle bag (every card equally likely) and spaced repetition">${S.mode === "bag" ? "🎲 Shuffle bag" : "↻ Spaced repetition"}</button><button data-mic class="${mic.on ? "a" : ""}">${mic.on ? "🎤 Mic on" : "🎤 Listen"}</button><button data-snd class="${S.mute ? "" : "a"}">${S.mute ? "🔇 Sound off" : "🔊 Sound on"}</button></div>${regionChips()}${card()}<button class="rs" data-reset>${ui.rs ? "Tap again to erase all progress" : "Reset progress"}</button>`;
 }
 
 /* Clicks on this page. Answering clicks only count while a card is open and unanswered. */
@@ -109,6 +121,7 @@ export function mountCards() {
     next();
   });
   action("g", (D) => {
+    S.onlyMine = 0;
     const ds = GR[D.g],
       on = ds.some((x) => S.act.includes(x));
     if (on) {
@@ -116,6 +129,17 @@ export function mountCards() {
       if (!r.length) return; // always keep at least one deck
       S.act = r;
     } else S.act.push(...ds);
+    save();
+    next();
+  });
+  action("mineSave", (D) => {
+    toggleMine(D.mineSave);
+    if (!S.mine.length && S.onlyMine) S.onlyMine = 0;
+    render();
+  });
+  action("mineMode", () => {
+    if (!S.mine.length) return;
+    S.onlyMine = S.onlyMine ? 0 : 1;
     save();
     next();
   });
