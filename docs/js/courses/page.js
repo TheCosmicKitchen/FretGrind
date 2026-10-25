@@ -15,6 +15,7 @@ import { next as nextCard } from "../cards/scheduler.js";
 import { PASS_LESSON, addDays, clearPending, dayKey, dueReviews, exportCode, importCode, pendingPractice, recordLesson, recordReview, recordTest, recordTestedOut, sanitize, streakNow, touch } from "./progress.js";
 import { figure } from "./figures.js";
 import { DRILLS, drillById, drillGroups, drillQuestions } from "./drills.js";
+import { motionAfter, motionStop, motionView, mountMotion } from "./motion-view.js";
 import { mapSvg } from "./map.js";
 import { advance, answer, cur, finished, newRun, questionHtml, score } from "./runner.js";
 import { drillSpecs, lessonMinutes, makePlan, miniSpecs, needsGuitar } from "./today.js";
@@ -35,6 +36,7 @@ const nice = (key) => {
 const bar = (a, b) => `<div class="ln-bar"><i style="width:${b ? Math.round((100 * a) / b) : 0}%"></i></div>`;
 const xp = (n) => (S.xp = (S.xp || 0) + n);
 const go = (view) => {
+  if (view !== "motion") motionStop();
   LN().view = view;
   LN().confirm = "";
   render();
@@ -371,7 +373,8 @@ function planNext() {
 function renderLearn() {
   hears = [];
   const v = LN().view;
-  app.innerHTML = v === "drills" ? drillsView() : v === "track" ? trackView() : v === "lesson" ? lessonView() : v === "quiz" ? quizView() : home();
+  app.innerHTML = v === "motion" ? motionView() : v === "drills" ? drillsView() : v === "track" ? trackView() : v === "lesson" ? lessonView() : v === "quiz" ? quizView() : home();
+  if (v === "motion") motionAfter();
 }
 /* ---------- Drills: endless generated questions ---------- */
 function drillsView() {
@@ -379,7 +382,8 @@ function drillsView() {
     const list = DRILLS.filter((d) => d.group === g)
       .map((d) => `<button class="ln-drow" data-ln-dgo="${d.id}"><b>${d.title}</b><small>${d.blurb}</small></button>`)
       .join("");
-    return `<section class="card ln-dgroup"><div class="tag">${g.toUpperCase()}</div>${list}</section>`;
+    const motion = g === "Guitar" ? `<button class="ln-drow ln-dmotion" data-ln-motion><b>🎸 Motion drills</b><small>Chord changes, scale runs, or both mixed, built on the fly and played to a metronome. You set how far your hands move and how tight the rhythm is.</small></button>` : "";
+    return `<section class="card ln-dgroup"><div class="tag">${g.toUpperCase()}</div>${motion}${list}</section>`;
   });
   return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">🎯</span><div><h2>Drills</h2><p class="ln-sub">Ten fresh questions every round. Nothing is saved except your streak, so go wild.</p></div></div><section class="card ln-dgroup"><button class="go" data-ln-dgo="mix">🎲 Mixed round</button></section>${groups.join("")}`;
 }
@@ -464,6 +468,8 @@ export function mountLearn() {
     render();
   });
   action("lnDrills", () => go("drills"));
+  action("lnMotion", () => go("motion"));
+  mountMotion();
   action("lnDgo", (D) => startDrill(D.lnDgo));
   action("lnSave", (D) => {
     toggleMine(D.lnSave);

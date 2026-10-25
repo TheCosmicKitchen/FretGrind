@@ -9,6 +9,7 @@ import { sanitizeListen, listenStop } from "./core/listen-io.js";
 import { mountListenUi } from "./core/listen-ui.js";
 import { mountCards, sanitizeCards } from "./cards/page.js";
 import { mountLearn, sanitizeCourses } from "./courses/page.js";
+import { motionKey, motionStop } from "./courses/motion-view.js";
 import { next } from "./cards/scheduler.js";
 import { mountGames, stopGames } from "./games/page.js";
 import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
@@ -30,6 +31,7 @@ if (!found || tidied || coursesTidied) save();
 function openPage(id) {
   if (id !== "cards" && mic.on) micStop(); // never leave the mic running out of sight
   if (id !== "practice" && metBusy()) metStop();
+  if (id !== "learn") motionStop();
   if (id !== "games") stopGames();
   if (id !== "songs") stopSongs();
   if (id !== "games" && id !== "songs") listenStop(); // the microphone only runs where it is used
@@ -55,6 +57,7 @@ document.addEventListener("keydown", (e) => {
   if (rhythmKey(e)) return; // taps in the rhythm game
   if (ui.page === "songs" && songKey(e)) return;
   if (ui.page === "learn") {
+    if (motionKey(e, ui.learn && ui.learn.view)) return;
     if (e.key === "Enter" && !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(e.target.tagName)) {
       const b = app.querySelector("[data-ln-go]:not([disabled])");
       b && b.click();

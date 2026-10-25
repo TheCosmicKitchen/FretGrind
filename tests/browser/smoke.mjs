@@ -52,6 +52,25 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await drive();
   check(await page.evaluate(() => !!document.querySelector("[data-ln-dgo]") && /DRILL|%|score/i.test(document.body.textContent)), "a drill round reaches its result with Another round");
   await page.evaluate(() => document.querySelector("[data-ln-quit]")?.click());
+  // motion drills: setup, a few seconds of generated bars on the audio clock, a live tempo change, stop
+  await page.evaluate(() => document.querySelector("[data-ln-quit]")?.click());
+  await page.click("[data-page=learn]");
+  await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
+  await page.click("[data-ln-drills]");
+  await page.click("[data-ln-motion]");
+  check(await page.evaluate(() => !!document.querySelector("[data-mo-start]") && document.querySelectorAll("[data-mo-set=motion]").length === 5), "the Motion drills setup shows five motion levels");
+  await page.evaluate(() => (__fg.S.mo = { ...__fg.S.mo, countIn: false, bpm: 120 }));
+  await page.click('[data-mo-set="content"][data-v="mixed"]');
+  await page.click('[data-mo-set="rhythm"][data-v="3"]');
+  await page.click("[data-mo-start]");
+  await page.waitForFunction(() => document.getElementById("mo-now")?.innerText.trim().length > 1, null, { timeout: 8000 });
+  check(await page.evaluate(() => !!document.getElementById("mo-next")?.innerText.trim() && !!document.querySelector("#mo-strip .mo-strip")), "a motion drill shows now, next and the bar");
+  await page.click('[data-mo-set="bpm"][data-v="5"]');
+  check(await page.evaluate(() => __fg.S.mo.bpm === 125 && !!document.getElementById("mo-now")), "the tempo can change while it plays");
+  await page.click("[data-mo-stop]");
+  check(await page.evaluate(() => !!document.querySelector("[data-mo-start]")), "stopping returns to the setup");
+  await page.evaluate(() => document.querySelector("[data-ln-drills]")?.click());
+  await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
   // review deck: save a lesson question, review it on the Cards tab, and jump back to its lesson
   await page.evaluate(() => (__fg.S.mine = [], __fg.S.onlyMine = 0));
   await page.evaluate(() => { const e = document.createElement("button"); e.setAttribute("data-ln-start", "theory:T1.1"); document.querySelector(".topnav").parentElement.appendChild(e); e.click(); e.remove(); });

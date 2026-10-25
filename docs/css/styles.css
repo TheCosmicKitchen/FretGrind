@@ -1297,3 +1297,42 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .ln-drow small { display: block; color: var(--mu); font-weight: 500; margin-top: 2px; }
 .ln-more a { color: var(--ac); text-decoration: underline; text-underline-offset: 2px; }
 .ln-more { margin-top: 8px; }
+
+/* Guitar motion drills */
+.ln-dmotion { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 8%, var(--card)); }
+.mo-set .tag, .mo-run .tag { margin-top: 12px; }
+.mo-set .tag:first-child { margin-top: 0; }
+.mo-seg { display: flex; gap: 4px; padding: 4px; background: color-mix(in srgb, var(--ln) 42%, transparent); border-radius: 12px; margin: 6px 0; }
+.mo-seg button { flex: 1; border: 0; min-height: 38px; padding: 0 4px; border-radius: 9px; background: transparent; font-weight: 700; color: var(--mu); font-size: 13px; }
+.mo-seg button.on { background: var(--card); color: var(--ac); box-shadow: 0 2px 8px #00000012; }
+.mo-keys { margin: 6px 0; }
+.mo-bpm { margin: 6px 0; }
+.mo-load b { color: var(--ac); }
+.mo-ex { font-size: 13px; }
+.mo-info { text-align: center; color: var(--mu); font-weight: 700; margin: 4px 0 10px; min-height: 1.4em; }
+.mo-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mo-now, .mo-next { border: 1px solid var(--ln); border-radius: 14px; padding: 10px 8px 12px; text-align: center; min-width: 0; }
+.mo-now { border-color: var(--ac); background: color-mix(in srgb, var(--ac) 7%, var(--card)); }
+.mo-next { opacity: .85; }
+.mo-now .tag, .mo-next .tag { margin: 0 0 4px; }
+.mo-face { min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
+.mo-face small { color: var(--mu); font-size: 12px; }
+.mo-name { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.mo-next .mo-name { font-size: 22px; }
+.mo-box .pr-box { width: 118px; height: auto; }
+.mo-tab { width: 130px; height: auto; margin-top: 8px; }
+.mo-tab line { stroke: var(--mu); stroke-width: 1; }
+.mo-tab rect { fill: var(--ac); }
+.mo-tab text { fill: #fff; font-size: 11px; font-weight: 800; }
+.mo-hint { color: var(--mu); font-size: 12px; line-height: 1.35; margin: 6px 0 0; min-height: 2.7em; }
+.mo-lv { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 11px; font-weight: 800; color: #fff; background: var(--mu); }
+.mo-lv.l1 { background: #3aa66b; } .mo-lv.l2 { background: #6aa84f; } .mo-lv.l3 { background: #d9a21b; } .mo-lv.l4 { background: #e0742a; } .mo-lv.l5 { background: #d9453b; }
+.mo-strip { position: relative; height: 54px; margin: 14px 4px 6px; border-top: 2px solid var(--ln); }
+.mo-strip i { position: absolute; top: -9px; width: 2px; height: 16px; background: var(--ln); }
+.mo-strip span { position: absolute; top: 12px; transform: translateX(-2px); font-size: 12px; font-weight: 800; color: var(--mu); white-space: nowrap; }
+.mo-strip span::before { content: ""; position: absolute; left: 0; top: -14px; width: 9px; height: 9px; border-radius: 50%; background: var(--mu); }
+.mo-strip span.hot { color: var(--ac); }
+.mo-strip span.hot::before { background: var(--ac); transform: scale(1.5); }
+.mo-strip.dots span { font-size: 0; }
+.mo-ex { text-align: center; }
+.mo-strip.dots { height: 14px; margin-bottom: 14px; }
