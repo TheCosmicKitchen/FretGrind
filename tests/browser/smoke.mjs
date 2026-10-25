@@ -17,6 +17,33 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   page.on("pageerror", (e) => errs.push(e.message));
   page.on("console", (m) => m.type() === "error" && errs.push(m.text()));
   await page.goto(base + "/index.html?debug");
+  await page.waitForSelector(".ln-wrap, .ln-track, [data-ln-plan]");
+
+  // --- learn tab: the home screen, a whole lesson, the daily plan
+  check(await page.evaluate(() => document.querySelector("[data-page=learn]")?.classList.contains("on")), "learn is the first tab");
+  check(await page.evaluate(() => document.querySelectorAll(".ln-track").length === 2), "learn home shows both tracks");
+  // drive the screen by clicking whatever the lesson asks for, until the result screen shows
+  const drive = async (limit = 120) => {
+    for (let i = 0; i < limit; i++) {
+      const acted = await page.evaluate(() => {
+        const q = (sel) => document.querySelector(sel + ":not([disabled])");
+        const el = q("[data-ln-ans]") || q("[data-ln-z]") || q("[data-ln-chk]") || q("[data-ln-next]") || q("[data-ln-did]") || q("[data-ln-skip]") || q("[data-ln-cont]") || q("[data-ln-anyway]");
+        if (!el) return false;
+        if (el.matches("[data-ln-z]") && !document.querySelector(".ln-opts .ok, .fb")) { el.dispatchEvent(new MouseEvent("click", { bubbles: true })); return true; }
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        return true;
+      });
+      if (!acted) return i;
+    }
+    return limit;
+  };
+  await page.click("[data-ln-plan]");
+  check(await page.evaluate(() => !!document.querySelector(".ln-step, .ln-q, .ln-run, [data-ln-next], [data-ln-ans]")), "the daily plan opens its first lesson");
+  await drive();
+  check(await page.evaluate(() => /Lesson|learned|done|Nice|score|%/i.test(document.body.textContent)), "a lesson can be walked from first step to result");
+  check(await page.evaluate(() => Object.keys(__fg.S.courses.guitar.les).length + Object.keys(__fg.S.courses.theory.les).length >= 1), "finishing a lesson is saved");
+  await page.click("[data-ln-home]").catch(() => {});
+  await page.click("[data-page=cards]");
   await page.waitForSelector(".card .prompt");
 
   // --- flash cards: answer cards in every deck, correct and wrong
@@ -117,6 +144,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
 
   await page.evaluate(() => localStorage.setItem("fg1", JSON.stringify({ it: { "bogus:1": {} }, act: ["nope"], prac: { cRoot: 99 }, rhythm: { bpm: "x" }, regions: ["zz"] })));
   await page.reload();
+  await page.click("[data-page=cards]");
   await page.waitForSelector(".card");
   check(await page.evaluate(() => __fg.S.act.length > 0 && __fg.S.prac.cRoot === 7 && __fg.S.rhythm.bpm === 80 && __fg.S.regions.length === 0), "damaged save is repaired on load");
 

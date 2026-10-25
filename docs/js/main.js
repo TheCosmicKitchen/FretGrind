@@ -8,6 +8,7 @@ import { mic, micStop } from "./core/mic.js";
 import { sanitizeListen, listenStop } from "./core/listen-io.js";
 import { mountListenUi } from "./core/listen-ui.js";
 import { mountCards, sanitizeCards } from "./cards/page.js";
+import { mountLearn, sanitizeCourses } from "./courses/page.js";
 import { next } from "./cards/scheduler.js";
 import { mountGames, stopGames } from "./games/page.js";
 import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
@@ -22,7 +23,8 @@ sanitizeLibrary();
 sanitizeRhythm();
 sanitizeSongs();
 sanitizeListen();
-if (!found || tidied) save();
+const coursesTidied = sanitizeCourses();
+if (!found || tidied || coursesTidied) save();
 
 /* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
 function openPage(id) {
@@ -35,6 +37,7 @@ function openPage(id) {
   render();
 }
 
+mountLearn();
 mountCards();
 mountGames();
 mountLibrary(openPage);
@@ -51,6 +54,13 @@ mountClicks(app);
 document.addEventListener("keydown", (e) => {
   if (rhythmKey(e)) return; // taps in the rhythm game
   if (ui.page === "songs" && songKey(e)) return;
+  if (ui.page === "learn") {
+    if (e.key === "Enter" && !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(e.target.tagName)) {
+      const b = app.querySelector("[data-ln-go]:not([disabled])");
+      b && b.click();
+    }
+    return;
+  }
   if (ui.page === "practice") {
     if (e.key === " " && !/^(BUTTON|INPUT|SELECT)$/.test(e.target.tagName)) {
       e.preventDefault();
@@ -74,4 +84,5 @@ document.addEventListener("visibilitychange", () => {
 
 if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug, songsDebug, audioCtx: () => ctx };
 
+ui.page = "learn"; // the app opens on the Learn tab
 next(); // draws the first card

@@ -65,7 +65,19 @@ DK.interval = CLASSICS.map((_, i) => `interval:${i}`);
 
 /* ---- Practice regions ---------------------------------------------------------------------------
    S.regions lists the region ids being practised; empty (or all four) means the whole board. */
+// Lessons ask questions about the whole neck, whatever regions the flash cards are limited to.
+export const drill = { on: false };
+export const drillScope = (fn) => {
+  const was = drill.on;
+  drill.on = true;
+  try {
+    return fn();
+  } finally {
+    drill.on = was;
+  }
+};
 export const activeRegions = () => {
+  if (drill.on) return [];
   const ids = S.regions || [],
     r = REGIONS.filter((x) => ids.includes(x.id));
   return r.length < REGIONS.length ? r : [];

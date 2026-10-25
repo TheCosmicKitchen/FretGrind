@@ -13,7 +13,9 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **Listening** (microphone, optional, nothing leaves your device): in the Songs player, *Play along* counts you in with a click and then marks every note you play for pitch and timing (on time / early / late / wrong note / missed, with the trouble bars and your average early or late bias), and *Wait for me* lights up one note at a time and moves on when you play it (an octave off still counts). *Tap the rhythm* can also be played by playing or clapping instead of tapping. Use the delay "Measure" button once (speaker beeps, no headphones) so timing is judged against what you hear; on speakers the click stops after the count-in so the microphone does not hear it, with headphones it keeps going. The detector is plain signal processing in `core/listen.js` (no model, no download).
 
-**Games** tab: *Tap the rhythm* (tap eighth-note patterns on the audio clock, 5 levels, optional count-in, click, listen-first and tap-delay compensation, graded perfect/good/ok with stars) and *Follow the score*. **Flash Cards** are a separate tab from the games.
+**Games** tab: *Tap the rhythm* (tap eighth-note patterns on the audio clock, 5 levels, optional count-in, click, listen-first and tap-delay compensation, graded perfect/good/ok with stars) and *Follow the score*. **Cards** (flash cards) are a separate tab from the games.
+
+**Learn** tab (the start page): two separate tracks, *Guitar* (G1–G9) and *Music theory* (T1–T7), each a course path drawn as a winding map of lesson circles, checkpoint (?) and course-test (★) diamonds. Lessons mix short reading, figures (staff, tab, neck, chords, keys, rhythm), ear questions and quizzes. A daily plan (5, 10 or 20 minutes) picks due reviews (after 3, 14 and 45 days), the next lesson and a quick drill. "No guitar with me" saves play-along steps for later, so lessons work on the train. Progress is kept in this browser; copy a save code under *Save or restore your progress* to back it up or move device. Chord charts for folk songs are typical arrangements, and only public-domain songs are named.
 
 Static site: no build step, no bundler, no dependencies. The app is native ES modules served as plain files from `docs/`. Progress is stored in your browser's `localStorage`.
 
@@ -53,6 +55,9 @@ node tests/browser/listen-e2e.mjs # listening end to end: the mic is replaced by
 | `songs/` | Song data and format (`data.js`, `format.js`), tab assignment (`tabify.js`), score drawing (`draw.js`), click-synced player, play-along grading (`grade.js`, pure) and the Songs page |
 
 `sw.js` keeps an explicit asset list: **add every new file there** (a unit test checks this) and bump `CACHE` when you deploy.
+
+## Adding a lesson
+Lessons are plain data in `docs/js/courses/guitar/` and `theory/` (one file per course), built with the helpers in `courses/dsl.js` (`read`, `quiz`, `ask`, `card`, `practice`) and registered in `courses/curriculum.js`. Add new files to `docs/sw.js`; `npm test` validates every question, figure and answer index.
 
 ## Adding a song
 

@@ -23,6 +23,7 @@ await page.addInitScript(() => {
   };
 });
 await page.goto(base + "/index.html?debug");
+await page.click("[data-page=cards]");
 await page.waitForSelector(".card .prompt");
 
 // pure helper used from the page
