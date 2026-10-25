@@ -1,5 +1,5 @@
 // Offline cache. Bump CACHE when you deploy changes so users get the new files.
-const CACHE = "fret-grind-v15";
+const CACHE = "fret-grind-v16";
 const ASSETS = [
   "./", "index.html", "css/styles.css", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
@@ -21,9 +21,11 @@ const ASSETS = [
     "js/core/store.js",
     "js/core/theory.js",
     "js/courses/curriculum.js",
+    "js/courses/drills.js",
     "js/courses/dsl.js",
     "js/courses/figures.js",
     "js/courses/guitar/g1.js",
+    "js/courses/guitar/g10.js",
     "js/courses/guitar/g2.js",
     "js/courses/guitar/g3.js",
     "js/courses/guitar/g4.js",
@@ -37,12 +39,16 @@ const ASSETS = [
     "js/courses/progress.js",
     "js/courses/runner.js",
     "js/courses/theory/t1.js",
+    "js/courses/theory/t10.js",
+    "js/courses/theory/t11.js",
     "js/courses/theory/t2.js",
     "js/courses/theory/t3.js",
     "js/courses/theory/t4.js",
     "js/courses/theory/t5.js",
     "js/courses/theory/t6.js",
     "js/courses/theory/t7.js",
+    "js/courses/theory/t8.js",
+    "js/courses/theory/t9.js",
     "js/courses/today.js",
     "js/games/page.js",
     "js/games/rhythm-patterns.js",

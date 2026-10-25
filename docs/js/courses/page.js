@@ -14,6 +14,7 @@ import { addMine, isMine, toggleMine } from "../cards/mine.js";
 import { next as nextCard } from "../cards/scheduler.js";
 import { PASS_LESSON, addDays, clearPending, dayKey, dueReviews, exportCode, importCode, pendingPractice, recordLesson, recordReview, recordTest, recordTestedOut, sanitize, streakNow, touch } from "./progress.js";
 import { figure } from "./figures.js";
+import { DRILLS, drillById, drillGroups, drillQuestions } from "./drills.js";
 import { mapSvg } from "./map.js";
 import { advance, answer, cur, finished, newRun, questionHtml, score } from "./runner.js";
 import { drillSpecs, lessonMinutes, makePlan, miniSpecs, needsGuitar } from "./today.js";
@@ -68,9 +69,10 @@ function home() {
   const q = queue.length
     ? `<section class="card ln-queue"><div class="tag">PRACTICE AT HOME</div><p class="ln-sub">You studied these away from the guitar. Play them when you have it with you:</p>${queue.map((x) => `<div class="ln-qrow"><span>${x.id} · ${x.l ? x.l.title : ""}</span><button data-ln-practiced="${x.tr}:${x.id}">Done ✓</button></div>`).join("")}</section>`
     : "";
+  const drills = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">🎯 DRILLS</div><p class="ln-sub">Endless practice: ear training, spelling, reading, capo maths.</p></div><button data-ln-drills>Open →</button></div></section>`;
   const mineN = (S.mine || []).length,
     deck = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">★ MY REVIEW DECK</div><p class="ln-sub">${mineN ? `${mineN} saved card${mineN > 1 ? "s" : ""} and lesson question${mineN > 1 ? "s" : ""}.` : "Save any question with ☆ during a lesson or on a card, and it will wait for you here."}</p></div><button ${mineN ? "" : "disabled"} data-ln-mydeck>Review →</button></div></section>`;
-  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">🔥 ${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">🚆 No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${deck}${q}${backup()}`;
+  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">🔥 ${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">🚆 No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${drills}${deck}${q}${backup()}`;
 }
 
 function backup() {
@@ -124,7 +126,14 @@ function trackView() {
       dueHere = nodes.filter((n) => n.kind === "lesson" && due.has(n.id)).length;
     body = `<div class="card ln-mapcard">${mapSvg(course, tr.id, c, due, L.sel, nextId)}<div class="ln-legend"><span><i class="lg done"></i>done</span><span><i class="lg next"></i>start here</span><span><i class="lg due"></i>review due</span><span><i class="lg dia"></i>test</span></div></div>${node ? nodePanel(tr.id, course, node, t) : ""}${dueHere ? `<button class="go alt" data-ln-reviewfirst="${tr.id}">Review ${dueHere} lesson${dueHere > 1 ? "s" : ""} now (≈${dueHere * 2} min)</button>` : ""}<ul class="ln-list">${nodes.map((n) => `<li><button data-ln-node="${n.id}" class="${n.id === L.sel ? "on" : ""}"><span class="ln-dot ${n.kind === "lesson" ? (C()[tr.id].les[n.id] ? "done" : "open") : C()[tr.id].tst[n.id]?.ok ? "done" : "open"} ${n.kind}"></span><span><b>${nodeTitle(n)}</b><small>${status(tr.id, n, t)}</small></span></button></li>`).join("")}</ul>`;
   }
-  return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">${tr.icon}</span><div><h2>${tr.name}</h2><p class="ln-sub">${tr.blurb}</p></div></div><div class="ln-courses" role="group" aria-label="Courses">${chips}</div><div class="card ln-cinfo"><b>${course.id} · ${course.name}</b><p class="ln-sub">${course.blurb}</p>${written(course) ? `${bar(s.done, s.total)}<p class="ln-sub">${s.done}/${s.total} lessons · ${s.passed}/${s.tests} tests passed</p>` : ""}</div>${body}`;
+  return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">${tr.icon}</span><div><h2>${tr.name}</h2><p class="ln-sub">${tr.blurb}</p></div></div><div class="ln-courses" role="group" aria-label="Courses">${chips}</div><div class="card ln-cinfo"><b>${course.id} · ${course.name}</b><p class="ln-sub">${course.blurb}</p>${written(course) ? `${bar(s.done, s.total)}<p class="ln-sub">${s.done}/${s.total} lessons · ${s.passed}/${s.tests} tests passed</p>` : ""}${goDeeper(course)}</div>${body}`;
+}
+
+/* "Go deeper": free outside reading for a course. Our lessons are written fresh; these are links only. */
+function goDeeper(course) {
+  const links = (course.more || []).filter((m) => m && /^https:\/\//.test(m.u));
+  if (!links.length) return "";
+  return `<p class="ln-sub ln-more">Go deeper: ${links.map((m) => `<a href="${m.u}" target="_blank" rel="noopener noreferrer">${m.t}</a>`).join(" · ")}</p>`;
 }
 
 function nodePanel(trackId, course, node, t) {
@@ -238,7 +247,7 @@ function nextButtons(s) {
     if (nl && !more && !(s.kind === "test" && s.pass === false))
       h += `<button class="${more ? "" : "go"}" data-ln-start="${s.track}:${nl.lesson.id}" ${more ? "" : "data-ln-go"}>Next lesson · ${nl.lesson.title}</button>`;
   }
-  return h + `<button data-ln-back>Back to the path</button>`;
+  return h + `<button data-ln-back>${s && s.track ? "Back to the path" : "Back to Learn"}</button>`;
 }
 
 /* ---------- Questions in tests, reviews and drills ---------- */
@@ -315,7 +324,7 @@ function finishQuiz(z) {
     xp(z.pass ? 10 : 2);
   } else {
     touch(c, t, { q: sc.total });
-    xp(5);
+    xp(5 + (z.kind === "dr" && sc.pct >= 90 ? 5 : 0));
   }
   const L = LN();
   if (z.planIdx != null && L.plan && L.plan.items[z.planIdx]) L.plan.items[z.planIdx].done = true;
@@ -324,7 +333,7 @@ function finishQuiz(z) {
 function quizView() {
   const z = LN().qz;
   if (!z) return home();
-  const top = `<div class="ln-top"><button class="ln-x" data-ln-quit aria-label="Leave">✕</button><div><div class="tag">${z.kind === "cp" ? "CHECKPOINT" : z.kind === "test" ? "COURSE TEST" : z.kind === "review" ? "REVIEW" : "PRACTICE"}</div><b>${z.title}</b></div></div>`;
+  const top = `<div class="ln-top"><button class="ln-x" data-ln-quit aria-label="Leave">✕</button><div><div class="tag">${z.kind === "cp" ? "CHECKPOINT" : z.kind === "test" ? "COURSE TEST" : z.kind === "review" ? "REVIEW" : z.kind === "dr" ? "DRILL" : "PRACTICE"}</div><b>${z.title}</b></div></div>`;
   if (z.state === "play") return `${header()}${top}<div class="card ln-card">${z.sub ? `<p class="ln-sub">${z.sub}</p>` : ""}${qCard(z.run, "next")}</div>`;
   const sc = z.sc,
     graded = z.need > 0,
@@ -335,6 +344,7 @@ function quizView() {
   if (z.skipped) h += `<p class="ln-sub"><b>${z.skipped} lesson${z.skipped > 1 ? "s" : ""} in this course now count as done.</b></p>`;
   if (missed.length) h += `<details class="ln-missed" open><summary>${missed.length} to look at again</summary>${missed.map((m) => `<p><span>${m.p}</span><br><b>${m.rev}</b></p>`).join("")}</details>`;
   h += deckTools(missed, z.kind === "review" || z.kind === "drill" ? { track: z.track, id: z.id } : null);
+  if (z.kind === "dr") h += `<button class="go" data-ln-dgo="${z.id}" data-ln-go>Another round</button><button data-ln-drills>All drills</button>`;
   h += nextButtons({ track: z.track, kind: z.kind, pass: z.pass });
   if (graded && !ok && (z.kind === "cp" || z.kind === "test")) h = h.replace('<button data-ln-back>', '<button class="go" data-ln-retake data-ln-go>Try the test again</button><button data-ln-back>');
   return `${header()}${top}${h}</div>`;
@@ -361,8 +371,24 @@ function planNext() {
 function renderLearn() {
   hears = [];
   const v = LN().view;
-  app.innerHTML = v === "track" ? trackView() : v === "lesson" ? lessonView() : v === "quiz" ? quizView() : home();
+  app.innerHTML = v === "drills" ? drillsView() : v === "track" ? trackView() : v === "lesson" ? lessonView() : v === "quiz" ? quizView() : home();
 }
+/* ---------- Drills: endless generated questions ---------- */
+function drillsView() {
+  const groups = drillGroups().map((g) => {
+    const list = DRILLS.filter((d) => d.group === g)
+      .map((d) => `<button class="ln-drow" data-ln-dgo="${d.id}"><b>${d.title}</b><small>${d.blurb}</small></button>`)
+      .join("");
+    return `<section class="card ln-dgroup"><div class="tag">${g.toUpperCase()}</div>${list}</section>`;
+  });
+  return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">🎯</span><div><h2>Drills</h2><p class="ln-sub">Ten fresh questions every round. Nothing is saved except your streak, so go wild.</p></div></div><section class="card ln-dgroup"><button class="go" data-ln-dgo="mix">🎲 Mixed round</button></section>${groups.join("")}`;
+}
+function startDrill(id) {
+  const d = id === "mix" ? { title: "Mixed round" } : drillById(id);
+  if (!d) return;
+  startQuiz("dr", "", id, drillQuestions(id, 10), null, { title: d.title, sub: "10 fresh questions" });
+}
+
 /* Leave a lesson or quiz and land on the path map of the course it belonged to. */
 function leave() {
   const L = LN(),
@@ -437,6 +463,8 @@ export function mountLearn() {
     save();
     render();
   });
+  action("lnDrills", () => go("drills"));
+  action("lnDgo", (D) => startDrill(D.lnDgo));
   action("lnSave", (D) => {
     toggleMine(D.lnSave);
     render();

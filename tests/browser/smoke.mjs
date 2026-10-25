@@ -42,6 +42,16 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await drive();
   check(await page.evaluate(() => /Lesson|learned|done|Nice|score|%/i.test(document.body.textContent)), "a lesson can be walked from first step to result");
   check(await page.evaluate(() => Object.keys(__fg.S.courses.guitar.les).length + Object.keys(__fg.S.courses.theory.les).length >= 1), "finishing a lesson is saved");
+  // drills: open the screen, run a mixed round to the result, go again
+  await page.evaluate(() => (document.querySelector("[data-ln-quit]") || document.querySelector("[data-ln-home]"))?.click());
+  await page.click("[data-page=learn]");
+  await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
+  await page.click("[data-ln-drills]");
+  check(await page.evaluate(() => document.querySelectorAll("[data-ln-dgo]").length >= 16), "the Drills screen lists every drill and a mixed round");
+  await page.click('[data-ln-dgo="mix"]');
+  await drive();
+  check(await page.evaluate(() => !!document.querySelector("[data-ln-dgo]") && /DRILL|%|score/i.test(document.body.textContent)), "a drill round reaches its result with Another round");
+  await page.evaluate(() => document.querySelector("[data-ln-quit]")?.click());
   // review deck: save a lesson question, review it on the Cards tab, and jump back to its lesson
   await page.evaluate(() => (__fg.S.mine = [], __fg.S.onlyMine = 0));
   await page.evaluate(() => { const e = document.createElement("button"); e.setAttribute("data-ln-start", "theory:T1.1"); document.querySelector(".topnav").parentElement.appendChild(e); e.click(); e.remove(); });

@@ -7,7 +7,10 @@ import { T4 } from "./theory/t4.js";
 import { T5 } from "./theory/t5.js";
 import { T6 } from "./theory/t6.js";
 import { T7 } from "./theory/t7.js";
-import { soon } from "./dsl.js";
+import { T8 } from "./theory/t8.js";
+import { T9 } from "./theory/t9.js";
+import { T10 } from "./theory/t10.js";
+import { T11 } from "./theory/t11.js";
 import { G1 } from "./guitar/g1.js";
 import { G2 } from "./guitar/g2.js";
 import { G3 } from "./guitar/g3.js";
@@ -17,6 +20,7 @@ import { G6 } from "./guitar/g6.js";
 import { G7 } from "./guitar/g7.js";
 import { G8 } from "./guitar/g8.js";
 import { G9 } from "./guitar/g9.js";
+import { G10 } from "./guitar/g10.js";
 
 export const TRACKS = [
   {
@@ -25,8 +29,7 @@ export const TRACKS = [
     icon: "🎸",
     blurb: "From holding the guitar to folk songs and chord changes.",
     courses: [
-      G1, G2, G3, G4, G5, G6, G7, G8, G9,
-      soon("G10", "Folk songs, start to finish", "A repertoire of public-domain folk songs with chords, arrangement and fingerpicking.", "Coming soon"),
+      G1, G2, G3, G4, G5, G6, G7, G8, G9, G10,
     ],
   },
   {
@@ -35,8 +38,7 @@ export const TRACKS = [
     icon: "🎼",
     blurb: "Notes, rhythm, scales, keys and chords. Works without a guitar.",
     courses: [
-      T1, T2, T3, T4, T5, T6, T7,
-      soon("T8", "Modes and richer harmony", "Dorian, mixolydian and friends, secondary dominants, borrowed chords, extensions.", "Coming soon"),
+      T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,
     ],
   },
 ];

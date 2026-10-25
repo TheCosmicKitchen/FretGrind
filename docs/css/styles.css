@@ -1290,3 +1290,10 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .ln-deck { margin: 12px 0; text-align: left; }
 .ln-deck button { min-height: 44px; padding: 8px 18px; border-radius: 12px; font-weight: 700; flex: none; }
 .ln-result > button:not(.go) { display: block; width: 100%; margin-top: 8px; }
+
+/* Drills screen */
+.ln-dgroup { margin: 12px 0; text-align: left; }
+.ln-drow { display: block; width: 100%; text-align: left; margin-top: 8px; padding: 10px 14px; border-radius: 12px; }
+.ln-drow small { display: block; color: var(--mu); font-weight: 500; margin-top: 2px; }
+.ln-more a { color: var(--ac); text-decoration: underline; text-underline-offset: 2px; }
+.ln-more { margin-top: 8px; }
