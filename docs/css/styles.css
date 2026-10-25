@@ -427,7 +427,7 @@ svg {
 }
 .topnav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 5px;
   background: color-mix(in srgb, var(--ln) 42%, transparent);
@@ -1037,3 +1037,42 @@ svg {
 .rhythm-menu .rh-bpm label { flex: none; min-width: 160px; }
 .rhythm-menu small { display: block; margin: 8px 0; }
 .song-picker button.on small { color: color-mix(in srgb, currentColor 78%, transparent); }
+
+/* ---------- Songs tab ---------- */
+.topnav { gap: 4px; }
+@media (max-width: 480px) { .topnav button { font-size: 12px; } }
+.sg-lv { margin: 18px 0 8px; font-size: 15px; color: var(--mu); text-align: left; }
+.sg-list { display: grid; gap: 8px; }
+.sg-item { display: grid; gap: 3px; text-align: left; padding: 12px 14px; border: 1px solid var(--ln); border-radius: 14px; background: var(--card); color: var(--tx); }
+.sg-t1 { font-weight: 800; font-size: 16px; }
+.sg-t2 { color: var(--mu); font-size: 13px; }
+.sg-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.sg-tags i { font-style: normal; font-size: 11px; font-weight: 700; color: var(--ac); background: color-mix(in srgb, var(--ac) 12%, transparent); border-radius: 999px; padding: 2px 8px; }
+.sg-wrap { overflow-x: auto; margin: 4px -4px 8px; padding: 4px; border: 1px solid var(--ln); border-radius: 12px; background: color-mix(in srgb, var(--card) 70%, var(--bg)); max-height: 62vh; overflow-y: auto; }
+.sg-sys { display: block; }
+.sg-svg { display: block; max-width: none; margin: 0 auto; }
+.sg-svg .sg-ln { stroke: var(--tx); stroke-width: 1.2; opacity: .7; }
+.sg-svg .sg-bar { stroke: var(--tx); stroke-width: 1.4; opacity: .85; }
+.sg-svg .sg-bar.thick { stroke-width: 4; }
+.sg-svg .sg-stem { stroke: var(--tx); stroke-width: 1.6; }
+.sg-svg .sg-beam { fill: var(--tx); }
+.sg-svg .sg-flag, .sg-svg .sg-rl { fill: none; stroke: var(--tx); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sg-svg .sg-head { fill: var(--tx); }
+.sg-svg .sg-head.open { fill: var(--card); stroke: var(--tx); stroke-width: 1.7; }
+.sg-svg .sg-dot, .sg-svg .sg-rest, .sg-svg .sg-rd { fill: var(--tx); }
+.sg-svg .sg-clef, .sg-svg .sg-acc { fill: var(--tx); font-family: 'Noto Music','Apple Symbols','Segoe UI Symbol',serif; }
+.sg-svg .sg-clef { font-size: 46px; }
+.sg-svg .sg-acc { font-size: 18px; }
+.sg-svg .sg-ts { fill: var(--tx); font-size: 20px; font-weight: 800; text-anchor: middle; }
+.sg-svg .sg-tab-clef { fill: var(--mu); font-size: 12px; font-weight: 800; }
+.sg-svg .sg-bn { fill: var(--mu); font-size: 10px; }
+.sg-svg .sg-tbg { fill: var(--card); }
+.sg-svg .sg-fret { fill: var(--tx); font-size: 12px; font-weight: 800; text-anchor: middle; }
+.sg-svg .sg-syl { fill: var(--tx); font-size: 12px; }
+.sg-n.hot .sg-head { fill: var(--ac); stroke: var(--ac); }
+.sg-n.hot .sg-ln, .sg-n.hot .sg-acc { stroke: var(--ac); opacity: 1; }
+.sg-n.hot .sg-acc { fill: var(--ac); stroke: none; }
+.sg-n.hot .sg-dot { fill: var(--ac); }
+.sg-t.hot .sg-tbg { fill: var(--ac); }
+.sg-t.hot .sg-fret { fill: #fff; }
+.sg-bpm { display: block; margin: 0 0 6px; }

@@ -10,12 +10,14 @@ import { mountGames, stopGames } from "./games/page.js";
 import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
 import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
 import { metBusy, metStop } from "./library/metronome.js";
+import { mountSongs, sanitizeSongs, songKey, stopSongs } from "./songs/page.js";
 
 /* Saved state: read it, then let each feature tidy its own part. */
 const found = load(),
   tidied = sanitizeCards();
 sanitizeLibrary();
 sanitizeRhythm();
+sanitizeSongs();
 if (!found || tidied) save();
 
 /* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
@@ -23,6 +25,7 @@ function openPage(id) {
   if (id !== "cards" && mic.on) micStop(); // never leave the mic running out of sight
   if (id !== "practice" && metBusy()) metStop();
   if (id !== "games") stopGames();
+  if (id !== "songs") stopSongs();
   ui.page = id;
   render();
 }
@@ -30,6 +33,7 @@ function openPage(id) {
 mountCards();
 mountGames();
 mountLibrary(openPage);
+mountSongs();
 action("page", (D) => openPage(D.page));
 action("snd", () => {
   S.mute = !S.mute;
@@ -40,6 +44,7 @@ mountClicks(app);
 
 document.addEventListener("keydown", (e) => {
   if (rhythmKey(e)) return; // taps in the rhythm game
+  if (ui.page === "songs" && songKey(e)) return;
   if (ui.page === "practice") {
     if (e.key === " " && !/^(BUTTON|INPUT|SELECT)$/.test(e.target.tagName)) {
       e.preventDefault();
@@ -56,7 +61,8 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopRhythm();
-    if (ui.page === "games") render();
+    stopSongs();
+    if (ui.page === "games" || ui.page === "songs") render();
   }
 });
 

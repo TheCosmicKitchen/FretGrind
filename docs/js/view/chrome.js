@@ -4,6 +4,7 @@ import { S, ui } from "../core/store.js";
 const TABS = [
   ["cards", "Flash Cards"],
   ["games", "Games"],
+  ["songs", "Songs"],
   ["library", "Library"],
   ["practice", "Practice"],
 ];

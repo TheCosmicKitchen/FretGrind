@@ -91,6 +91,30 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   check(await page.evaluate(() => Object.keys(__fg.S.it).length <= 1 && __fg.S.mode === "bag"), "reset clears progress, keeps the mode");
 
   // --- a damaged save must not break the app
+  // --- songs: list, sheet music and tab, play, highlight, stop, mark learned
+  await page.click("[data-page=songs]");
+  check((await page.locator(".sg-item").count()) >= 9, "songs: the list shows the library");
+  await page.click("[data-song-open=mary]");
+  await page.waitForSelector(".sg-svg");
+  const counts = await page.evaluate(() => ({ staff: document.querySelectorAll(".sg-n").length, tab: document.querySelectorAll(".sg-t").length }));
+  check(counts.staff === 26 && counts.tab === 26, `songs: every note is drawn in staff and tab (${counts.staff}/${counts.tab})`);
+  await page.click('[data-sp=view][data-v=tab]');
+  check(await page.evaluate(() => document.querySelectorAll(".sg-n").length === 0 && document.querySelectorAll(".sg-t").length === 26), "songs: tab-only view");
+  await page.click('[data-sp=view][data-v=both]');
+  await page.evaluate(() => { __fg.S.songs.countIn = false; __fg.S.songs.pct = 100; __fg.render(); });
+  await page.click("[data-sp=play]");
+  await page.waitForFunction(() => document.querySelector(".sg-n.hot"), null, { timeout: 5000 });
+  check(true, "songs: playing highlights the current note");
+  await page.click("[data-sp=play]");
+  check(await page.evaluate(() => !document.querySelector(".sg-n.hot") && /Play/.test(document.querySelector("[data-sp=play]").textContent)), "songs: stop clears the highlight");
+  await page.click("[data-sp=done]");
+  check(await page.evaluate(() => !!__fg.S.songs.done.mary), "songs: mark as learned");
+  await page.click("[data-sp=play]"); // leave the tab while playing: it must stop
+  await page.click("[data-page=cards]");
+  await page.waitForTimeout(300);
+  await page.click("[data-page=songs]");
+  check(await page.evaluate(() => /Play/.test(document.querySelector("[data-sp=play]").textContent)), "songs: leaving the tab stops playback");
+
   await page.evaluate(() => localStorage.setItem("fg1", JSON.stringify({ it: { "bogus:1": {} }, act: ["nope"], prac: { cRoot: 99 }, rhythm: { bpm: "x" }, regions: ["zz"] })));
   await page.reload();
   await page.waitForSelector(".card");
