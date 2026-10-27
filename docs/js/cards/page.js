@@ -4,6 +4,7 @@ import { LET, LSEM, NAMES } from "../core/theory.js";
 import { DK, GR, REGIONS, activeRegions, cardInRegion, deckKeys } from "../core/decks.js";
 import { play } from "../core/audio.js";
 import { mic, micBox, micHooks, toggleMic } from "../core/mic.js";
+import { midiBox, midiReady } from "../piano/midi.js";
 import { action, render, screen } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
@@ -71,6 +72,7 @@ function card() {
   h += answers(q);
   if (mic.err) h += `<div class="msg badm" role="alert">${mic.err}</div>`;
   if (mic.on && !d && q.mic) h += micBox();
+  else if (midiReady() && !d && q.mic) h += midiBox(); // a connected MIDI keyboard answers too (piano/page.js)
   if (d) h += cur.ok ? '<div class="msg good" role="status">✓ Correct</div>' : `<div class="msg badm" role="status">✗ ${q.rev}</div><button class="go" data-next>Next →</button>`;
   return h + tools(cur) + "</div>";
 }

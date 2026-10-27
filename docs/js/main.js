@@ -16,6 +16,7 @@ import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhyt
 import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
 import { metBusy, metStop } from "./library/metronome.js";
 import { mountSongs, sanitizeSongs, songKey, songsDebug, stopSongs } from "./songs/page.js";
+import { mountPiano, pianoAllOff, pianoKey, sanitizePiano } from "./piano/page.js";
 
 /* Saved state: read it, then let each feature tidy its own part. */
 const found = load(),
@@ -24,6 +25,7 @@ sanitizeLibrary();
 sanitizeRhythm();
 sanitizeSongs();
 sanitizeListen();
+sanitizePiano();
 const coursesTidied = sanitizeCourses();
 if (!found || tidied || coursesTidied) save();
 
@@ -35,6 +37,7 @@ function openPage(id) {
   if (id !== "games") stopGames();
   if (id !== "songs") stopSongs();
   if (id !== "games" && id !== "songs") listenStop(); // the microphone only runs where it is used
+  if (id !== "piano") pianoAllOff(); // release keys held on the Piano tab
   ui.page = id;
   render();
 }
@@ -45,6 +48,7 @@ mountGames();
 mountLibrary(openPage);
 mountSongs();
 mountListenUi();
+mountPiano();
 action("page", (D) => openPage(D.page));
 action("snd", () => {
   S.mute = !S.mute;
@@ -56,6 +60,7 @@ mountClicks(app);
 document.addEventListener("keydown", (e) => {
   if (rhythmKey(e)) return; // taps in the rhythm game
   if (ui.page === "songs" && songKey(e)) return;
+  if (ui.page === "piano") return void pianoKey(e); // computer keys play the piano
   if (ui.page === "learn") {
     if (motionKey(e, ui.learn && ui.learn.view)) return;
     if (e.key === "Enter" && !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(e.target.tagName)) {

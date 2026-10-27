@@ -427,7 +427,7 @@ svg {
 }
 .topnav {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 6px;
   padding: 5px;
   background: color-mix(in srgb, var(--ln) 42%, transparent);
@@ -1040,7 +1040,7 @@ svg {
 
 /* ---------- Songs tab ---------- */
 .topnav { gap: 4px; }
-@media (max-width: 480px) { .topnav button { font-size: 12px; } }
+@media (max-width: 480px) { .topnav { gap: 3px; padding: 4px; } .topnav button { font-size: 11px; } }
 .sg-lv { margin: 18px 0 8px; font-size: 15px; color: var(--mu); text-align: left; }
 .sg-list { display: grid; gap: 8px; }
 .sg-item { display: grid; gap: 3px; text-align: left; padding: 12px 14px; border: 1px solid var(--ln); border-radius: 14px; background: var(--card); color: var(--tx); }
@@ -1336,3 +1336,204 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .mo-strip.dots span { font-size: 0; }
 .mo-ex { text-align: center; }
 .mo-strip.dots { height: 14px; margin-bottom: 14px; }
+/* ---------- Piano ---------- */
+.pn-home,
+.pn-units {
+  margin-top: 4px;
+}
+.pn-units {
+  margin-top: 12px;
+  text-align: left;
+}
+.pn-units h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+  margin: 14px 0 8px;
+}
+.pn-units h3:first-child {
+  margin-top: 2px;
+}
+.pn-units h3 small {
+  font-size: 12px;
+  color: var(--mu);
+  font-weight: 600;
+}
+.pn-list {
+  display: grid;
+  gap: 6px;
+}
+.pn-list button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.pn-list button small {
+  color: #d99a1e;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.pn-list button.done {
+  border-color: color-mix(in srgb, var(--ok) 55%, var(--ln));
+}
+.pn-list button.next {
+  border-color: var(--ac);
+  box-shadow: 0 0 0 1px var(--ac) inset;
+}
+.pn-conn {
+  margin: 10px 0 4px;
+  font-size: 14px;
+}
+.pn-conn.small {
+  font-size: 12px;
+  color: var(--mu);
+  margin-top: 12px;
+}
+.pn-conn button:not(.go) {
+  min-height: 0;
+  padding: 3px 10px;
+  font-size: 13px;
+}
+.pn-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ok);
+  margin-right: 4px;
+}
+.pn-opts {
+  justify-content: center;
+}
+.pn-kb {
+  margin: 12px 0 6px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pk {
+  cursor: pointer;
+  stroke: #2a2f3a;
+  stroke-width: 1;
+  transition: fill 0.06s;
+}
+.pkw {
+  fill: #fdfdfd;
+}
+.pkb {
+  fill: #20232b;
+}
+.pk.tg.pkw {
+  fill: color-mix(in srgb, var(--ac) 40%, #fff);
+}
+.pk.tg.pkb {
+  fill: var(--ac);
+}
+.pk.hd {
+  fill: color-mix(in srgb, var(--ac) 75%, #fff);
+}
+.pk.gd {
+  fill: var(--ok);
+}
+.pk.wr {
+  fill: var(--bad);
+}
+.pk.oc {
+  fill: #e7a73b;
+}
+.pk-lbl {
+  font-size: 8px;
+  fill: #6b7385;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.pn-free {
+  min-height: 1.5em;
+  font-weight: 700;
+  font-size: 15px;
+}
+.pn-kbhint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--mu);
+}
+.pn-lesson h2 {
+  font-size: 22px;
+  margin: 8px 0;
+}
+.pn-intro {
+  text-align: left;
+  line-height: 1.5;
+}
+.pn-meta {
+  font-size: 13px;
+  color: var(--mu);
+  margin: 4px 0 6px;
+}
+.pn-chip {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 12%, var(--card));
+  border-radius: 99px;
+  padding: 2px 9px;
+  margin-left: 4px;
+}
+.pn-staff {
+  max-width: 230px;
+  margin-top: 4px;
+}
+.pn-staff line {
+  stroke: var(--tx);
+  stroke-width: 1;
+}
+.pn-staff .pn-note {
+  fill: var(--ac);
+}
+.pn-staff text {
+  fill: var(--tx);
+  font-family: "Noto Music", "Apple Symbols", "Segoe UI Symbol", serif;
+}
+.pn-staff .pn-acc {
+  font-size: 18px;
+  fill: var(--ac);
+}
+.pn-ear {
+  font-size: 64px;
+  line-height: 1.2;
+  margin: 14px 0 6px;
+}
+.pn-msg {
+  min-height: 1.4em;
+}
+.pn-msg.warn {
+  color: #c27c0e;
+}
+.pn-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--ln);
+  overflow: hidden;
+  margin: 10px 0 2px;
+}
+.pn-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ac);
+  transition: width 0.2s;
+}
+.pn-stars {
+  font-size: 36px;
+  letter-spacing: 6px;
+  color: #e7a73b;
+}
+

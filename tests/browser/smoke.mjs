@@ -16,6 +16,12 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
     errs = [];
   page.on("pageerror", (e) => errs.push(e.message));
   page.on("console", (m) => m.type() === "error" && errs.push(m.text()));
+  // a fake MIDI keyboard for the Piano tab: __midi(0x90, note, velocity) plays it
+  await page.addInitScript(() => {
+    const input = { name: "Test keys", state: "connected", onmidimessage: null };
+    window.__midi = (st, d1, d2) => input.onmidimessage && input.onmidimessage({ data: new Uint8Array([st, d1, d2]) });
+    navigator.requestMIDIAccess = () => Promise.resolve({ inputs: new Map([["1", input]]), onstatechange: null });
+  });
   await page.goto(base + "/index.html?debug");
   await page.waitForSelector(".ln-wrap, .ln-track, [data-ln-plan]");
 
@@ -190,6 +196,34 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.click("[data-page=cards]");
   await page.waitForSelector(".card");
   check(await page.evaluate(() => __fg.S.act.length > 0 && __fg.S.prac.cRoot === 7 && __fg.S.rhythm.bpm === 80 && __fg.S.regions.length === 0), "damaged save is repaired on load");
+
+  // --- piano: connect a MIDI keyboard, walk a lesson with a wrong note and an octave slip, a chord, and Cards
+  await page.click("[data-page=piano]");
+  check((await page.locator("[data-pn=open]").count()) >= 27, "piano: the lesson list shows every lesson");
+  await page.click("[data-pn=connect]");
+  await page.waitForFunction(() => /Test keys/.test(document.getElementById("pn-conn")?.textContent || ""));
+  await page.evaluate(() => [60, 64, 67].forEach((m) => __midi(0x90, m, 100)));
+  check(/C4 · E4 · G4\s+→\s+C/.test(await page.textContent("#pn-free")), "piano: held MIDI notes are shown and named as a chord");
+  await page.evaluate(() => [60, 64, 67].forEach((m) => __midi(0x80, m, 0)));
+  await page.click('[data-pn=open][data-pn-arg=cde]');
+  await page.click("[data-pn=start]");
+  await page.evaluate(() => (__midi(0x90, 65, 90), __midi(0x80, 65, 0), __midi(0x90, 72, 90), __midi(0x80, 72, 0)));
+  check(/octave/.test(await page.textContent("#pn-msg")), "piano: the right note in the wrong octave gets a hint");
+  await page.evaluate(() => [60, 62, 64, 64, 62, 60, 62, 64, 60, 64, 62, 60].forEach((m) => (__midi(0x90, m, 90), __midi(0x80, m, 0))));
+  check(await page.evaluate(() => /passed/i.test(document.body.textContent) && __fg.S.piano.done.cde.best === 92), "piano: a lesson finishes and saves its score (one wrong note = 92%)");
+  await page.click('[data-pn=exit]');
+  await page.click('[data-pn=open][data-pn-arg=triads]');
+  await page.click("[data-pn=start]");
+  await page.evaluate(() => [60, 64].forEach((m) => __midi(0x90, m, 90)));
+  check(/STEP 1 \//.test(await page.textContent(".tag")), "piano: a chord waits until every note is held");
+  await page.evaluate(() => __midi(0x90, 67, 90));
+  check(/STEP 2 \//.test(await page.textContent(".tag")), "piano: holding the whole chord moves on");
+  await page.evaluate(() => [60, 64, 67].forEach((m) => __midi(0x80, m, 0)));
+  await page.keyboard.down("a");
+  check(await page.waitForFunction(() => !!document.querySelector(".pk.wr, .pk.gd, .pk.oc"), null, { timeout: 3000 }).then(() => true, () => false), "piano: computer keys play notes");
+  await page.keyboard.up("a");
+  await page.click("[data-page=cards]");
+  check(await page.evaluate(() => !__fg.ui.cur?.q.mic || !!document.getElementById("midi-note")), "cards: a connected MIDI keyboard can answer");
 
   check(errs.length === 0, `no console errors ${errs.join(" | ")}`);
   await page.close();

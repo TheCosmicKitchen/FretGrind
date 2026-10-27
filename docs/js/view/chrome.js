@@ -1,4 +1,4 @@
-/* The header and the four tabs shown on every page. */
+/* The header and the tabs shown on every page. */
 import { S, ui } from "../core/store.js";
 
 const TABS = [
@@ -8,6 +8,7 @@ const TABS = [
   ["songs", "Songs"],
   ["library", "Library"],
   ["practice", "Practice"],
+  ["piano", "Piano"],
 ];
 export const topnav = () =>
   `<nav class="topnav">${TABS.map(([id, label]) => `<button data-page="${id}" class="${ui.page === id ? "on" : ""}">${label}</button>`).join("")}</nav>`;
