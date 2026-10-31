@@ -11,6 +11,7 @@ import { lineOf, songSvg } from "./draw.js";
 import { songBusy, songClock, songRunning, songStart, songStop } from "./player.js";
 import { gradeRun, waitStep } from "./grade.js";
 import { NAMES } from "../core/theory.js";
+import { stringOffsets } from "../core/pitch.js";
 import { ctx, tone } from "../core/audio.js";
 import { listen, listenStart, onNote } from "../core/listen-io.js";
 import { listenPanel } from "../core/listen-ui.js";
@@ -19,6 +20,7 @@ const LIB = SONGS.map(build),
   byId = Object.fromEntries(LIB.map((s) => [s.id, s])),
   tabs = {};
 const tabFor = (s) => (tabs[s.id] ||= tabify(s));
+const shiftOf = (s, i) => stringOffsets(S.tuning)[tabFor(s)[i][0]]; // how far off the string playing note i is
 export const LEVEL_NAMES = {
   1: "Level 1 · First position, simple rhythms",
   2: "Level 2 · Pick-ups and dotted rhythms",
@@ -155,7 +157,7 @@ const say = (t) => {
 function onWait(e) {
   if (!wait || wait.done || performance.now() < wait.quietUntil) return;
   const s = byId[wait.song],
-    r = waitStep(e, s.sounding[wait.i].midi, ctx.sampleRate);
+    r = waitStep(e, s.sounding[wait.i].midi, ctx.sampleRate, shiftOf(s, wait.i));
   if (r === "wrong") {
     wait.wrong++;
     wait.msg = `Heard ${NAMES[e.m % 12]}: not quite.`;
@@ -203,7 +205,7 @@ function finishAlong(s) {
       const beatSec = 60 / (s.tempo * (S.songs.pct / 100)),
         from = a.clock.due[0] - Math.min(0.3, beatSec * 0.45),
         heard = a.heard.filter((e) => e.t >= from),
-        exp = a.clock.due.map((t, i) => ({ t, m: s.sounding[i].midi }));
+        exp = a.clock.due.map((t, i) => ({ t, m: s.sounding[i].midi, shift: shiftOf(s, i) }));
       res = { song: s.id, g: gradeRun(exp, heard, { sr: ctx.sampleRate }) };
     }
   }

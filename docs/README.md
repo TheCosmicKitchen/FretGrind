@@ -17,6 +17,10 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **Piano** tab: 27 step-by-step piano lessons (finding the keys, first melodies, reading treble and bass clef, scales, chords and inversions, hands together, ear training) that listen to a USB or Bluetooth **MIDI keyboard** through Web MIDI (Chrome, Edge, Firefox; not Safari or iOS). Each step shows the notes on a grand staff and an on-screen keyboard; keys turn green, red, or orange (right note, wrong octave) as you play, and chords pass when every note is held together. *Any octave* helps on small keyboards, and the app can sound your keys if the keyboard has no speakers. No keyboard? The computer keys A–K (Z/X change octave) and the drawn keys work too. Once connected, the MIDI keyboard also answers the Cards that accept a played note. Lessons are plain data in `docs/js/piano/lessons.js`.
 
+**Tuner** tab: a normal tuner, plus *Sample my strings*, which asks for each open string and treats however it sounds as correct. Every microphone feature (Cards, Tabs, Wait for me, Play along) then judges notes relative to the guitar as it is, so it does not have to be in tune. Without a sample, Cards and Tabs still allow a note to be up to 70 cents out.
+
+**Tabs** tab: upload or paste a text tab (six lines of dashes and fret numbers) and the microphone follows you through it note by note. Chords, two-digit frets, bends, drop tunings, capo and multiple sections are read; text tabs rarely give rhythm, so it goes at your speed. Tabs stay in this browser.
+
 **Learn** tab (the start page): two separate tracks, *Guitar* (G1–G10: playing, tab and folk songs, no staff reading) and *Music theory* (T1–T11: notation, scales, intervals, chords, keys, modes, cadences and form, pop and jazz harmony, and ear training; no guitar-neck lessons), each a course path drawn as a winding map of lesson circles, checkpoint (?) and course-test (★) diamonds. Lessons mix short reading, figures (staff, tab, neck, chords, keys, rhythm), ear questions and quizzes. A daily plan (5, 10 or 20 minutes) picks due reviews (after 3, 14 and 45 days), the next lesson and a quick drill. "No guitar with me" saves play-along steps for later, so lessons work on the train. **★ My review deck:** tap ☆ on any lesson question or flash card (or add everything you missed from a result screen); the Cards tab's *★ My deck* chip then practises only those. Each card links to the lesson that teaches it, and each lesson result links to the matching card decks. **🎯 Drills:** 16 endless practice sets (ear, reading, spelling, harmony, guitar), ten fresh questions per round, plus a mixed round; they never touch your lesson progress. **🎸 Motion drills** (in the Guitar group) generate chord changes, scale runs, or both mixed, on the fly and in time with a built-in metronome: you choose a hand-motion level (1 tiny to 5 huge, scored from how many fingers must land somewhere new, how far the hand shifts, barres, and fret and string jumps for single notes) and a separate rhythm level (how much time each move gets, from one change a bar to syncopated half-beat changes), plus key, scale and chord vocabulary. The score is a heuristic to tune by feel. Courses can list free outside reading under *Go deeper*; all lesson text is original and those are links only. Progress is kept in this browser; copy a save code under *Save or restore your progress* to back it up or move device. Chord charts for folk songs are typical arrangements, and only public-domain songs are named.
 
 Static site: no build step, no bundler, no dependencies. The app is native ES modules served as plain files from `docs/`. Progress is stored in your browser's `localStorage`.
@@ -47,7 +51,7 @@ node tests/browser/listen-e2e.mjs # listening end to end: the mic is replaced by
 | `core/theory.js` | Notes, tunings, chord/scale tables, spelling (pure) |
 | `core/decks.js` | Decks, board regions, classics |
 | `core/audio.js` | Web Audio synth and click |
-| `core/pitch.js`, `core/mic.js` | YIN pitch detection (pure) and the Flash Cards microphone hook |
+| `core/pitch.js`, `core/mic.js` | YIN pitch detection and note matching relative to the guitar's tuning (pure), and the microphone hook for Cards, Tuner and Tabs |
 | `core/listen.js` | Note-onset and pitch detector for live playing (pure, tested with synthetic audio) |
 | `core/listen-io.js`, `listen-worklet.js`, `listen-ui.js` | Microphone capture on the audio clock, delay calibration, the shared listening panel |
 | `view/notation.js`, `view/chrome.js` | SVG staff, fretboard and chord boxes; header and tabs |
@@ -55,6 +59,8 @@ node tests/browser/listen-e2e.mjs # listening end to end: the mic is replaced by
 | `games/` | Games page, Follow the score, Tap the rhythm (`rhythm-patterns.js` is pure) |
 | `library/` | Chord/scale catalog, drawing, metronome, Library and Practice pages |
 | `piano/` | Piano lessons (`lessons.js`, pure data and helpers), Web MIDI input (`midi.js`) and the Piano page |
+| `tuner/` | Tuner and string sampling (saved as `S.tuning`) |
+| `tabs/` | Text tab parser (`parse.js`, pure) and the Tabs page |
 | `songs/` | Song data and format (`data.js`, `format.js`), tab assignment (`tabify.js`), score drawing (`draw.js`), click-synced player, play-along grading (`grade.js`, pure) and the Songs page |
 
 `sw.js` keeps an explicit asset list: **add every new file there** (a unit test checks this) and bump `CACHE` when you deploy.

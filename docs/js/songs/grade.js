@@ -5,15 +5,17 @@ import { support } from "../core/listen.js";
 export const TIGHT = 0.07, // seconds: within this is "on time"
   PITCH_OK = 0.6; // how much of the strongest sound must sit on the wanted note's overtones
 
-/* Is this sound the wanted note? An octave off still counts (the pitch is right, so only the octave is flagged). */
-export function pitchOk(ev, written, sr) {
-  const s = support(ev, written, sr),
+/* Is this sound the wanted note? An octave off still counts (the pitch is right, so only the octave is flagged).
+   shift = semitones the string playing it is from standard (see stringOffsets): the guitar as it is counts as correct. */
+export function pitchOk(ev, written, sr, shift = 0) {
+  const s = support(ev, written + shift, sr),
+    heard = shift && ev.m !== null && ev.m !== undefined ? Math.round(ev.m + ev.cents / 100 - shift) : ev.m,
     // the detector's own pitch estimate: a different note name (an octave error does not change the name) vetoes a borderline match
-    other = ev.m !== null && ev.m !== undefined && ev.m % 12 !== written % 12;
+    other = heard !== null && heard !== undefined && heard % 12 !== written % 12;
   if (s >= (other ? 0.85 : PITCH_OK)) return { ok: true, octave: false, s };
   if (!other)
     for (const d of [12, -12]) {
-      const o = support(ev, written + d, sr);
+      const o = support(ev, written + shift + d, sr);
       if (o >= PITCH_OK + 0.1) return { ok: true, octave: true, s: o };
     }
   return { ok: false, octave: false, s };
@@ -33,7 +35,7 @@ export function gradeRun(expected, heard, { sr = 44100 } = {}) {
     const w = windowOf(expected, i);
     heard.forEach((h, j) => {
       const dt = h.t - x.t;
-      if (Math.abs(dt) <= w) pairs.push({ i, j, dt, p: pitchOk(h, x.m, sr) });
+      if (Math.abs(dt) <= w) pairs.push({ i, j, dt, p: pitchOk(h, x.m, sr, x.shift) });
     });
   });
   pairs.sort((a, b) => (b.p.ok - a.p.ok) || Math.abs(a.dt) - Math.abs(b.dt));
@@ -70,7 +72,7 @@ export function summary(notes, extras) {
 }
 
 /* "Wait for me": does this sound move the song on? "hit" = the wanted note, "wrong" = a different note was played, "ignore" = not a note. */
-export function waitStep(ev, written, sr) {
-  if (pitchOk(ev, written, sr).ok) return "hit";
+export function waitStep(ev, written, sr, shift = 0) {
+  if (pitchOk(ev, written, sr, shift).ok) return "hit";
   return ev.m === null || ev.m === undefined ? "ignore" : "wrong";
 }

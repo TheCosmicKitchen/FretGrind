@@ -44,7 +44,6 @@ export function neck(o) {
     fx = (f) => (f ? (edge(f - 1) + edge(f)) / 2 : x0 - 34),
     vis = (f) => f > b0 && f <= b1, // is fret f on screen?
     mid = top + 2.5 * gap,
-    NAMES6 = ["E", "A", "D", "G", "B", "e"],
     W = [3.2, 2.6, 2.1, 1.6, 1.25, 1],
     MARK = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24],
     allow = o.allow || (() => true); // which frets may be tapped (regions being practised)
@@ -83,7 +82,6 @@ export function neck(o) {
     h += `<line class="string-shadow" x1="${x0}" x2="${x1 + 18}" y1="${y + 2}" y2="${y + 2}" stroke-width="${W[i]}"/>`;
     h += `<line class="${cls}" x1="${x0}" x2="${x1 + 18}" y1="${y}" y2="${y}" stroke-width="${W[i]}"/>`;
     if (b0 === 0) h += `<line class="${cls} stub" x1="${x0 - 52}" x2="${x0 - 6}" y1="${y}" y2="${y}" stroke-width="${W[i]}"/>`;
-    h += `<text class="neck-label" x="22" y="${y + 4}" text-anchor="middle">${NAMES6[i]}</text>`;
   }
   // fret numbers: every visible fret when zoomed, the usual marker frets otherwise
   for (let f = b0 + 1; f <= b1; f++)

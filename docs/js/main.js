@@ -17,6 +17,8 @@ import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
 import { metBusy, metStop } from "./library/metronome.js";
 import { mountSongs, sanitizeSongs, songKey, songsDebug, stopSongs } from "./songs/page.js";
 import { mountPiano, pianoAllOff, pianoKey, sanitizePiano } from "./piano/page.js";
+import { mountTuner, sanitizeTuner } from "./tuner/page.js";
+import { mountTabs } from "./tabs/page.js";
 
 /* Saved state: read it, then let each feature tidy its own part. */
 const found = load(),
@@ -26,12 +28,13 @@ sanitizeRhythm();
 sanitizeSongs();
 sanitizeListen();
 sanitizePiano();
+sanitizeTuner();
 const coursesTidied = sanitizeCourses();
 if (!found || tidied || coursesTidied) save();
 
 /* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
 function openPage(id) {
-  if (id !== "cards" && mic.on) micStop(); // never leave the mic running out of sight
+  if (id !== ui.page && mic.on) micStop(); // never leave the mic running out of sight
   if (id !== "practice" && metBusy()) metStop();
   if (id !== "learn") motionStop();
   if (id !== "games") stopGames();
@@ -49,6 +52,8 @@ mountLibrary(openPage);
 mountSongs();
 mountListenUi();
 mountPiano();
+mountTuner();
+mountTabs();
 action("page", (D) => openPage(D.page));
 action("snd", () => {
   S.mute = !S.mute;

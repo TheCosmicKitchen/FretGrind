@@ -86,3 +86,17 @@ test("pitch check: the right note and its octaves pass; fifths, fourths, and nei
   assert.ok(right / rightN >= 0.95, `right ${right}/${rightN}`);
   assert.ok(wrong / wrongN <= 0.04, `wrong accepted ${wrong}/${wrongN}`);
 });
+
+test("a detuned guitar is judged relative to itself once its strings are sampled", () => {
+  const exp = expectedFor(0.8, 0.45),
+    flat = hear(exp.map((x) => ({ t: x.t, m: x.m - 0.6 })), 5),
+    sampled = gradeRun(exp.map((x) => ({ ...x, shift: -0.6 })), flat, { sr: SR });
+  assert.equal(sampled.counts.ok, 8, JSON.stringify(sampled.notes));
+});
+
+test("sampling does not excuse a wrong note", () => {
+  const exp = expectedFor(0.8, 0.45),
+    oneUp = hear(exp.map((x) => ({ t: x.t, m: x.m + 1 - 0.6 })), 5),
+    g = gradeRun(exp.map((x) => ({ ...x, shift: -0.6 })), oneUp, { sr: SR });
+  assert.equal(g.counts.ok, 0, JSON.stringify(g.notes));
+});

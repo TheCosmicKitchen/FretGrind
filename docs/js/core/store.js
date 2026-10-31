@@ -4,7 +4,7 @@
    Both are plain objects that every module imports; they are changed in place, never replaced. */
 export const S = {};
 export const ui = {
-  page: "cards", // "learn" | "cards" | "games" | "songs" | "library" | "practice" | "piano"
+  page: "cards", // "learn" | "cards" | "games" | "songs" | "library" | "practice" | "piano" | "tabs" | "tuner"
   cur: null, // the flash card on screen
   rs: 0, // 1 while "tap again to erase all progress" is pending
   retry: [], // missed cards that come back soon (spaced-repetition mode)

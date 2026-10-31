@@ -9,6 +9,8 @@ const TABS = [
   ["library", "Library"],
   ["practice", "Practice"],
   ["piano", "Piano"],
+  ["tabs", "Tabs"],
+  ["tuner", "Tuner"],
 ];
 export const topnav = () =>
   `<nav class="topnav">${TABS.map(([id, label]) => `<button data-page="${id}" class="${ui.page === id ? "on" : ""}">${label}</button>`).join("")}</nav>`;
