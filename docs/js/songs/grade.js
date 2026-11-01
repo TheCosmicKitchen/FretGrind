@@ -1,5 +1,5 @@
 /* Marks what the microphone heard against what the song asks for. Pure: no browser, so it can be tested with synthetic audio.
-   expected = [{ t, m }] (seconds on the audio clock, written MIDI note); heard = events from core/listen.js (t already has the device delay taken off). */
+   expected = [{ t, m, ms }] (seconds on the audio clock, written MIDI note, every note of a chord); heard = events from core/listen.js (t already has the device delay taken off). */
 import { support } from "../core/listen.js";
 
 export const TIGHT = 0.07, // seconds: within this is "on time"
@@ -21,6 +21,14 @@ export function pitchOk(ev, written, sr, shift = 0) {
   return { ok: false, octave: false, s };
 }
 
+/* The same for a chord (ms = its pitches): most of its notes must be in the sound. The strongest sound in a strum can
+   be any one of them, so the detector's single pitch estimate says nothing against the others. */
+export function chordOk(ev, ms, sr, shift = 0) {
+  const heard = ms.filter((m) => support(ev, m + shift, sr) >= PITCH_OK).length;
+  return { ok: heard * 2 >= ms.length, octave: false, s: heard / ms.length };
+}
+const noteOk = (ev, x, sr) => (x.ms && x.ms.length > 1 ? chordOk(ev, x.ms, sr, x.shift) : pitchOk(ev, x.m, sr, x.shift));
+
 /* How far from its note a sound may land and still be that note's: nearer than half the way to a neighbour. */
 function windowOf(expected, i) {
   let gap = Infinity;
@@ -35,7 +43,7 @@ export function gradeRun(expected, heard, { sr = 44100 } = {}) {
     const w = windowOf(expected, i);
     heard.forEach((h, j) => {
       const dt = h.t - x.t;
-      if (Math.abs(dt) <= w) pairs.push({ i, j, dt, p: pitchOk(h, x.m, sr, x.shift) });
+      if (Math.abs(dt) <= w) pairs.push({ i, j, dt, p: noteOk(h, x, sr) });
     });
   });
   pairs.sort((a, b) => (b.p.ok - a.p.ok) || Math.abs(a.dt) - Math.abs(b.dt));
@@ -72,7 +80,7 @@ export function summary(notes, extras) {
 }
 
 /* "Wait for me": does this sound move the song on? "hit" = the wanted note, "wrong" = a different note was played, "ignore" = not a note. */
-export function waitStep(ev, written, sr, shift = 0) {
-  if (pitchOk(ev, written, sr, shift).ok) return "hit";
+export function waitStep(ev, written, sr, shift = 0, ms = null) {
+  if ((ms && ms.length > 1 ? chordOk(ev, ms, sr, shift) : pitchOk(ev, written, sr, shift)).ok) return "hit";
   return ev.m === null || ev.m === undefined ? "ignore" : "wrong";
 }

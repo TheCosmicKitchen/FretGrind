@@ -58,40 +58,41 @@ function beamRuns(song, ns) {
     runs = [];
   let run = null;
   ns.forEach((n) => {
-    const ok = !n.rest && n.dur <= 3,
-      beat = Math.floor((n.start - g0) / song.beat);
-    if (ok && run && run.beat === beat) run.items.push(n);
+    const ok = !n.rest && n.dur <= 3 && Math.abs(n.dur - 8 / 3) > 0.01, // a quarter-note triplet has no beam
+      beat = Math.floor((n.start - g0 + 1e-6) / song.beat);
+    if (ok && run && run.beat === beat && run.triplet === n.triplet) run.items.push(n);
     else {
-      run = ok ? { beat, items: [n] } : null;
+      run = ok ? { beat, items: [n], triplet: n.triplet } : null;
       if (run) runs.push(run);
     }
   });
   return runs;
 }
 
-/* Stems, beams and flags. items = [{x, y, dur}] for one run (or one note); dir = -1 stem up, 1 stem down. */
+/* Stems, beams and flags. items = [{x, y, far, dur}] for one run (or one note); y is the note head nearest the stem's
+   tip and far the one furthest from it (they differ in a chord); dir = -1 stem up, 1 stem down. */
 function stems(items, dir, beamed) {
   const sx = (it) => it.x + (dir < 0 ? 5.6 : -5.6);
   let end = dir < 0 ? Math.min(...items.map((i) => i.y)) - STEM : Math.max(...items.map((i) => i.y)) + STEM,
     h = "";
   items.forEach((it) => {
     if (it.dur >= 16) return;
-    h += `<line class="sg-stem" x1="${sx(it)}" x2="${sx(it)}" y1="${it.y}" y2="${beamed ? end : dir < 0 ? it.y - STEM : it.y + STEM}"/>`;
+    h += `<line class="sg-stem" x1="${sx(it)}" x2="${sx(it)}" y1="${it.far === undefined ? it.y : it.far}" y2="${beamed ? end : dir < 0 ? it.y - STEM : it.y + STEM}"/>`;
   });
   if (beamed && items.length > 1) {
     const x0 = sx(items[0]), x1 = sx(items[items.length - 1]),
       rect = (a, b, off) => `<rect class="sg-beam" x="${a}" y="${dir < 0 ? end + off : end - off - 4}" width="${b - a}" height="4"/>`;
     h += rect(x0, x1, 0);
     items.forEach((it, i) => {
-      if (it.dur !== 1) return;
+      if (it.dur > 1) return;
       const nx = items[i + 1], pv = items[i - 1];
-      if (nx && nx.dur === 1) h += rect(sx(it), sx(nx), 6);
-      else if (!(pv && pv.dur === 1)) h += pv ? rect(sx(it) - 8, sx(it), 6) : rect(sx(it), sx(it) + 8, 6);
+      if (nx && nx.dur <= 1) h += rect(sx(it), sx(nx), 6);
+      else if (!(pv && pv.dur <= 1)) h += pv ? rect(sx(it) - 8, sx(it), 6) : rect(sx(it), sx(it) + 8, 6);
     });
   } else if (!beamed) {
     items.forEach((it) => {
       if (it.dur > 3) return;
-      const flags = it.dur === 1 ? 2 : 1;
+      const flags = it.dur <= 1 ? 2 : 1;
       for (let f = 0; f < flags; f++) {
         const y = (dir < 0 ? it.y - STEM + f * 7 : it.y + STEM - f * 7),
           q = dir < 0 ? "9 8 6 20" : "9 -8 6 -20";
@@ -112,6 +113,14 @@ function rest(n, y) {
   let h = `<line class="sg-rl" x1="${x + 3}" y1="${my - 8}" x2="${x - 3}" y2="${my + 10}"/>`;
   for (let i = 0; i < dots; i++) h += `<circle class="sg-rd" cx="${x - 3 + i * -2.5}" cy="${my - 5 + i * 7}" r="2.3"/>`;
   return h;
+}
+
+const stepsOf = (n) => n.pitches.map((p) => p.step);
+const midStep = (n) => stepsOf(n).reduce((a, b) => a + b, 0) / n.pitches.length;
+/* a note as stems() wants it, for a stem going dir */
+function stemItem(n, y, dir) {
+  const ys = stepsOf(n).map(y);
+  return { x: n.x, y: dir < 0 ? Math.min(...ys) : Math.max(...ys), far: dir < 0 ? Math.max(...ys) : Math.min(...ys), dur: n.dur };
 }
 
 /* One system (line): staff, optional lyrics, optional tab. */
@@ -166,33 +175,49 @@ function system(song, tab, ln, li, ctx) {
         return;
       }
       const idx = ctx.index.get(n),
-        yy = y(n.step);
+        ps = n.pitches;
       if (showStaff) {
         let g = `<g class="sg-n" data-n="${idx}">`;
-        for (let s = 28; s >= n.step; s -= 2) g += `<line class="sg-ln" x1="${n.x - 10}" x2="${n.x + 10}" y1="${y(s)}" y2="${y(s)}"/>`;
-        for (let s = 40; s <= n.step; s += 2) g += `<line class="sg-ln" x1="${n.x - 10}" x2="${n.x + 10}" y1="${y(s)}" y2="${y(s)}"/>`;
-        if (n.show) g += `<text class="sg-acc" x="${n.x - 17}" y="${yy + 5}">${n.show}</text>`;
-        g += `<ellipse class="sg-head${n.dur >= 8 ? " open" : ""}" cx="${n.x}" cy="${yy}" rx="6.6" ry="4.9" transform="rotate(-18 ${n.x} ${yy})"/>`;
-        if ([3, 6, 12].includes(n.dur)) g += `<circle class="sg-dot" cx="${n.x + 11}" cy="${yy + (n.step % 2 ? 0 : -4)}" r="1.9"/>`;
+        const lo = ps[0].step,
+          hi = ps[ps.length - 1].step;
+        for (let s = 28; s >= lo; s -= 2) g += `<line class="sg-ln" x1="${n.x - 10}" x2="${n.x + 10}" y1="${y(s)}" y2="${y(s)}"/>`;
+        for (let s = 40; s <= hi; s += 2) g += `<line class="sg-ln" x1="${n.x - 10}" x2="${n.x + 10}" y1="${y(s)}" y2="${y(s)}"/>`;
+        ps.forEach((p, i) => {
+          const py = y(p.step),
+            px = n.x + (i > 0 && p.step - ps[i - 1].step === 1 ? 12 : 0); // a second can't share the stem's side
+          if (p.show) g += `<text class="sg-acc" x="${n.x - 17 - (i % 2) * 9}" y="${py + 5}">${p.show}</text>`;
+          g += `<ellipse class="sg-head${n.dur >= 8 ? " open" : ""}" cx="${px}" cy="${py}" rx="6.6" ry="4.9" transform="rotate(-18 ${px} ${py})"/>`;
+          if ([3, 6, 12, 24].includes(n.dur)) g += `<circle class="sg-dot" cx="${px + 11}" cy="${py + (p.step % 2 ? 0 : -4)}" r="1.9"/>`;
+        });
         h += g + "</g>";
       }
       if (showTab) {
-        const [s, f] = ctx.tab[idx];
-        h += `<g class="sg-t" data-n="${idx}"><rect class="sg-tbg" x="${n.x - 7}" y="${TY(s) - 7}" width="14" height="14" rx="3"/><text class="sg-fret" x="${n.x}" y="${TY(s) + 4.2}">${f}</text></g>`;
+        const c = ctx.tab[idx];
+        h += `<g class="sg-t" data-n="${idx}">${(c.all || [c]).map(([s, f]) => `<rect class="sg-tbg" x="${n.x - 7}" y="${TY(s) - 7}" width="14" height="14" rx="3"/><text class="sg-fret" x="${n.x}" y="${TY(s) + 4.2}">${f}</text>`).join("")}</g>`;
       }
+      if (n.label) h += `<text class="sg-lab" x="${n.x - 6}" y="${(showStaff ? y(Math.max(38, n.step + 1)) : TY(5)) - 10}">${esc(n.label)}</text>`;
       if (lyrics && n.syl && showStaff) h += `<text class="sg-syl" x="${n.x - 5}" y="${stavesBottom + 14}">${esc(n.syl)}</text>`;
       // stems: once per run, or per single note
       const r = inRun.get(n);
       if (r && !done.has(r)) {
         done.add(r);
         if (showStaff && r.items.length > 1) {
-          const avg = r.items.reduce((a, m) => a + m.step, 0) / r.items.length;
-          h += stems(r.items.map((m) => ({ x: m.x, y: y(m.step), dur: m.dur })), avg < 34 ? -1 : 1, true);
+          const avg = r.items.reduce((a, m) => a + midStep(m), 0) / r.items.length,
+            dir = avg < 34 ? -1 : 1;
+          h += stems(r.items.map((m) => stemItem(m, y, dir)), dir, true);
         }
         if (!showStaff && r.items.length > 1) h += stems(r.items.map((m) => ({ x: m.x + 0.1, y: tabBottom + 12, dur: m.dur })), 1, true);
+        if (r.triplet && r.items.length > 1) {
+          const mid = (r.items[0].x + r.items[r.items.length - 1].x) / 2,
+            ty = showStaff ? y(Math.max(...r.items.flatMap(stepsOf), 40)) - 14 : tabBottom + 38;
+          h += `<text class="sg-tup" x="${mid}" y="${ty}">3</text>`;
+        }
       }
       if (!r || r.items.length === 1) {
-        if (showStaff && n.dur < 16) h += stems([{ x: n.x, y: yy, dur: n.dur }], n.step < 34 ? -1 : 1, false);
+        if (showStaff && n.dur < 16) {
+          const dir = midStep(n) < 34 ? -1 : 1;
+          h += stems([stemItem(n, y, dir)], dir, false);
+        }
         if (!showStaff && n.dur < 16) h += stems([{ x: n.x + 0.1, y: tabBottom + 12, dur: n.dur }], 1, false);
       }
     });
@@ -204,7 +229,7 @@ function system(song, tab, ln, li, ctx) {
 export function songSvg(song, tab, opts) {
   const lines = layout(song, opts.width, opts.lyrics && opts.view !== "tab"),
     index = new Map(song.sounding.map((n, i) => [n, i])),
-    steps = song.sounding.map((n) => n.step),
+    steps = song.sounding.flatMap(stepsOf),
     ys = {
       top: Math.max(18, (Math.max(...steps, 38) - 38) * 4 + STEM + 4),
       below: Math.max(14, (30 - Math.min(...steps, 30)) * 4 + STEM + 4),
@@ -218,4 +243,53 @@ export function lineOf(song, width, lyrics = false) {
   const m = new Map();
   layout(song, width, lyrics).forEach((ln, i) => ln.bars.forEach((b) => b.ns.forEach((n) => !n.rest && m.set(n, i))));
   return song.sounding.map((n) => m.get(n));
+}
+
+/* What following along needs for each note: its line, and whether it is near enough the end of that line that the next
+   line should already be moving into place. On a line of one bar (a phone) that means the second half of the bar. */
+export function followPlan(song, width, lyrics = false) {
+  const lines = layout(song, width, lyrics),
+    m = new Map();
+  lines.forEach((ln, i) => {
+    const last = ln.bars[ln.bars.length - 1],
+      from = last.ns[0].start + (ln.bars.length === 1 ? song.barLens[last.bi] / 2 : 0);
+    ln.bars.forEach((b) => b.ns.forEach((n) => !n.rest && m.set(n, { line: i, late: i < lines.length - 1 && b === last && n.start >= from })));
+  });
+  return song.sounding.map((n) => m.get(n));
+}
+
+/* The whole piece as one endless line, for the lane view. xs and starts place each note: the line slides by
+   these so a note reaches the lane exactly when it is due. */
+export function ribbon(song, tab, opts) {
+  const width = Math.ceil(layout(song, 1e7, opts.lyrics && opts.view !== "tab")[0].end) + 12,
+    svg = songSvg(song, tab, { ...opts, width });
+  return { svg, width, xs: song.sounding.map((n) => n.x), starts: song.sounding.map((n) => n.start), end: song.total };
+}
+/* How far along the line (px) the lane is at time u (sixteenths from the start). Between notes it moves evenly; before
+   the first note and after the last it keeps the neighbouring pace, so the count-in glides in. */
+export function ribbonX(r, u) {
+  const { xs, starts } = r,
+    n = xs.length;
+  if (n < 2) return xs[0] || 0;
+  const pace = (xs[n - 1] - xs[0]) / (starts[n - 1] - starts[0]);
+  if (u <= starts[0]) return xs[0] + (u - starts[0]) * pace;
+  if (u >= starts[n - 1]) return xs[n - 1] + (u - starts[n - 1]) * pace;
+  let a = 0,
+    b = n - 1;
+  while (b - a > 1) {
+    const m = (a + b) >> 1;
+    if (starts[m] <= u) a = m;
+    else b = m;
+  }
+  return xs[a] + ((u - starts[a]) / (starts[b] - starts[a])) * (xs[b] - xs[a]);
+}
+
+/* Which line belongs at the top of the view. tops and heights = each line in px, view = the height of the scroll box.
+   With room for three lines the one just played stays above as a place-marker, and near the end of a line everything
+   moves up one so the next line is settled before you reach it. With room for only two the playing line stays on top:
+   the next one is already showing, and moving early would push the bars being played out of sight. */
+export function followTop(tops, heights, view, line, late) {
+  const from = Math.max(0, line - 1),
+    three = heights.slice(from, from + 3).reduce((a, h) => a + h, 0) <= view;
+  return three && line + 1 < tops.length ? tops[late ? line : from] : tops[line];
 }

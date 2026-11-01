@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { SONGS } from "../../docs/js/songs/data.js";
-import { build, check, keySig, parsePitch } from "../../docs/js/songs/format.js";
+import { build, check, keyLabel, keySig, parsePitch } from "../../docs/js/songs/format.js";
 import { LEVELS, places, playability, tabify } from "../../docs/js/songs/tabify.js";
 import { countIn, timeline } from "../../docs/js/songs/player.js";
-import { layout, lineOf, songSvg } from "../../docs/js/songs/draw.js";
+import { followPlan, followTop, layout, lineOf, songSvg } from "../../docs/js/songs/draw.js";
 import { OPEN } from "../../docs/js/core/theory.js";
 
 const built = SONGS.map(build);
@@ -27,7 +27,7 @@ test("every song is well formed: bar lengths, lyrics, range, metadata", () => {
     assert.ok(!ids.has(s.id), "duplicate id " + s.id);
     ids.add(s.id);
     assert.ok(s.title && s.by && s.source && s.tags.length, s.id + " metadata");
-    assert.ok([1, 2, 3, 4].includes(s.level) && s.tempo >= 40 && s.tempo <= 200, s.id);
+    assert.ok([1, 2, 3, 4, 5, 6].includes(s.level) && s.tempo >= 40 && s.tempo <= 200, s.id);
     assert.equal(s.total % s.beat, 0, s.id + ": a loop must end on a beat");
   }
 });
@@ -75,7 +75,7 @@ test("click timeline: beats per bar, accents on downbeats, count-in ends before 
     clicks.forEach((c) => assert.equal(c.beat === 0, (c.u - g0) % s.bar === 0, `${s.id} u=${c.u}`));
     const ci = countIn(s);
     assert.ok(ci.length > 0 && ci.every((c) => c.u < 0));
-    assert.equal(ci.length * s.beat + g0 % s.bar, s.bar, s.id + ": the count-in is one bar up to the downbeat... or its pick-up");
+    assert.equal(ci.length, Math.ceil((s.bar - g0) / s.beat), s.id + ": the count-in is one bar up to the downbeat, or its pick-up");
   }
 });
 

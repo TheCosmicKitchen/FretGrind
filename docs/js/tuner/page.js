@@ -5,26 +5,26 @@ import { action, render, screen } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
 import { NAMES, OPEN } from "../core/theory.js";
-import { STRING_NAMES, writtenPitch } from "../core/pitch.js";
+import { STRING_NAMES, nearestString, sampleReading, saneTuning, steady, writtenPitch } from "../core/pitch.js";
 import { MIC_MIN_RMS, mic, micHooks, micRead, toggleMic } from "../core/mic.js";
 
 const ATTACK = 4, // readings to skip after a pluck, which starts out sharp (~200ms)
   WINDOW = 10, // readings to take the median of, so the needle doesn't jitter
-  RANGE = 250, // cents: anything further from every string is a misheard harmonic
-  SAMPLE_RANGE = 700, // cents: when we ask for a string by name it may be tuned almost anywhere
+  CONFIRM = 3, // readings in a row before the tuner believes a different string is being played
   IN_TUNE = 5; // cents
 
 let now = { s: null, vals: [] },
   step = null, // which string the guided sample is asking for (null: free tuning)
   armed = true, // false until a new pluck, so the last string's ring isn't taken for the next one
-  prevRms = 0;
+  prevRms = 0,
+  rival = { s: null, n: 0 }; // a different string heard, not yet confirmed
 
 export function sanitizeTuner() {
-  if (!Array.isArray(S.tuning) || S.tuning.length !== OPEN.length) S.tuning = OPEN.map(() => null);
+  // saneTuning also repairs saves from before MAX_DETUNE, which could hold the A string as a very sharp low E
+  S.tuning = Array.isArray(S.tuning) && S.tuning.length === OPEN.length ? saneTuning(S.tuning) : OPEN.map(() => null);
 }
 
 const stringName = (s) => NAMES[OPEN[s] % 12];
-const stringPitch = (s) => OPEN[s] + (S.tuning[s] || 0) / 100; // this string as last heard
 const label = (c) => (Math.abs(c) <= IN_TUNE ? "In tune" : `${Math.abs(c)}¢ ${c < 0 ? "flat" : "sharp"}`);
 
 function paintString(s) {
@@ -58,16 +58,30 @@ function tick() {
   if (plucked) armed = true;
   if (!armed || !f || clarity < 0.85) return;
   const w = writtenPitch(f),
-    sampling = step !== null,
-    // Free tuning matches the string as last heard, so one tuned far from standard isn't mistaken for its neighbour.
-    s = sampling ? step : OPEN.reduce((a, _, i) => (Math.abs(w - stringPitch(i)) < Math.abs(w - stringPitch(a)) ? i : a), 0);
-  if (Math.abs(w - stringPitch(s)) * 100 > (sampling ? SAMPLE_RANGE : RANGE)) return;
+    sampling = step !== null;
+  if (sampling) {
+    const r = sampleReading(w, step);
+    if (r.other !== undefined) {
+      const t = document.getElementById("tn-cents");
+      if (t) t.textContent = `That sounds like your ${STRING_NAMES[r.other]} string. Pluck ${STRING_NAMES[step]}.`;
+      return;
+    }
+  }
+  const s = sampling ? step : nearestString(w, S.tuning);
+  if (s === null) return; // between strings: a misheard harmonic
+  if (s !== now.s && now.s !== null) {
+    // one odd reading shouldn't throw away the string being tuned
+    rival = rival.s === s ? { s, n: rival.n + 1 } : { s, n: 1 };
+    if (rival.n < CONFIRM) return;
+  }
+  rival = { s: null, n: 0 };
   if (s !== now.s) now = { s, vals: [] };
   now.vals.push((w - OPEN[s]) * 100);
   const n = now.vals.length;
   if (n <= ATTACK) return;
   const v = now.vals.slice(Math.max(ATTACK, n - WINDOW)).sort((a, b) => a - b),
     c = Math.round(v[v.length >> 1]);
+  if (!steady(v)) return;
   S.tuning[s] = c;
   if (n % 5 === 0) save();
   paintNeedle(s, c);

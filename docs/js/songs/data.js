@@ -1,7 +1,9 @@
 /* The song library. Every melody is public domain (composer died before 1926, or traditional) and the
    notation and tab are our own, entered by hand and not copied from any edition.
    Format: see format.js. Pitches are written guitar pitch (open strings E3 A3 D4 G4 B4 E5).
-   reviewed:false means the tab was chosen by the program and nobody has checked it by hand yet. */
+   reviewed:false means the tab was chosen by the program and nobody has checked it by hand yet.
+   These are the songs that ship with the app; the much larger imported library is in docs/lib (see library.js). */
+const STYLE_OF = { joy: "classical", elise: "classical" };
 export const SONGS = [
   {
     id: "joy",
@@ -132,4 +134,116 @@ export const SONGS = [
            E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 | A4:2 r:1 C4:1 E4:1 A4:1 | B4:2 r:1 E4:1 C5:1 B4:1 | A4:6`,
     source: "Bagatelle in A minor, WoO 59, by Ludwig van Beethoven (1770-1827), composed about 1810. Count one eighth note per beat.",
   },
-].map((s) => ({ reviewed: false, ...s }));
+  {
+    id: "greensleeves",
+    title: "Greensleeves",
+    by: "English, 16th century",
+    level: 3,
+    style: "folk",
+    key: "Am",
+    time: "6/8",
+    tempo: 56,
+    pickup: 2,
+    tags: ["6/8 time", "dotted rhythm", "accidentals"],
+    bars: `A4:2 | C5:4 D5:2 E5:3 F5:1 E5:2 | D5:4 B4:2 G4:3 A4:1 B4:2 | C5:4 A4:2 A4:3 G#4:1 A4:2 | B4:4 G#4:2 E4:4 A4:2 |
+           C5:4 D5:2 E5:3 F5:1 E5:2 | D5:4 B4:2 G4:3 A4:1 B4:2 | C5:3 B4:1 A4:2 G#4:3 F#4:1 G#4:2 | A4:6 A4:6 |
+           G5:6 G5:3 F#5:1 E5:2 | D5:4 B4:2 G4:3 A4:1 B4:2 | C5:4 A4:2 A4:3 G#4:1 A4:2 | B4:4 G#4:2 E4:6 |
+           G5:6 G5:3 F#5:1 E5:2 | D5:4 B4:2 G4:3 A4:1 B4:2 | C5:3 B4:1 A4:2 G#4:3 F#4:1 G#4:2 | A4:10`,
+    source: "English ballad, registered in 1580.",
+  },
+  {
+    id: "saints",
+    title: "When the Saints Go Marching In",
+    by: "American spiritual",
+    level: 2,
+    style: "folk",
+    key: "C",
+    time: "4/4",
+    tempo: 104,
+    tags: ["rests", "long notes"],
+    bars: `r:4 C5:4 E5:4 F5:4 | G5:16 | r:4 C5:4 E5:4 F5:4 | G5:16 | r:4 C5:4 E5:4 F5:4 | G5:8 E5:8 | C5:8 E5:8 | D5:16 |
+           r:4 E5:4 E5:4 D5:4 | C5:12 C5:4 | E5:8 G5:8 | G5:4 F5:12 | r:4 E5:4 F5:4 G5:4 | G5:8 E5:8 | C5:8 D5:8 | C5:16`,
+    source: "Traditional American spiritual, in print by 1896.",
+  },
+  {
+    id: "susanna",
+    title: "Oh! Susanna",
+    by: "Stephen Foster, 1848",
+    level: 2,
+    style: "folk",
+    key: "C",
+    time: "2/4",
+    tempo: 92,
+    pickup: 4,
+    tags: ["pick-up notes", "dotted rhythm"],
+    bars: `C5:2 D5:2 | E5:2 G5:2 G5:3 A5:1 | G5:2 E5:2 C5:3 D5:1 | E5:2 E5:2 D5:2 C5:2 | D5:6 C5:1 D5:1 |
+           E5:2 G5:2 G5:3 A5:1 | G5:2 E5:2 C5:3 D5:1 | E5:2 E5:2 D5:2 D5:2 | C5:4`,
+    source: "Stephen Foster (1826-1864), published 1848.",
+  },
+  {
+    id: "canon",
+    title: "Canon in D (theme over the bass)",
+    by: "Pachelbel",
+    level: 4,
+    style: "classical",
+    key: "D",
+    time: "4/4",
+    tempo: 60,
+    tags: ["two voices", "long notes"],
+    bars: `D4+F#5:8 A3+E5:8 | B3+D5:8 F#3+C#5:8 | G3+B4:8 D3+A4:8 | G3+B4:8 A3+C#5:8 |
+           D4+F#5:8 A3+E5:8 | B3+D5:8 F#3+C#5:8 | G3+B4:8 D3+A4:8 | G3+B4:8 A3+C#5:8`.replace(/D3\+/g, "D4+"),
+    source: "Theme of the Canon in D by Johann Pachelbel (1653-1706), our own reduction for one guitar.",
+  },
+  {
+    id: "morning",
+    title: "Morning Mood (Peer Gynt, opening)",
+    by: "Grieg",
+    level: 3,
+    style: "classical",
+    key: "C",
+    time: "6/8",
+    tempo: 60,
+    tags: ["6/8 time", "eighth notes"],
+    bars: `G5:2 E5:2 D5:2 C5:2 D5:2 E5:2 | G5:2 E5:2 D5:2 C5:2 D5:1 E5:1 D5:1 E5:1 | G5:2 E5:2 G5:2 A5:2 E5:2 A5:2 | G5:2 E5:2 D5:2 C5:6`,
+    source: "From Peer Gynt by Edvard Grieg (1843-1907), written in the original's opening shape and moved into C.",
+  },
+  {
+    id: "largo",
+    title: "Largo (New World Symphony theme)",
+    by: "Dvořák",
+    level: 2,
+    style: "classical",
+    key: "C",
+    time: "4/4",
+    tempo: 56,
+    tags: ["dotted rhythm", "slow"],
+    bars: `E4:6 G4:2 G4:8 | E4:6 D4:2 C4:8 | D4:4 E4:4 G4:4 E4:4 | D4:16`,
+    source: "Second movement of Symphony No. 9 by Antonín Dvořák (1841-1904).",
+  },
+  {
+    id: "turca",
+    title: "Rondo alla Turca (opening)",
+    by: "Mozart",
+    level: 4,
+    style: "classical",
+    key: "Am",
+    time: "2/4",
+    tempo: 80,
+    tags: ["sixteenth notes", "accidentals"],
+    bars: `B4:1 A4:1 G#4:1 A4:1 C5:4 | D5:1 C5:1 B4:1 C5:1 E5:4 | F5:1 E5:1 D#5:1 E5:1 B5:1 A5:1 G#5:1 A5:1 | B5:1 A5:1 G#5:1 A5:1 C6:4`,
+    source: "Piano Sonata K. 331 by Wolfgang Amadeus Mozart (1756-1791).",
+  },
+  {
+    id: "nachtmusik",
+    title: "Eine kleine Nachtmusik (opening)",
+    by: "Mozart",
+    level: 4,
+    style: "classical",
+    key: "G",
+    time: "4/4",
+    tempo: 96,
+    tags: ["leaps", "rests"],
+    bars: `G5:4 r:2 D5:2 G5:4 r:2 D5:2 | G5:2 D5:2 G5:2 B5:2 D6:4 r:4 | C6:4 r:2 A5:2 C6:4 r:2 A5:2 | C6:2 A5:2 F#5:2 A5:2 D5:4 r:4`,
+    source: "Serenade No. 13, K. 525 by Wolfgang Amadeus Mozart (1756-1791).",
+  },
+].map((s) => ({ reviewed: false, style: STYLE_OF[s.id] || s.style || "beginner", ...s }));

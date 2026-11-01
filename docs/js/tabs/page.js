@@ -10,7 +10,8 @@ import { parseTextTab, tabTarget } from "./parse.js";
 
 const KEY = "fg-tabs",
   MAX_BYTES = 2e6,
-  WINDOW = 28; // notes shown at once
+  COL = 26, // px per note, as in .tb-strip span
+  BEHIND = 3; // notes kept in view before the one to play
 
 let tabs = [],
   run = null, // the tab being followed: { tab, i }
@@ -46,20 +47,26 @@ async function addFile(file) {
   render();
 }
 
+/* The tab as a lane: the note to play stands at the same spot, the music comes to it, and a second row carries on from
+   where the first runs out, so there is always something to read ahead. */
 function strip(r) {
-  const from = Math.max(0, r.i - 4),
-    shown = r.tab.ev.slice(from, from + WINDOW),
-    col = (e, j) => {
-      const at = from + j,
-        newBar = j && e.b !== shown[j - 1].b;
-      return `<span class="${at === r.i ? "now" : at < r.i ? "past" : ""}${newBar ? " bar" : ""}">${[5, 4, 3, 2, 1, 0]
-        .map((s) => {
-          const n = e.n.find((x) => x[0] === s);
-          return `<i>${n ? n[1] : ""}</i>`;
-        })
-        .join("")}</span>`;
+  const cols = Math.max(10, Math.floor((app.clientWidth - 40) / COL)),
+    from = Math.max(0, r.i - BEHIND),
+    row = (start, lane) => {
+      const shown = r.tab.ev.slice(start, start + cols),
+        col = (e, j) => {
+          const at = start + j,
+            newBar = j && e.b !== shown[j - 1].b;
+          return `<span class="${at === r.i ? "now" : at < r.i ? "past" : ""}${newBar ? " bar" : ""}">${[5, 4, 3, 2, 1, 0]
+            .map((s) => {
+              const n = e.n.find((x) => x[0] === s);
+              return `<i>${n ? n[1] : ""}</i>`;
+            })
+            .join("")}</span>`;
+        };
+      return shown.length ? `<div class="tb-strip${lane ? " lane" : ""}" style="--lane:${(r.i - from) * COL}px" aria-hidden="true">${shown.map(col).join("")}</div>` : "";
     };
-  return `<div class="tb-strip" aria-hidden="true">${shown.map(col).join("")}</div>`;
+  return row(from, true) + row(from + cols, false);
 }
 
 function draw() {

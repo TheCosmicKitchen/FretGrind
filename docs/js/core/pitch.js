@@ -51,10 +51,41 @@ export function freqToWritten(f) {
 /* Hz -> written pitch as a fractional MIDI number. */
 export const writtenPitch = (f) => 69 + 12 * Math.log2(f / 440) + 12;
 
+/* The furthest (cents) a string may sit from standard and still be that string. It has to stay well under the 400-500
+   cents between neighbours, or the next string along passes for a badly tuned one. Three semitones allows drop and
+   open tunings. */
+export const MAX_DETUNE = 300;
+const plausible = (c) => c !== null && Number.isFinite(c) && Math.abs(c) <= MAX_DETUNE;
+export const saneTuning = (tuning) => tuning.map((c) => (plausible(c) ? c : null));
+
+/* A reading while the guided sample asks for string `asked`: { cents } to take it, or { other: s } when it is not that
+   string (the wrong string was plucked, or the last one is still ringing). */
+export function sampleReading(w, asked) {
+  const cents = Math.round((w - OPEN[asked]) * 100);
+  if (Math.abs(cents) <= MAX_DETUNE) return { cents };
+  return { other: OPEN.reduce((a, o, i) => (Math.abs(w - o) < Math.abs(w - OPEN[a]) ? i : a), 0) };
+}
+
+/* Which string free tuning is hearing, or null. It goes by the string as last heard, so one tuned far from standard
+   isn't mistaken for its neighbour, but only inside MAX_DETUNE of standard, so a wrong saved value can't capture it. */
+export function nearestString(w, tuning) {
+  const t = saneTuning(tuning || OPEN.map(() => null));
+  let best = null,
+    bestD = Infinity;
+  OPEN.forEach((o, s) => {
+    const d = Math.abs(w - o - (t[s] || 0) / 100);
+    if (d < bestD && Math.abs(w - o) * 100 <= MAX_DETUNE) ((best = s), (bestD = d));
+  });
+  return best;
+}
+
+/* Are these readings (cents) one settled pitch? A stray reading must not go into a string's saved tuning. */
+export const steady = (vals, spread = 40) => Math.max(...vals) - Math.min(...vals) <= spread;
+
 /* How far each open string is from standard tuning, in semitones. tuning = cents per string, null if not sampled.
    Strings not sampled use the average of those that were, since a guitar is usually flat or sharp as a whole. */
 export function stringOffsets(tuning) {
-  const t = tuning || OPEN.map(() => null),
+  const t = saneTuning(tuning || OPEN.map(() => null)),
     known = t.filter((c) => c !== null),
     mean = known.length ? known.reduce((a, c) => a + c, 0) / known.length : 0;
   return t.map((c) => (c === null ? mean : c) / 100);

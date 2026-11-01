@@ -1,0 +1,571 @@
+/* Turns public-domain sources into the library in docs/lib. Run by hand; the site never needs it.
+     node tools/import-music.mjs <folder with ryans/, oneills/ and mutopia/>
+   ryans/ and oneills/ hold the ABC files from music21's corpus (Ryan's Mammoth Collection, 1883; O'Neill's Music of
+   Ireland, 1903). mutopia/ holds pieces.json and each piece's .mid and .ly, only for pieces Mutopia marks Public Domain.
+   A tune that can't be written faithfully in the song format is left out rather than bent to fit. */
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { METERS, build, check } from "../docs/js/songs/format.js";
+import { grips, levelOfTab, playability, tabify } from "../docs/js/songs/tabify.js";
+
+const T = 12, // twelfths of a sixteenth, as in format.js
+  LEGAL = new Map([[8, "2/3"], [12, "1"], [16, "4/3"], [24, "2"], [32, "8/3"], [36, "3"], [48, "4"], [72, "6"], [96, "8"], [144, "12"], [192, "16"], [288, "24"]]),
+  LEGAL_DESC = [...LEGAL.keys()].filter((k) => k % 12 === 0).sort((a, b) => b - a);
+
+/* ---------- writing notes into bars ---------- */
+/* notes = [{ ps: ["C5", ...] | null for a rest, t: twelfths }] -> bars string, or a reason it can't be done */
+function toBars(stream, barLen, pickup) {
+  const out = [];
+  let cur = [],
+    room = pickup || barLen;
+  for (const n of stream) {
+    if (n.t > room) return { why: "note crosses a barline" };
+    const len = LEGAL.get(n.t);
+    if (!len) return { why: "note length has no written form" };
+    cur.push(`${n.ps ? n.ps.join("+") : "r"}:${len}`);
+    room -= n.t;
+    if (room === 0) {
+      out.push(cur.join(" "));
+      cur = [];
+      room = barLen;
+    }
+  }
+  if (cur.length) {
+    // the piece stops mid-bar: a rest completes it unless that is just the other half of a pick-up
+    if (!(pickup && barLen - room === barLen - pickup))
+      for (const r of LEGAL_DESC)
+        while (room >= r) {
+          cur.push(`r:${LEGAL.get(r)}`);
+          room -= r;
+        }
+    if (room && !(pickup && room === pickup)) return { why: "last bar can't be completed" };
+    out.push(cur.join(" "));
+  } else if (pickup) {
+    // a full last bar after a pick-up: a short rest bar gives the pick-up its time back, so a loop stays on the beat
+    let left = barLen - pickup;
+    for (const r of LEGAL_DESC)
+      while (left >= r) {
+        cur.push(`r:${LEGAL.get(r)}`);
+        left -= r;
+      }
+    if (left) return { why: "last bar can't be completed" };
+    out.push(cur.join(" "));
+  }
+  return { bars: out.join(" | ") };
+}
+
+/* ---------- ABC ---------- */
+const SHARPS = "FCGDAEB", FLATS = "BEADGCF",
+  TONIC = { C: 0, G: 1, D: 2, A: 3, E: 4, B: 5, "F#": 6, "C#": 7, F: -1, Bb: -2, Eb: -3, Ab: -4, Db: -5, Gb: -6 },
+  MODE = { "": ["", 0], maj: ["", 0], m: ["m", -3], min: ["m", -3], dor: ["dor", -2], phr: ["phr", -4], lyd: ["lyd", 1], mix: ["mix", -1], loc: ["loc", -5], aeo: ["m", -3], ion: ["", 0] };
+function abcKey(k) {
+  const m = /^\s*([A-G][#b]?)\s*([A-Za-z]*)/.exec(k);
+  if (!m) return null;
+  const mode = MODE[m[2].slice(0, 3).toLowerCase()];
+  if (!mode || TONIC[m[1]] === undefined) return null;
+  const sig = TONIC[m[1]] + mode[1],
+    acc = {};
+  if (Math.abs(sig) > 7) return null;
+  (sig > 0 ? SHARPS : FLATS).slice(0, Math.abs(sig)).split("").forEach((l) => (acc[l] = sig > 0 ? 1 : -1));
+  return { key: m[1] + mode[0], acc };
+}
+const abcMeter = (m) => (m === "C" ? "4/4" : m === "C|" ? "2/2" : m);
+
+/* The music of one tune as a flat list of notes and repeat marks. */
+function abcScan(body, meter, L16, key) {
+  const ev = [];
+  let i = 0,
+    acc = {}, // accidentals so far in this bar
+    k = key,
+    trip = 0,
+    broken = 0, // >0: the next note takes this share of its length
+    tied = false;
+  const dur = (a, b) => {
+    let v = (L16 * T * a) / b;
+    if (trip > 0) ((v = (v * 2) / 3), trip--);
+    if (broken) ((v *= broken), (broken = 0));
+    return v;
+  };
+  const noteAt = (s, p) => {
+    const m = /^(\^\^|__|\^|_|=)?([A-Ga-g])([,']*)/.exec(s.slice(p));
+    if (!m) return null;
+    const L = m[2].toUpperCase(),
+      oct = (m[2] === L ? 4 : 5) + (m[3].match(/'/g) || []).length - (m[3].match(/,/g) || []).length,
+      id = L + oct;
+    if (m[1] === "^^" || m[1] === "__") throw "double accidental";
+    if (m[1]) acc[id] = m[1] === "^" ? 1 : m[1] === "_" ? -1 : 0;
+    const a = id in acc ? acc[id] : k.acc[L] || 0;
+    if (oct < 0 || oct > 9) throw "pitch out of range";
+    return { p: L + (a > 0 ? "#" : a < 0 ? "b" : "") + oct, len: m[0].length };
+  };
+  const lenAt = (s, p) => {
+    const m = /^(\d*)(\/*)(\d*)/.exec(s.slice(p));
+    const a = m[1] ? +m[1] : 1,
+      b = m[3] ? +m[3] : m[2] ? 2 ** m[2].length : 1;
+    return { a, b, len: m[0].length };
+  };
+  while (i < body.length) {
+    const c = body[i],
+      two = body.slice(i, i + 2);
+    if (c === '"') i = body.indexOf('"', i + 1) + 1 || body.length;
+    else if (c === "!" || c === "+") i = body.indexOf(c, i + 1) + 1 || body.length;
+    else if (c === "{") i = body.indexOf("}", i) + 1 || body.length;
+    else if (/^\[[KML]:/.test(body.slice(i, i + 3))) {
+      const e = body.indexOf("]", i),
+        f = body.slice(i + 1, e);
+      if (f[0] === "K") k = abcKey(f.slice(2)) || (() => { throw "bad inline key"; })();
+      else throw "meter or unit changes mid-tune";
+      i = e + 1;
+    } else if (c === "|" || c === ":" || two === "[|") {
+      const m = /^(\[\||\|\]|\|\||\|:|:\|:?|::|\|)/.exec(body.slice(i));
+      if (!m) { i++; continue; }
+      i += m[0].length;
+      acc = {};
+      const n = /^\s*\[?([12])/.exec(body.slice(i));
+      if (n && /^(\|\s*|\s*\[)?/.test(m[0])) {
+        const after = /^\s*\[?[12](,[12])?/.exec(body.slice(i));
+        // a digit straight after a bar line is a first or second ending
+        ev.push({ bar: m[0] });
+        if (/^\[?[12]/.test(body.slice(i))) {
+          ev.push({ ending: +n[1] });
+          i += after[0].length;
+        }
+        continue;
+      }
+      ev.push({ bar: m[0] });
+    } else if (/^\[[12]/.test(body.slice(i, i + 2))) {
+      ev.push({ ending: +body[i + 1] });
+      i += 2;
+    } else if (c === "(" && /\d/.test(body[i + 1] || "")) {
+      const m = /^\((\d)(:\d*)?(:\d*)?/.exec(body.slice(i));
+      if (m[1] !== "3" || m[2]) throw "tuplet other than a triplet";
+      trip = 3;
+      i += m[0].length;
+    } else if (c === "[") {
+      const e = body.indexOf("]", i);
+      if (e < 0) throw "open chord";
+      const ps = [];
+      let p = i + 1, l = null;
+      while (p < e) {
+        const n = noteAt(body, p);
+        if (!n) { p++; continue; }
+        p += n.len;
+        const q = lenAt(body, p);
+        l = l || q;
+        p += q.len;
+        ps.push(n.p);
+      }
+      i = e + 1;
+      const q = lenAt(body, i);
+      i += q.len;
+      if (!ps.length) continue;
+      ev.push({ ps, t: dur((l ? l.a : 1) * q.a, (l ? l.b : 1) * q.b), tie: tied });
+      tied = false;
+    } else if (c === "z" || c === "x") {
+      const q = lenAt(body, i + 1);
+      i += 1 + q.len;
+      ev.push({ ps: null, t: dur(q.a, q.b) });
+    } else if (/[_^=A-Ga-g]/.test(c)) {
+      const n = noteAt(body, i);
+      if (!n) { i++; continue; }
+      i += n.len;
+      const q = lenAt(body, i);
+      i += q.len;
+      ev.push({ ps: [n.p], t: dur(q.a, q.b), tie: tied });
+      tied = false;
+    } else if (c === "-") {
+      tied = true;
+      i++;
+    } else if (c === ">" || c === "<") {
+      let n = 0;
+      while (body[i] === c) (n++, i++);
+      const big = 2 - 0.5 ** n,
+        small = 0.5 ** n,
+        last = [...ev].reverse().find((e) => e.t);
+      if (!last) throw "broken rhythm at the start";
+      last.t *= c === ">" ? big : small;
+      broken = c === ">" ? small : big;
+    } else i++;
+  }
+  return ev;
+}
+
+/* Play out the repeats: |: A :| twice, first and second endings, into one straight run. */
+function unroll(ev) {
+  const out = [];
+  let cur = [],
+    mark = -1;
+  const repeat = () => {
+    if (mark >= 0) out.push(...cur, ...cur.slice(0, mark));
+    else out.push(...cur, ...cur);
+    cur = [];
+    mark = -1;
+  };
+  for (const e of ev) {
+    if (e.ending) {
+      if (e.ending === 1) mark = cur.length;
+      continue;
+    }
+    if (e.bar) {
+      if (e.bar.startsWith(":") || e.bar === "::") repeat();
+      else if (["|:", "||", "|]", "[|"].includes(e.bar)) (out.push(...cur), (cur = []), (mark = -1));
+      continue;
+    }
+    cur.push(e);
+  }
+  return out.concat(cur);
+}
+
+/* length of the opening bar, if it is shorter than a full one */
+function abcPickup(ev, barLen) {
+  let t = 0;
+  for (const e of ev) {
+    if (e.t) t += e.t;
+    else if (e.bar && t > 0) break;
+    else if (e.bar === undefined && e.ending) break;
+  }
+  return t > 0 && t < barLen ? t : 0;
+}
+
+const TEMPO = { // comfortable practice speeds, in the meter's own beat
+  reel: 56, hornpipe: 50, jig: 72, "double jig": 72, "single jig": 72, "slip jig": 66, slipjig: 66, strathspey: 46, clog: 50, "highland fling": 50, fling: 50, slide: 72, polka: 88, march: 80, waltz: 96, air: 66, "": 72,
+};
+const titleCase = (t) => (t === t.toUpperCase() ? t.toLowerCase().replace(/(^|[\s(-])(\w)/g, (m, a, b) => a + b.toUpperCase()) : t);
+/* "The Enchanted Valley", never "Enchanted Valley, The" */
+function cleanTitle(t) {
+  let s = t.replace(/\s*--\s*.*$/, "").replace(/["“”]/g, "").replace(/\s+/g, " ").replace(/[.,;]+$/, "").trim();
+  const m = /^(.*),\s*(The|A|An)$/i.exec(s);
+  if (m) s = `${m[2]} ${m[1]}`;
+  s = titleCase(s);
+  return s[0].toUpperCase() + s.slice(1);
+}
+const DANCE = (r) => {
+  const x = r.toLowerCase().replace(/[^a-z ]/g, "").trim();
+  if (/slip/.test(x)) return "slip jig";
+  if (/double|single|jig/.test(x)) return "jig";
+  if (/reel/.test(x)) return "reel";
+  if (/hornpipe/.test(x)) return "hornpipe";
+  if (/strathspey/.test(x)) return "strathspey";
+  if (/clog/.test(x)) return "clog";
+  if (/fling/.test(x)) return "highland fling";
+  if (/waltz/.test(x)) return "waltz";
+  if (/march|walkaround/.test(x)) return "march";
+  if (/air/.test(x)) return "air";
+  return "";
+};
+
+function parseAbcTune(text, collection, file) {
+  const head = {},
+    body = [];
+  let inBody = false;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.replace(/(^|[^\\])%.*$/, "$1");
+    const m = /^([A-Za-z]):\s*(.*)$/.exec(line);
+    if (m && !inBody) {
+      if (!(m[1] in head)) head[m[1]] = m[2].trim();
+      if (m[1] === "K") inBody = true;
+    } else if (inBody && m) {
+      if (m[1] === "K" || m[1] === "M" || m[1] === "L") {
+        if (m[1] !== "K") throw "meter or unit changes mid-tune";
+        body.push(`[K:${m[2]}]`);
+      }
+    } else if (inBody) body.push(line.replace(/\\\s*$/, ""));
+  }
+  if (!head.T || !head.M || !head.K) throw "incomplete header";
+  const time = abcMeter(head.M.trim());
+  if (!METERS[time]) throw "unsupported meter";
+  const key = abcKey(head.K);
+  if (!key) throw "unsupported key";
+  const L = /^1\/(\d+)$/.exec(head.L || "1/8");
+  if (!L) throw "unusual unit";
+  const barLen = METERS[time].bar * T,
+    ev = abcScan(body.join("\n"), time, 16 / +L[1], key),
+    pickup = abcPickup(ev, barLen);
+  // join tied notes
+  const flat = [];
+  for (const e of unroll(ev)) {
+    if (!Number.isInteger(Math.round(e.t * 1e6) / 1e6)) throw "note length has no written form";
+    const t = Math.round(e.t);
+    if (e.tie && flat.length) flat[flat.length - 1].t += t;
+    else flat.push({ ps: e.ps, t });
+  }
+  if (!flat.some((n) => n.ps)) throw "no notes";
+  const r = toBars(flat, barLen, pickup);
+  if (r.why) throw r.why;
+  const dance = DANCE(head.R || ""),
+    hasOwn = /^(.*?)\s*--/.test(head.T);
+  return {
+    title: cleanTitle(head.T),
+    by: head.C ? head.C.replace(/^C:\s*/, "") : collection === "ryans" ? "Traditional, American and British Isles" : "Traditional Irish",
+    style: dance === "air" || !dance ? "air" : ["reel", "jig", "hornpipe"].includes(dance) ? dance : ["waltz", "march"].includes(dance) ? "waltz" : "dance",
+    dance,
+    key: key.key,
+    time,
+    tempo: Math.max(40, Math.min(200, TEMPO[dance] || (time === "6/8" ? 66 : 72))),
+    pickup: pickup ? pickup / T : 0,
+    bars: r.bars,
+    enc: (head.Z || "").replace(/[\w.-]+[:@][\w.-]+\.\w+/g, "").replace(/^Contributed by\s*/i, "").replace(/,\s*$/, "").trim(),
+    file,
+    hasOwn,
+  };
+}
+
+/* ---------- MIDI (Mutopia) ---------- */
+function readMidi(buf) {
+  let p = 0;
+  const u32 = () => ((p += 4), buf.readUInt32BE(p - 4)),
+    u16 = () => ((p += 2), buf.readUInt16BE(p - 2)),
+    vlq = () => {
+      let v = 0, b;
+      do ((b = buf[p++]), (v = (v << 7) | (b & 127)));
+      while (b & 128);
+      return v;
+    };
+  if (buf.toString("latin1", 0, 4) !== "MThd") throw "not a MIDI file";
+  p = 8;
+  u16();
+  const tracks = u16(),
+    ppq = u16();
+  if (ppq & 0x8000) throw "SMPTE timing";
+  const notes = [];
+  let time = null, tempo = null, times = 0;
+  for (let t = 0; t < tracks; t++) {
+    if (buf.toString("latin1", p, p + 4) !== "MTrk") throw "bad track";
+    p += 4;
+    const end = u32() + p,
+      on = {};
+    let now = 0, st = 0;
+    while (p < end) {
+      now += vlq();
+      let b = buf[p];
+      if (b & 128) ((st = b), p++);
+      const hi = st & 0xf0;
+      if (st === 0xff) {
+        const ty = buf[p++], len = vlq();
+        if (ty === 0x58) {
+          const v = `${buf[p]}/${2 ** buf[p + 1]}`;
+          if (v !== time) times++;
+          time = time || v;
+        }
+        if (ty === 0x51 && tempo === null) tempo = 60e6 / ((buf[p] << 16) | (buf[p + 1] << 8) | buf[p + 2]);
+        p += len;
+      } else if (st === 0xf0 || st === 0xf7) p += vlq();
+      else if (hi === 0x90 || hi === 0x80) {
+        const n = buf[p++], v = buf[p++];
+        if (hi === 0x90 && v > 0) (on[n] ||= []).push(now);
+        else if (on[n] && on[n].length) {
+          const s = on[n].shift();
+          notes.push({ n, s, e: now });
+        }
+      } else p += hi === 0xc0 || hi === 0xd0 ? 1 : 2;
+    }
+    p = end;
+  }
+  return { ppq, notes: notes.sort((a, b) => a.s - b.s || a.n - b.n), time, tempo, times };
+}
+const SPELL_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+  SPELL_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const LYKEY = { c: "C", d: "D", e: "E", f: "F", g: "G", a: "A", b: "B", bes: "Bb", ees: "Eb", aes: "Ab", des: "Db", ges: "Gb", fis: "F#", cis: "C#", gis: "G#", dis: "D#", ais: "A#" };
+function lyInfo(ly) {
+  const k = /\\key\s+([a-g](?:is|es)?|ees|aes)\s*\\(major|minor|dorian|mixolydian)/.exec(ly),
+    part = /\\partial\s+(\d+)(\.?)(?:\*(\d+))?/.exec(ly);
+  return {
+    key: k ? LYKEY[k[1]] + { major: "", minor: "m", dorian: "dor", mixolydian: "mix" }[k[2]] : "C",
+    pickupQ: part ? (4 / +part[1]) * (part[2] ? 1.5 : 1) * (part[3] ? +part[3] : 1) : 0,
+    treble8: /treble_8|"G_8"|transposition\s+c/.test(ly),
+  };
+}
+/* Merge every voice onto one line of "what strikes when". Held notes run to the next strike, so a bass that rings
+   under a melody is written shorter than it sounds; the tab and the fingers are unaffected. */
+function midiToBars(mid, info, meter) {
+  const q = mid.ppq,
+    tick = (v) => (v * q) / (4 * T), // twelfths -> MIDI ticks
+    shift = info.treble8 || Math.min(...mid.notes.map((n) => n.n)) < 52 ? 12 : 0,
+    flats = /^(F|Bb|Eb|Ab|Db|Gb|Dm|Gm|Cm|Fm|Bbm)$/.test(info.key),
+    name = (m) => (flats ? SPELL_FLAT : SPELL_SHARP)[m % 12] + (Math.floor(m / 12) - 1),
+    keep = mid.notes.filter((n) => n.e - n.s >= q / 8), // grace notes are too short to count
+    groups = new Map();
+  let off = 0;
+  for (const n of keep) {
+    const raw = (n.s * (4 * T)) / q, // to twelfths of a sixteenth
+      six = Math.round(raw / T) * T, // nearest sixteenth
+      tri = Math.round(raw / 16) * 16; // nearest eighth triplet
+    const t = Math.abs(raw - six) <= 1.5 ? six : Math.abs(raw - tri) <= 1.5 ? tri : null;
+    if (t === null) off++;
+    else (groups.get(t) || groups.set(t, new Set()).get(t)).add(n.n + shift);
+  }
+  if (off > keep.length * 0.01) throw "rhythm finer than the format";
+  const ts = [...groups.keys()].sort((a, b) => a - b),
+    barLen = meter.bar * T,
+    pick = Math.round(info.pickupQ * 4 * T),
+    stream = [],
+    barEnd = (t) => (t < pick ? pick : pick + (Math.floor((t - pick) / barLen) + 1) * barLen);
+  if (ts[0] !== 0) throw "starts with silence";
+  let onDown = 0, bars = 0, lastBar = -1;
+  ts.forEach((t, i) => {
+    const b = t < pick ? -1 : Math.floor((t - pick) / barLen);
+    if (b !== lastBar) ((bars++), (lastBar = b), (onDown += t === pick + b * barLen || b < 0 ? 1 : 0));
+    const next = i + 1 < ts.length ? ts[i + 1] : barEnd(t),
+      ms = [...groups.get(t)].sort((a, b) => a - b);
+    let at = t, head = true;
+    // the strike takes the longest written length that fits; rests fill what is left up to the next strike
+    while (at < next) {
+      const room = Math.min(next, barEnd(at)) - at,
+        fit = (head ? [...LEGAL.keys()] : LEGAL_DESC).filter((k) => k <= room).sort((a, b) => b - a)[0];
+      if (!fit) throw "gap has no written form";
+      stream.push({ ps: head ? ms : null, t: fit });
+      at += fit;
+      head = false;
+    }
+  });
+  if (onDown < bars * 0.8) throw "bars don't line up with the music";
+  return { stream, barLen, pick, name };
+}
+
+function holdable(ms, name, level) {
+  // a chord nobody can hold keeps its melody and bass, then whatever else fits
+  const pitch = (m) => ({ midi: m });
+  if (grips(ms.map(pitch), 19).length) return ms;
+  const top = ms[ms.length - 1], low = ms[0];
+  for (const mid of ms.slice(1, -1).reverse()) if (grips([low, mid, top].map(pitch), 19).length) return [low, mid, top];
+  if (ms.length > 1 && grips([low, top].map(pitch), 19).length) return [low, top];
+  return [top];
+}
+
+function parseMidiPiece(p, dir) {
+  const mid = readMidi(readFileSync(join(dir, `${p.id}.mid`))),
+    info = lyInfo(readFileSync(join(dir, `${p.id}.ly`), "latin1"));
+  if (mid.times > 1) throw "meter changes";
+  const time = mid.time || "4/4",
+    meter = METERS[time];
+  if (!meter) throw "unsupported meter " + time;
+  const { stream, barLen, pick, name } = midiToBars(mid, info, meter),
+    flat = stream.map((n) => ({ t: n.t, ps: n.ps && holdable(n.ps, name).map(name) })),
+    r = toBars(flat, barLen, pick);
+  if (r.why) throw r.why;
+  return {
+    title: p.title.replace(/\s+/g, " "),
+    by: p.by.replace(/\s*\(.*$/, ""),
+    style: "classical",
+    dance: "",
+    key: info.key,
+    time,
+    tempo: Math.max(40, Math.min(120, Math.round(((mid.tempo || 80) * 4) / meter.beat))),
+    pickup: pick / T,
+    bars: r.bars,
+    mutopia: p,
+  };
+}
+
+/* ---------- grading ---------- */
+/* How hard a piece is to get under the fingers. Tempo stays out of it: the player sets the speed, so what counts is how
+   busy the rhythm is, how far the hand goes, how much strays from the key, and how much is held at once. */
+function hardness(s) {
+  const notes = s.sounding,
+    n = notes.length,
+    perBeat = n / (s.total / 4),
+    fine = notes.filter((x) => x.dur <= 1 || !Number.isInteger(x.dur)).length / n,
+    accs = notes.filter((x) => x.show).length / n,
+    chords = notes.filter((x) => x.pitches.length > 1).length / n,
+    midis = notes.map((x) => x.midi),
+    leap = midis.slice(1).reduce((a, m, i) => a + Math.abs(m - midis[i]), 0) / Math.max(1, n - 1),
+    range = Math.max(...midis) - Math.min(...midis),
+    tab = tabify(s, 6),
+    hand = tab.map((c) => c[1]).reduce((a, f) => a + f, 0) / n;
+  return (perBeat - 1) * 1.1 + fine * 3 + accs * 9 + leap * 0.28 + range * 0.035 + chords * 2.2 + hand * 0.22 + Math.max(0, Math.abs(sigOf(s.key)) - 2) * 0.5 + (s.pickup ? 0.2 : 0) + Math.min(1, n / 500);
+}
+const CUTS = [2.75, 3.25, 3.8, 4.7, 6.5]; // where each level ends; set so the library spreads across all six
+
+function gradeOf(s) {
+  const h = hardness(s),
+    lv = 1 + CUTS.filter((c) => h > c).length;
+  return { level: Math.max(lv, levelOfTab(s), s.sounding.some((n) => n.pitches.length > 1) && s.style === "classical" ? 3 : 1), h };
+}
+const sigOf = (k) => (TONIC[k.replace(/(m|dor|phr|lyd|mix|loc)$/, "")] || 0) + (MODE[(/(m|dor|phr|lyd|mix|loc)$/.exec(k) || [""])[0]] || ["", 0])[1];
+
+/* ---------- main ---------- */
+const raw = process.argv[2];
+if (!raw) throw new Error("usage: node tools/import-music.mjs <source folder>");
+const lib = [], why = {};
+const miss = (w, n = 1) => (why[w] = (why[w] || 0) + n);
+for (const coll of ["ryans", "oneills"])
+  for (const f of readdirSync(join(raw, coll)).sort()) {
+    const text = readFileSync(join(raw, coll, f), "latin1");
+    for (const tune of text.split(/\r?\n(?=X:)/)) {
+      if (!/^X:/m.test(tune)) continue;
+      try {
+        lib.push({ ...parseAbcTune(tune.slice(tune.indexOf("X:")), coll, f), coll, no: +(/^X:\s*(\d+)/m.exec(tune) || [])[1] });
+      } catch (e) {
+        if (typeof e !== "string") throw e;
+        miss(e);
+      }
+    }
+  }
+const mdir = join(raw, "mutopia");
+for (const p of JSON.parse(readFileSync(join(mdir, "pieces.json"), "utf8")))
+  try {
+    lib.push({ ...parseMidiPiece(p, mdir), coll: "mutopia", no: +p.id });
+  } catch (e) {
+    if (typeof e !== "string") throw e;
+    miss("classical: " + e);
+  }
+
+const seen = new Set(),
+  slug = (t) => t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40),
+  ids = new Set(),
+  hards = [],
+  good = [];
+for (const t of lib) {
+  const dup = (t.bars.match(/[A-G][#b]?\d/g) || []).join("");
+  if (seen.has(dup)) { miss("same notes as another entry"); continue; }
+  seen.add(dup);
+  let id = `${t.coll[0]}-${slug(t.title)}`;
+  for (let n = 2; ids.has(id); n++) id = `${t.coll[0]}-${slug(t.title)}-${n}`;
+  const def = { id, title: t.title, by: t.by, key: t.key, time: t.time, tempo: t.tempo, bars: t.bars, level: 6, tags: [] };
+  if (t.pickup) def.pickup = t.pickup;
+  try {
+    const s = build(def);
+    if (check(s).length) { miss("bars don't add up"); continue; }
+    if (s.total % s.beat) { miss("doesn't end on a beat"); continue; }
+    if (s.sounding.length < 12) { miss("too short"); continue; }
+    if (s.sounding.some((n) => n.midi > 95)) { miss("too high for the guitar"); continue; }
+    s.style = t.style;
+    const g = gradeOf(s);
+    def.level = g.level;
+    hards.push(g.h);
+    const check2 = build(def);
+    if (playability(check2, tabify(check2)).length) { miss("no playable tab"); continue; }
+  } catch (e) {
+    if (String(e).includes("cannot be played") || String(e).includes("Unknown key")) { miss("no playable tab"); continue; }
+    throw e;
+  }
+  ids.add(id);
+  const m = t.mutopia;
+  def.style = t.style;
+  def.tags = [t.dance, t.style === "classical" ? "chords and melody" : ""].filter(Boolean);
+  def.src = t.coll;
+  def.ref = t.coll === "mutopia" ? `Mutopia piece ${m.id}` : t.coll === "oneills" ? `No. ${t.no}` : "";
+  if (t.enc) def.enc = t.enc;
+  if (m) def.note = [m.opus, m.edition].filter((x) => x && x.trim() && !/^mutopia$/i.test(x.trim())).join(", ");
+  good.push(def);
+}
+
+const here = fileURLToPath(new URL("../docs/", import.meta.url)),
+  out = join(here, "lib"),
+  CHUNK = 120;
+rmSync(out, { recursive: true, force: true });
+mkdirSync(out, { recursive: true });
+good.sort((a, b) => a.level - b.level || a.title.localeCompare(b.title));
+const rows = [];
+for (let c = 0; c * CHUNK < good.length; c++) {
+  const part = good.slice(c * CHUNK, (c + 1) * CHUNK);
+  writeFileSync(join(out, `songs-${c}.json`), JSON.stringify(part));
+  part.forEach((d) => rows.push([d.id, d.title, d.by, d.style, d.level, d.key, d.time, d.tempo, c]));
+}
+writeFileSync(join(out, "index.json"), JSON.stringify(rows));
+const tally = (f) => good.reduce((a, d) => ((a[f(d)] = (a[f(d)] || 0) + 1), a), {});
+console.log({ parsed: lib.length, kept: good.length, levels: tally((d) => d.level), styles: tally((d) => d.style), sources: tally((d) => d.src) });
+console.log(Object.entries(why).sort((a, b) => b[1] - a[1]));
+hards.sort((a, b) => a - b);
+console.log("hardness percentiles", [5, 15, 30, 50, 70, 85, 95, 99].map((p) => `${p}%=${hards[Math.floor((hards.length * p) / 100)].toFixed(2)}`).join(" "));

@@ -53,7 +53,8 @@ export function songStart(song, opts, hooks) {
           if (t > ctx.currentTime + 0.16) break;
           if (ev.note !== undefined) {
             const n = song.sounding[ev.note];
-            if (opts.notes) tone(n.midi - 12, t, Math.min(1.8, Math.max(0.35, n.dur * run.usec * 1.3)), 0.3, "triangle", true);
+            if (opts.notes)
+              n.pitches.forEach((p) => tone(p.midi - 12, t, Math.min(1.8, Math.max(0.35, n.dur * run.usec * 1.3)), n.pitches.length > 1 ? 0.18 : 0.3, "triangle", true));
             run.q.push({ t, note: ev.note });
           } else {
             if (opts.click || (run.i < 0 && opts.clickIn)) click(t, ev.beat === 0);

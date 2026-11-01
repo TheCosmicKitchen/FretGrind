@@ -1694,3 +1694,21 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
   color: #e7a73b;
 }
 
+.sg-svg .sg-tup { fill: var(--tx); font-size: 12px; font-style: italic; font-weight: 700; text-anchor: middle; }
+/* Following along: the score takes the screen, and lines already played fade so the eye goes forward */
+.sg-wrap.following { max-height: calc(100dvh - 24px); padding-bottom: 45vh; }
+.sg-sys { transition: opacity .25s; }
+.sg-sys.played { opacity: .42; }
+/* Lane view: a fixed view the music slides through, past a lane that stands still and cuts through the tab numbers */
+.sg-lane { position: relative; overflow: hidden; margin: 4px -4px 8px; border: 1px solid var(--ln); border-radius: 12px; background: color-mix(in srgb, var(--card) 70%, var(--bg)); touch-action: pan-y; }
+.sg-track { will-change: transform; }
+.sg-track.glide { transition: transform .18s ease-out; }
+.sg-track .sg-svg { margin: 0; }
+.sg-hit { position: absolute; top: 0; bottom: 0; left: 22%; width: 3px; margin-left: -1.5px; background: var(--ac); box-shadow: 0 0 0 7px color-mix(in srgb, var(--ac) 16%, transparent); pointer-events: none; }
+.sg-lane::before { content: ""; position: absolute; inset: 0 78% 0 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, color-mix(in srgb, var(--card) 80%, transparent), transparent); }
+.sg-lane.following { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ac) 35%, transparent); }
+.sg-svg .sg-lab { fill: var(--ac); font-size: 13px; font-weight: 800; }
+.sg-q { width: 100%; box-sizing: border-box; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--ln); border-radius: 10px; background: var(--card); color: var(--tx); font: inherit; }
+.sg-ex .go { margin-top: 12px; }
+.tb-strip { position: relative; }
+.tb-strip.lane::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--lane) + 13px); width: 3px; margin-left: -1.5px; background: var(--ac); opacity: .55; pointer-events: none; }
