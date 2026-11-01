@@ -8,6 +8,7 @@ const check = (ok, what) => {
   console.log((ok ? "  ok  " : "  FAIL ") + what);
   if (!ok) fails.push(what);
 };
+const goTo = (page, id) => page.evaluate((p) => { if (p === "cards") __fg.ui.cardView = "session"; __fg.openPage(p); }, id);
 const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
 
 for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
@@ -50,7 +51,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   check(await page.evaluate(() => Object.keys(__fg.S.courses.guitar.les).length + Object.keys(__fg.S.courses.theory.les).length >= 1), "finishing a lesson is saved");
   // drills: open the screen, run a mixed round to the result, go again
   await page.evaluate(() => (document.querySelector("[data-ln-quit]") || document.querySelector("[data-ln-home]"))?.click());
-  await page.click("[data-page=learn]");
+  await goTo(page, "learn");
   await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
   await page.click("[data-ln-drills]");
   check(await page.evaluate(() => document.querySelectorAll("[data-ln-dgo]").length >= 16), "the Drills screen lists every drill and a mixed round");
@@ -60,7 +61,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.evaluate(() => document.querySelector("[data-ln-quit]")?.click());
   // motion drills: setup, a few seconds of generated bars on the audio clock, a live tempo change, stop
   await page.evaluate(() => document.querySelector("[data-ln-quit]")?.click());
-  await page.click("[data-page=learn]");
+  await goTo(page, "learn");
   await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
   await page.click("[data-ln-drills]");
   await page.click("[data-ln-motion]");
@@ -79,12 +80,12 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.evaluate(() => document.querySelector("[data-ln-home]")?.click());
   // review deck: save a lesson question, review it on the Cards tab, and jump back to its lesson
   await page.evaluate(() => (__fg.S.mine = [], __fg.S.onlyMine = 0));
-  await page.evaluate(() => { const e = document.createElement("button"); e.setAttribute("data-ln-start", "theory:T1.1"); document.querySelector(".topnav").parentElement.appendChild(e); e.click(); e.remove(); });
+  await page.evaluate(() => { const e = document.createElement("button"); e.setAttribute("data-ln-start", "theory:T1.1"); document.getElementById("app").appendChild(e); e.click(); e.remove(); });
   for (let i = 0; i < 40 && !(await page.$("[data-ln-ans]:not([disabled])")); i++) await page.evaluate(() => document.querySelector("[data-ln-next]")?.click());
   await page.click("[data-ln-ans]");
   await page.click("[data-ln-save]");
   check(await page.evaluate(() => __fg.S.mine.length === 1), "a lesson question can be saved to my review deck");
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   await page.click("[data-mine-mode]");
   check(await page.evaluate(() => /MY DECK/.test(document.querySelector(".card .tag")?.textContent || "")), "my deck mode shows saved cards");
   await page.click("[data-learn-lesson]");
@@ -92,7 +93,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.click("[data-ln-quit]");
   await page.evaluate(() => (__fg.S.onlyMine = 0));
   await page.click("[data-ln-home]").catch(() => {});
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   await page.waitForSelector(".card .prompt");
 
   // --- flash cards: answer cards in every deck, correct and wrong
@@ -114,7 +115,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.click('[data-region="all"]');
 
   // --- library & practice
-  await page.click("[data-page=library]");
+  await goTo(page, "library");
   await page.click('[data-pr="kind"][data-v="scale"]');
   await page.selectOption("[data-pr-sel=scale]", "11");
   check((await page.textContent(".prac h2")).includes("Harmonic minor"), "scale dropdown changes the scale");
@@ -129,12 +130,12 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.waitForTimeout(1200);
   check((await page.textContent("[data-pr=play]")).includes("Stop"), "metronome starts");
   check(await page.evaluate(() => document.querySelectorAll(".bd.on").length === 1), "one beat dot lit");
-  await page.click("[data-page=cards]");
-  await page.click("[data-page=practice]");
+  await goTo(page, "cards");
+  await goTo(page, "practice");
   check((await page.textContent("[data-pr=play]")).includes("Start"), "metronome stops when leaving the tab");
 
   // --- games: score run
-  await page.click("[data-page=games]");
+  await goTo(page, "games");
   await page.click("[data-score-start]");
   await page.click("[data-score-play]");
   await page.waitForSelector(".score-card");
@@ -161,14 +162,14 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   check(await page.evaluate(() => !!document.querySelector(".rhythm-menu")), "rhythm exits to the menu");
 
   // --- reset keeps preferences
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   await page.click("[data-reset]");
   await page.click("[data-reset]");
   check(await page.evaluate(() => Object.keys(__fg.S.it).length <= 1 && __fg.S.mode === "bag"), "reset clears progress, keeps the mode");
 
   // --- a damaged save must not break the app
   // --- songs: list, sheet music and tab, play, highlight, stop, mark learned
-  await page.click("[data-page=songs]");
+  await goTo(page, "songs");
   check((await page.locator(".sg-item").count()) >= 9, "songs: the list shows the library");
   await page.click("[data-song-open=mary]");
   await page.waitForSelector(".sg-svg");
@@ -186,19 +187,19 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.click("[data-sp=done]");
   check(await page.evaluate(() => !!__fg.S.songs.done.mary), "songs: mark as learned");
   await page.click("[data-sp=play]"); // leave the tab while playing: it must stop
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   await page.waitForTimeout(300);
-  await page.click("[data-page=songs]");
+  await goTo(page, "songs");
   check(await page.evaluate(() => /Play/.test(document.querySelector("[data-sp=play]").textContent)), "songs: leaving the tab stops playback");
 
   await page.evaluate(() => localStorage.setItem("fg1", JSON.stringify({ it: { "bogus:1": {} }, act: ["nope"], prac: { cRoot: 99 }, rhythm: { bpm: "x" }, regions: ["zz"] })));
   await page.reload();
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   await page.waitForSelector(".card");
   check(await page.evaluate(() => __fg.S.act.length > 0 && __fg.S.prac.cRoot === 7 && __fg.S.rhythm.bpm === 80 && __fg.S.regions.length === 0), "damaged save is repaired on load");
 
   // --- piano: connect a MIDI keyboard, walk a lesson with a wrong note and an octave slip, a chord, and Cards
-  await page.click("[data-page=piano]");
+  await goTo(page, "piano");
   check((await page.locator("[data-pn=open]").count()) >= 27, "piano: the lesson list shows every lesson");
   await page.click("[data-pn=connect]");
   await page.waitForFunction(() => /Test keys/.test(document.getElementById("pn-conn")?.textContent || ""));
@@ -222,7 +223,7 @@ for (const [w, h, name] of [[1100, 900, "desktop"], [390, 800, "phone"]]) {
   await page.keyboard.down("a");
   check(await page.waitForFunction(() => !!document.querySelector(".pk.wr, .pk.gd, .pk.oc"), null, { timeout: 3000 }).then(() => true, () => false), "piano: computer keys play notes");
   await page.keyboard.up("a");
-  await page.click("[data-page=cards]");
+  await goTo(page, "cards");
   check(await page.evaluate(() => !__fg.ui.cur?.q.mic || !!document.getElementById("midi-note")), "cards: a connected MIDI keyboard can answer");
 
   check(errs.length === 0, `no console errors ${errs.join(" | ")}`);

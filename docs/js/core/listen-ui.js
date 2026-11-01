@@ -14,7 +14,7 @@ export const listenOn = () => listen.on;
 export function listenPanel(extra = "") {
   const L = S.listen,
     msg = listen.err || cal.text;
-  return `<div class="ls-panel"><div class="ls-row"><button data-ls-toggle class="tg ${listen.on ? "a" : ""}" aria-pressed="${listen.on}">🎤 ${listen.starting ? "Starting…" : listen.on ? "Microphone on" : "Use microphone"}</button><span class="mic-meter ls-meter"><i id="ls-level"></i></span><span class="ls-dot" id="ls-dot" aria-hidden="true"></span></div>${
+  return `<div class="ls-panel"><div class="ls-row"><button data-ls-toggle class="tg ${listen.on ? "a" : ""}" aria-pressed="${listen.on}">${listen.starting ? "Starting…" : listen.on ? "Microphone on" : "Use microphone"}</button><span class="mic-meter ls-meter"><i id="ls-level"></i></span><span class="ls-dot" id="ls-dot" aria-hidden="true"></span></div>${
     listen.on
       ? `<div class="ls-row"><span>Sensitivity</span><button data-ls-sens="-1" aria-label="Less sensitive">−</button><b>${L.sens}</b><button data-ls-sens="1" aria-label="More sensitive">+</button><button data-ls-phones class="tg ${L.phones ? "a" : ""}" aria-pressed="${L.phones}">Headphones</button></div><div class="ls-row"><span>Delay</span><button data-ls-lat="-10" aria-label="Less delay">−</button><b>${latencyMs()} ms</b><button data-ls-lat="10" aria-label="More delay">+</button><button data-ls-cal ${cal.busy ? "disabled" : ""}>${cal.busy ? "Listening…" : "Measure"}</button></div>`
       : ""

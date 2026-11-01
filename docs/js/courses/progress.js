@@ -4,6 +4,7 @@
      guitar / theory   one record set per track
        les[id]   { d: 1, b: best %, f: first day done, n: next review day ("" = finished), r: review stage 0-3, p: 1 = practice waiting, w: 1 = passed weakly }
        tst[id]   { b: best %, ok: 1 once passed, a: attempts, f: day first passed }
+     songs       { id: best % } pieces learned on the song path
      streak      { last: day, n: days in a row, best }
      days        { "2026-10-24": { les, tst, rev, q } }   what was done on each day (last 60 days kept)
      min         minutes picked for the daily plan (5, 10 or 20)
@@ -28,6 +29,7 @@ export const fresh = () => ({
   v: 1,
   guitar: { les: {}, tst: {} },
   theory: { les: {}, tst: {} },
+  songs: {},
   streak: { last: "", n: 0, best: 0 },
   days: {},
   min: 10,
@@ -61,6 +63,7 @@ export function sanitize(raw, valid) {
       c[t].tst[id] = { b: pct(o.b), ok: o.ok ? 1 : 0, a: Math.max(0, Math.min(999, o.a | 0)), f: isDay(o.f) ? o.f : "" };
     }
   }
+  for (const [id, b] of Object.entries(obj(r.songs))) if (typeof id === "string" && id.length < 90) c.songs[id] = pct(b);
   const st = obj(r.streak);
   c.streak = { last: isDay(st.last) ? st.last : "", n: Math.max(0, Math.min(9999, st.n | 0)), best: Math.max(0, Math.min(9999, st.best | 0)) };
   c.streak.best = Math.max(c.streak.best, c.streak.n);
@@ -106,6 +109,11 @@ export function recordLesson(c, track, id, score, today, o = {}) {
     });
   touch(c, today, { les: 1 });
   return rec;
+}
+/* A piece on the song path was learned. */
+export function recordSong(c, id, score, today = dayKey()) {
+  c.songs[id] = Math.max(c.songs[id] || 0, pct(score));
+  touch(c, today, { les: 1 });
 }
 /* A lesson was passed by a course test instead of being studied: it counts, and comes back in two weeks. */
 export function recordTestedOut(c, track, id, today) {

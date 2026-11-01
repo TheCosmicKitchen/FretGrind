@@ -1,11 +1,13 @@
 /* The Songs tab: a searchable library of public-domain music graded by level, generated exercises, and a player that
    shows each piece as sheet music and tab and plays it along with a click. */
-import { S, save } from "../core/store.js";
+import { S, save, ui } from "../core/store.js";
 import { action, on, render, screen } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
 import { SONGS } from "./data.js";
 import { build, keyLabel } from "./format.js";
+import { GUITAR_PATH, PASS_MARK, coachPlan, sliceDef, starsFor } from "./path.js";
+import { recordSong } from "../courses/progress.js";
 import { tabify } from "./tabify.js";
 import { followPlan, followTop, ribbon, ribbonX, songSvg } from "./draw.js";
 import { songBusy, songClock, songRunning, songStart, songStop } from "./player.js";
@@ -33,7 +35,8 @@ export const LEVEL_NAMES = {
   6: "Level 6 · Concert pieces and hard reels",
 };
 const STYLE_TABS = [
-    ["all", "All"],
+    ["path", "Learning path"],
+    ["all", "All music"],
     ["classical", "Classical"],
     ["folk", "Folk"],
     ["air", "Airs"],
@@ -55,6 +58,14 @@ const VIEWS = [["staff", "Sheet music"], ["tab", "Tab"], ["both", "Both"]],
 
 const EX_DEFAULT = { kind: "scale", tonic: "G", scale: "major", pattern: "straight", pos: 2, rhythm: "e", prog: "I-IV-V-I", shape: "open", style: "block", beats: 4, tempo: 72 };
 
+/* How far each piece has been learned: { n: steps finished, stars } */
+function tidyLearn(raw, isId) {
+  const out = {};
+  if (raw && typeof raw === "object")
+    for (const [id, v] of Object.entries(raw)) if (isId(id) && v && Number.isFinite(v.n)) out[id] = { n: Math.max(0, v.n | 0), stars: Math.max(0, Math.min(3, v.stars | 0)) };
+  return out;
+}
+
 export function sanitizeSongs() {
   const p = S.songs && typeof S.songs === "object" ? S.songs : {},
     ok = (v, a, d) => (a.includes(v) ? v : d),
@@ -75,7 +86,8 @@ export function sanitizeSongs() {
     loop: p.loop === true,
     lyrics: p.lyrics !== false,
     done,
-    style: ok(p.style, STYLE_TABS.map((t) => t[0]), "all"),
+    style: ok(p.style, STYLE_TABS.map((t) => t[0]), "path"),
+    learn: tidyLearn(p.learn, isId),
     level: ok(p.level, [0, 1, 2, 3, 4, 5, 6], 0),
     ex: {
       kind: ok(x.kind, ["scale", "chord"], EX_DEFAULT.kind),
@@ -122,10 +134,10 @@ const item = (r) => `<button class="sg-item" data-song-open="${esc(r.id)}"><span
 
 function results() {
   // within a level, the well-known songs that ship with the app come before the imported collections
-  const found = matching().sort((a, b) => a.level - b.level || (a.chunk !== undefined) - (b.chunk !== undefined) || a.title.localeCompare(b.title)),
+  const found = matching().sort((a, b) => a.level - b.level || (a.chunk !== undefined) - (b.chunk !== undefined) || (a.h || 0) - (b.h || 0)),
     head = !libraryRows() && !indexFailed ? "Loading the library…" : `${found.length} piece${found.length === 1 ? "" : "s"}`,
     more = found.length > shown ? `<button class="rs" data-sl="more">Show more</button>` : "";
-  return `<p class="pr-sub" role="status">${head}${indexFailed ? " (the full library needs a connection the first time)" : ""}</p><div class="sg-list">${found.slice(0, shown).map(item).join("")}</div>${more}`;
+  return `<p class="pr-sub" role="status">${head}${indexFailed ? " (the full library needs a connection the first time)" : ""}</p>${[1, 2, 3, 4, 5, 6].map((lv) => { const part = found.slice(0, shown).filter((r) => r.level === lv); return part.length ? `<h3 class="sg-lv">${LEVEL_NAMES[lv]}</h3><div class="sg-list">${part.map(item).join("")}</div>` : ""; }).join("")}${more}`;
 }
 
 const chipRow = (key, opts, val, cls = "") =>
@@ -147,13 +159,29 @@ function exercisePanel() {
   return `${h}<h3 class="sg-lv">Tempo</h3>${chipRow("tempo", [50, 60, 72, 88, 104, 120].map((t) => [t, t]), x.tempo)}<button class="go" data-song-open="${exId(x)}">▶ Open this exercise</button></div>`;
 }
 
+const learned = (id) => (S.songs.learn[id] || {}).stars > 0 || !!S.songs.done[id];
+function pathHtml() {
+  const stages = GUITAR_PATH.map((st, k) => {
+    const got = st.songs.filter((x) => learned(x.id)).length,
+      rows = st.songs
+        .map((x) => {
+          const L = S.songs.learn[x.id];
+          return `<button class="sp-song${learned(x.id) ? " done" : ""}" data-song-open="${esc(x.id)}"><span class="sp-t">${esc(x.title)}</span><small>${esc(x.by)}</small><span class="sp-s">${L && L.stars ? "★".repeat(L.stars) + "☆".repeat(3 - L.stars) : L && L.n ? "In progress" : x.ex ? "Exercise" : ""}</span></button>`;
+        })
+        .join("");
+    return `<section class="sp-stage${got === st.songs.length ? " fin" : ""}"><header><span class="sp-n">${k + 1}</span><div><h3>${st.title}</h3><p>${st.blurb}</p></div><small>${got} / ${st.songs.length}</small></header><div class="sp-list">${rows}</div></section>`;
+  }).join("");
+  return `<div class="sp-path">${stages}</div>`;
+}
+
 function renderList() {
   const P = S.songs,
     done = Object.keys(P.done).length;
   let h = `${header()}<div class="card prac"><div class="tag">SONGS</div><h2>Music to work through</h2>
-    <p class="pr-sub">${done} learned. Public-domain classical, folk and fiddle music with sheet music and tab, plus scale and chord exercises made to order.</p>
+    <p class="pr-sub">${done} learned. Each piece breaks into small parts you learn one at a time, from first notes to concert pieces.</p>
     ${chipRow("style", STYLE_TABS, P.style, "sg-styles")}`;
   if (P.style === "exercise") h += exercisePanel();
+  else if (P.style === "path") h += pathHtml();
   else
     h += `<input id="sg-q" class="sg-q" type="search" placeholder="Search by title or composer" aria-label="Search the library" value="${esc(query)}" />${chipRow("level", [[0, "Any level"], ...[1, 2, 3, 4, 5, 6].map((l) => [l, l])], P.level)}${P.level ? `<p class="pr-sub">${LEVEL_NAMES[P.level]}</p>` : ""}<div id="sg-results">${results()}</div>`;
   app.innerHTML = h + `<small>Everything here is public domain: the composers died long ago, or the tune is traditional. Sources are credited on each piece. Tabs are chosen by the program, so if a fingering feels awkward, trust your hand.</small></div>`;
@@ -168,6 +196,78 @@ function renderList() {
 function refresh() {
   const e = document.getElementById("sg-results");
   if (e) e.innerHTML = results();
+}
+
+/* ----- learning a piece part by part ----- */
+let coach = null; // { id, plan, i, passed, stars, done }
+const opts = () => (coach && !coach.done ? { ...S.songs, mode: coach.plan[coach.i].mode, pct: coach.plan[coach.i].pct, loop: false } : S.songs);
+
+/* What is on the stand now: the whole piece, or the bars of the current step (fingered as they are in the whole piece). */
+function onStand(full) {
+  if (!coach || coach.done) return full;
+  const st = coach.plan[coach.i];
+  if (st.from === 0 && st.to === full.barLens.length - 1) return full;
+  const id = `${full.id}@${st.from}-${st.to}`;
+  if (!byId[id]) {
+    byId[id] = build(sliceDef(full, st.from, st.to));
+    const first = full.sounding.findIndex((n) => n.bar >= st.from);
+    tabs[id] = tabFor(full).slice(first, first + byId[id].sounding.length);
+  }
+  return byId[id];
+}
+function coachStart(full) {
+  const plan = coachPlan(full),
+    n = Math.min((S.songs.learn[full.id] || {}).n || 0, plan.length - 1);
+  coach = { id: full.id, plan, i: n, passed: false, done: false };
+  res = null;
+  render();
+}
+function coachPass(score = 1) {
+  if (!coach || coach.done) return;
+  const st = coach.plan[coach.i],
+    want = st.mode === "along" ? PASS_MARK : 0;
+  coach.score = score;
+  coach.passed = score >= want;
+}
+function coachNext(skipped) {
+  const full = byId[coach.id],
+    L = (S.songs.learn[coach.id] ||= { n: 0, stars: 0 }),
+    last = coach.i === coach.plan.length - 1;
+  L.n = Math.max(L.n, coach.i + 1);
+  S.xp += skipped ? 0 : 3;
+  res = null;
+  if (last) {
+    const stars = skipped ? 1 : starsFor(coach.score ?? 0);
+    L.stars = Math.max(L.stars, stars);
+    S.songs.done[coach.id] = 1;
+    S.xp += 30 + stars * 10;
+    recordSong(S.courses, coach.id, Math.round((coach.score ?? 0.7) * 100));
+    coach.done = true;
+    coach.stars = stars;
+  } else {
+    coach.i++;
+    coach.passed = false;
+    coach.score = undefined;
+  }
+  save();
+  render();
+  document.getElementById("sg-coach")?.scrollIntoView({ block: "nearest" });
+  return full;
+}
+function coachBar(full) {
+  if (coach && coach.done)
+    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>Come back to it next week and it will still be yours.</p><button class="go" data-sp="cquit">Back to the path</button></div>`;
+  if (!coach) {
+    const L = S.songs.learn[full.id],
+      total = coachPlan(full).length,
+      parts = coachPlan(full)[0].parts;
+    return `<div class="sc-card" id="sg-coach"><p>${parts > 1 ? `Learn it in ${parts} parts` : "Learn it step by step"}: listen, note by note, in time, then join them up.${L && L.stars ? ` Your best: ${"★".repeat(L.stars)}` : ""}</p>${L && L.n && !L.stars ? `<div class="ln-bar"><i style="width:${(100 * L.n) / total}%"></i></div>` : ""}<button class="go" data-sp="cstart">${L && L.stars ? "Learn it again" : L && L.n ? "Carry on learning" : "Learn this piece"}</button></div>`;
+  }
+  const st = coach.plan[coach.i],
+    where = st.kind === "full" ? "Final run" : `Part ${st.part} of ${st.parts}`,
+    pct = st.mode === "along" && coach.score !== undefined ? ` ${Math.round(coach.score * 100)}%` : "",
+    note = coach.passed ? `<b class="good">${st.mode === "along" ? `Nice.${pct}` : "Got it."}</b>` : coach.score !== undefined ? `<b class="badm">${pct.trim()}. Aim for ${PASS_MARK * 100}%, then move on.</b>` : st.say;
+  return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>${where} · bars ${st.from + 1}–${st.to + 1}</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div><div class="sc-steps">${coach.plan.map((_, k) => `<i class="${k < coach.i ? "d" : k === coach.i ? "n" : ""}"></i>`).join("")}</div><h3>${st.title}</h3><p role="status">${note}</p><div class="sc-acts">${coach.passed ? `<button class="go" data-sp="cnext">Next step →</button>` : `<button class="rs" data-sp="cskip">${st.mode === "along" ? "No microphone? I played it, move on" : "Skip this step"}</button>`}</div></div>`;
 }
 
 /* ----- the player ----- */
@@ -211,28 +311,31 @@ function scoreHtml(s) {
 }
 
 function renderPlayer() {
-  const s = current(),
-    P = S.songs;
-  if (!s) {
+  const full = current(),
+    P = opts();
+  if (!full) {
     app.innerHTML = `${header()}<div class="card prac"><p class="pr-sub" role="status">Loading…</p><button class="tg" data-sp="back">← All songs</button></div>`;
     return;
   }
-  const run = songRunning(),
+  if (coach && coach.id !== full.id) coach = null;
+  const s = onStand(full),
+    run = songRunning(),
     mode = P.mode,
     beats = Array.from({ length: Math.round(s.bar / s.beat) }, (_, b) => `<span class="bd" data-b="${b}">${b + 1}</span>`).join(""),
     hasWords = s.words !== undefined;
   app.innerHTML = `${header()}<div class="card prac">
     <div class="pr-now"><div><h2>${esc(s.title)}</h2><p class="pr-sub">${esc(s.by)} · ${meta(s)}</p></div><button class="tg" data-sp="back">← All songs</button></div>
-    ${seg("view", VIEWS, P.view)}${seg("scroll", SCROLLS, P.scroll)}${seg("mode", MODES, mode)}
+    ${coachBar(full)}
+    ${seg("view", VIEWS, P.view)}${seg("scroll", SCROLLS, P.scroll)}${coach ? "" : seg("mode", MODES, mode)}
     ${scoreHtml(s)}
     <div class="beats" aria-label="Beat">${beats}</div>
     ${mode === "hear" ? "" : modeBlock(s)}
     <div class="pr-ctl">
       <button class="go pr-play" data-sp="play">${run || wait ? "■ Stop" : songBusy() ? "…" : mode === "hear" ? "▶ Play" : mode === "along" ? "▶ Start (count-in, then play)" : "▶ Start"}</button>
-      <div class="chips pr-opts">${SPEEDS.map((v) => `<button data-sp="pct" data-v="${v}" class="${P.pct === v ? "a" : ""}">${v}%</button>`).join("")}</div>
+      ${coach ? "" : `<div class="chips pr-opts">${SPEEDS.map((v) => `<button data-sp="pct" data-v="${v}" class="${P.pct === v ? "a" : ""}">${v}%</button>`).join("")}</div>`}
     </div>
     <small class="sg-bpm">${Math.round((s.tempo * P.pct) / 100)} beats per minute</small>
-    <div class="chips pr-opts">${tog("click", "🕒 Click", P.click)}${tog("notes", "🔊 Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${tog("loop", "🔁 Loop", P.loop)}${hasWords ? tog("lyrics", "Words", P.lyrics) : ""}${s.style === "exercise" ? "" : tog("done", P.done[s.id] ? "✓ Learned" : "Mark as learned", !!P.done[s.id])}</div>
+    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${tog("loop", "Loop", P.loop)}${hasWords ? tog("lyrics", "Words", P.lyrics) : ""}${s.style === "exercise" ? "" : tog("done", P.done[s.id] ? "✓ Learned" : "Mark as learned", !!P.done[s.id])}</div>
     <small>${esc(s.source)}${s.reviewed ? "" : " The tab was chosen by the program and has not been checked by hand yet: if a fingering feels awkward, trust your hand."} Space starts and stops.</small>
   </div>`;
   paint(s);
@@ -306,7 +409,7 @@ const bar = (s, i) => (s.pickup ? s.sounding[i].bar || "pick-up" : s.sounding[i]
 const allOf = (n) => n.pitches.map((p) => p.midi);
 
 function modeBlock(s) {
-  const mode = S.songs.mode;
+  const mode = opts().mode;
   let h = listenPanel();
   if (mode === "along") {
     h += along
@@ -315,7 +418,7 @@ function modeBlock(s) {
         ? resultBlock(s, res.g)
         : `<p class="sg-say">The click counts you in, then you play the melody on your guitar. Every note is marked for pitch and for timing (${S.listen.phones ? "the click keeps going because you wear headphones" : "the click stops after the count-in so the microphone only hears you"}).</p>`;
   } else if (wait)
-    h += `<p class="sg-say" id="sg-say">${waitSay(s)}</p><div class="chips"><button data-sp="hearNote">🔊 Hear this note</button></div>`;
+    h += `<p class="sg-say" id="sg-say">${waitSay(s)}</p><div class="chips"><button data-sp="hearNote">Hear this note</button></div>`;
   else h += `<p class="sg-say">The song waits for you. Play each note as it lights up and the song moves on. No clock, so take your time.</p>`;
   return h;
 }
@@ -336,7 +439,7 @@ function resultBlock(s, g) {
 }
 /* put the marks on the notes after a redraw */
 function paint(s) {
-  if (res && res.song === s.id && S.songs.mode === "along" && !along)
+  if (res && res.song === s.id && opts().mode === "along" && !along)
     res.g.notes.forEach((x, i) => document.querySelectorAll(`[data-n="${i}"]`).forEach((e) => e.classList.add("res-" + x.state)));
   if (lane && !songBusy() && !wait) lanePlace(lane.xs[0] || 0);
   if (wait && wait.song === s.id && !wait.done) {
@@ -368,6 +471,7 @@ function onWait(e) {
       wait.done = true;
       clearHot();
       followEnd();
+      if (coach) (coachPass(), render());
     } else {
       markNote(wait.i);
       S.songs.scroll === "lane" ? laneTo(wait.i) : followLine(wait.i);
@@ -378,12 +482,12 @@ function onWait(e) {
 async function startListening(s) {
   if (!listen.on && !(await listenStart())) return render();
   res = null;
-  if (S.songs.mode === "wait") {
+  if (opts().mode === "wait") {
     wait = { song: s.id, i: 0, wrong: 0, msg: "", done: false, quietUntil: 0, off: onNote(onWait) };
     render();
     return followStart(s);
   }
-  const P = S.songs;
+  const P = opts();
   along = { song: s.id, heard: [], clock: null };
   along.off = onNote((e) => along && along.heard.push(e));
   const h = hooks(s);
@@ -407,14 +511,15 @@ function finishAlong(s) {
   if (a) {
     a.off();
     if (a.clock) {
-      const beatSec = 60 / (s.tempo * (S.songs.pct / 100)),
+      const beatSec = 60 / (s.tempo * (opts().pct / 100)),
         from = a.clock.due[0] - Math.min(0.3, beatSec * 0.45),
         heard = a.heard.filter((e) => e.t >= from),
         exp = a.clock.due.map((t, i) => ({ t, m: s.sounding[i].midi, ms: allOf(s.sounding[i]), shift: shiftOf(s, i) }));
       res = { song: s.id, g: gradeRun(exp, heard, { sr: ctx.sampleRate }) };
+      coachPass(res.g.accuracy);
     }
   }
-  if (S.songs.cur === s.id && (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane"))) render();
+  if (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane")) render();
 }
 
 /* ----- playing ----- */
@@ -439,7 +544,8 @@ const hooks = (s) => ({
     songStop();
     clearHot();
     followEnd();
-    if (S.songs.cur === s.id && (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane"))) render();
+    if (coach && opts().mode === "hear") coachPass();
+    if (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane")) render();
   },
 });
 export function stopSongs() {
@@ -451,14 +557,14 @@ export function stopSongs() {
   clearHot();
 }
 function togglePlay() {
-  const s = byId[S.songs.cur];
+  const s = byId[S.songs.cur] && onStand(byId[S.songs.cur]);
   if (!s) return;
   if (songBusy() || wait) {
     stopSongs();
     return render();
   }
-  if (S.songs.mode !== "hear") return startListening(s);
-  songStart(s, S.songs, hooks(s));
+  if (opts().mode !== "hear") return startListening(s);
+  songStart(s, opts(), hooks(s));
   render();
 }
 export const songKey = (e) => {
@@ -479,8 +585,21 @@ function change(k, v) {
     return;
   }
   stopSongs();
+  if (k === "cstart") return coachStart(byId[P.cur]);
+  if (k === "cnext") return coachNext(false);
+  if (k === "cskip") return coachNext(true);
+  if (k === "cquit") {
+    coach = null;
+    res = null;
+    if (P.fromPath) (P.cur = null), (P.style = "path");
+    save();
+    return render();
+  }
   if (k === "mode" || k === "pct") res = null;
-  if (k === "back") P.cur = null;
+  if (k === "back") {
+    P.cur = null;
+    coach = null;
+  }
   else if (k === "view") P.view = v;
   else if (k === "scroll") P.scroll = v;
   else if (k === "mode") P.mode = ["hear", "along", "wait"].includes(v) ? v : "hear";
@@ -509,8 +628,19 @@ function pick(k, v) {
 
 export function mountSongs() {
   screen("songs", () => (S.songs.cur ? renderPlayer() : renderList()));
+  on("open-song", (id) => {
+    S.songs.cur = id;
+    S.songs.style = "path";
+    coach = null;
+    res = null;
+    ui.page = "songs";
+    save();
+    render();
+    window.scrollTo(0, 0);
+  });
   action("songOpen", (D) => {
     S.songs.cur = D.songOpen;
+    coach = null;
     res = null;
     save();
     render();

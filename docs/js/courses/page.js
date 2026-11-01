@@ -1,7 +1,7 @@
 /* The Learn tab: home (daily plan, two tracks), a track's path map, the lesson player, tests, reviews and the progress code.
    Everything the player needs lives in ui.learn; everything saved lives in S.courses (see progress.js). */
 import { S, ui, save } from "../core/store.js";
-import { action, render, screen } from "../core/bus.js";
+import { action, render, screen, emit } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { play } from "../core/audio.js";
 import { shuf } from "../core/theory.js";
@@ -56,7 +56,7 @@ function home() {
     d = c.days[t] || { les: 0, tst: 0, rev: 0, q: 0 },
     items = makePlan(c, c.min, t),
     did = d.les + d.tst + d.rev;
-  const kinds = { review: "Review", lesson: "Lesson", drill: "Weak-spot drill", mini: "Mixed quiz" };
+  const kinds = { review: "Review", lesson: "Lesson", drill: "Weak-spot drill", mini: "Mixed quiz", song: "Song" };
   const planList = items.length
     ? `<ol class="ln-plan">${items.map((i) => `<li><b>${kinds[i.kind]}</b> ${i.title ? "· " + i.title : ""}<small>${i.cost} min</small></li>`).join("")}</ol>`
     : "<p class='ln-sub'>Nothing to plan yet.</p>";
@@ -65,16 +65,16 @@ function home() {
       done = Object.keys(c[tr.id].les).length,
       nl = nextLesson(c, tr.id),
       due = dueReviews(c, tr.id, t).length;
-    return `<section class="card ln-track"><div class="ln-row"><span class="ln-ic">${tr.icon}</span><div><h2>${tr.name}</h2><p class="ln-sub">${tr.blurb}</p></div></div>${bar(done, total)}<p class="ln-sub">${done} of ${total} written lessons done${due ? ` · <b>${due} review${due > 1 ? "s" : ""} due</b>` : ""}</p><div class="ln-btns">${nl ? `<button class="go" data-ln-cont="${tr.id}">Continue · ${nl.lesson.id} ${nl.lesson.title}</button>` : '<button class="go" disabled>All written lessons done 🎉</button>'}<button data-ln-track="${tr.id}">Path map</button></div></section>`;
+    return `<section class="card ln-track"><div class="ln-row"><span class="ln-ic">${tr.icon}</span><div><h2>${tr.name}</h2><p class="ln-sub">${tr.blurb}</p></div></div>${bar(done, total)}<p class="ln-sub">${done} of ${total} written lessons done${due ? ` · <b>${due} review${due > 1 ? "s" : ""} due</b>` : ""}</p><div class="ln-btns">${nl ? `<button class="go" data-ln-cont="${tr.id}">Continue · ${nl.lesson.id} ${nl.lesson.title}</button>` : '<button class="go" disabled>All written lessons done </button>'}<button data-ln-track="${tr.id}">Path map</button></div></section>`;
   }).join("");
   const queue = TRACKS.flatMap((tr) => pendingPractice(c, tr.id).map((id) => ({ tr: tr.id, id, l: findLesson(tr.id, id) })));
   const q = queue.length
     ? `<section class="card ln-queue"><div class="tag">PRACTICE AT HOME</div><p class="ln-sub">You studied these away from the guitar. Play them when you have it with you:</p>${queue.map((x) => `<div class="ln-qrow"><span>${x.id} · ${x.l ? x.l.title : ""}</span><button data-ln-practiced="${x.tr}:${x.id}">Done ✓</button></div>`).join("")}</section>`
     : "";
-  const drills = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">🎯 DRILLS</div><p class="ln-sub">Endless practice: ear training, spelling, reading, capo maths.</p></div><button data-ln-drills>Open →</button></div></section>`;
+  const drills = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">DRILLS</div><p class="ln-sub">Endless practice: ear training, spelling, reading, capo maths.</p></div><button data-ln-drills>Open →</button></div></section>`;
   const mineN = (S.mine || []).length,
     deck = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">★ MY REVIEW DECK</div><p class="ln-sub">${mineN ? `${mineN} saved card${mineN > 1 ? "s" : ""} and lesson question${mineN > 1 ? "s" : ""}.` : "Save any question with ☆ during a lesson or on a card, and it will wait for you here."}</p></div><button ${mineN ? "" : "disabled"} data-ln-mydeck>Review →</button></div></section>`;
-  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">🔥 ${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">🚆 No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${drills}${deck}${q}${backup()}`;
+  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${drills}${deck}${q}${backup()}`;
 }
 
 function backup() {
@@ -89,15 +89,17 @@ function backup() {
 /* ---------- Track page and path map ---------- */
 function status(trackId, node, t) {
   const c = C();
+  if (node.kind === "song") return c.songs[node.song.id] !== undefined ? `Learned · best ${c.songs[node.song.id]}%` : node.song.ex ? "Exercise" : node.song.by;
   if (node.kind === "lesson") {
     const r = c[trackId].les[node.id];
     if (!r) return "Not started";
-    return `Done · best ${r.b}%${r.n ? (r.n <= t ? " · <b>review due</b>" : " · review " + nice(r.n)) : " · mastered"}${r.p ? " · 🎸 practice waiting" : ""}`;
+    return `Done · best ${r.b}%${r.n ? (r.n <= t ? " · <b>review due</b>" : " · review " + nice(r.n)) : " · mastered"}${r.p ? " · practice waiting" : ""}`;
   }
   const r = c[trackId].tst[node.id];
   return r ? `${r.ok ? "Passed" : "Not passed yet"} · best ${r.b}% · ${r.a} attempt${r.a > 1 ? "s" : ""}` : "Not taken";
 }
 function nodeTitle(node) {
+  if (node.kind === "song") return node.song.title;
   return node.kind === "lesson" ? `Lesson ${node.i + 1} · ${node.lesson.title}` : node.kind === "cp" ? `Checkpoint · lessons ${node.from + 1}–${node.to + 1}` : "Course test";
 }
 
@@ -126,7 +128,7 @@ function trackView() {
   else {
     const node = nodes.find((n) => n.id === L.sel),
       dueHere = nodes.filter((n) => n.kind === "lesson" && due.has(n.id)).length;
-    body = `<div class="card ln-mapcard">${mapSvg(course, tr.id, c, due, L.sel, nextId)}<div class="ln-legend"><span><i class="lg done"></i>done</span><span><i class="lg next"></i>start here</span><span><i class="lg due"></i>review due</span><span><i class="lg dia"></i>test</span></div></div>${node ? nodePanel(tr.id, course, node, t) : ""}${dueHere ? `<button class="go alt" data-ln-reviewfirst="${tr.id}">Review ${dueHere} lesson${dueHere > 1 ? "s" : ""} now (≈${dueHere * 2} min)</button>` : ""}<ul class="ln-list">${nodes.map((n) => `<li><button data-ln-node="${n.id}" class="${n.id === L.sel ? "on" : ""}"><span class="ln-dot ${n.kind === "lesson" ? (C()[tr.id].les[n.id] ? "done" : "open") : C()[tr.id].tst[n.id]?.ok ? "done" : "open"} ${n.kind}"></span><span><b>${nodeTitle(n)}</b><small>${status(tr.id, n, t)}</small></span></button></li>`).join("")}</ul>`;
+    body = `<div class="card ln-mapcard">${mapSvg(course, tr.id, c, due, L.sel, nextId)}<div class="ln-legend"><span><i class="lg done"></i>done</span><span><i class="lg next"></i>start here</span><span><i class="lg due"></i>review due</span><span><i class="lg dia"></i>test</span><span><i class="lg sng"></i>song</span></div></div>${node ? nodePanel(tr.id, course, node, t) : ""}${dueHere ? `<button class="go alt" data-ln-reviewfirst="${tr.id}">Review ${dueHere} lesson${dueHere > 1 ? "s" : ""} now (≈${dueHere * 2} min)</button>` : ""}<ul class="ln-list">${nodes.map((n) => `<li><button data-ln-node="${n.id}" class="${n.id === L.sel ? "on" : ""}"><span class="ln-dot ${n.kind === "song" ? (C().songs[n.song.id] !== undefined ? "done" : "open") : n.kind === "lesson" ? (C()[tr.id].les[n.id] ? "done" : "open") : C()[tr.id].tst[n.id]?.ok ? "done" : "open"} ${n.kind}"></span><span><b>${nodeTitle(n)}</b><small>${status(tr.id, n, t)}</small></span></button></li>`).join("")}</ul>`;
   }
   return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">${tr.icon}</span><div><h2>${tr.name}</h2><p class="ln-sub">${tr.blurb}</p></div></div><div class="ln-courses" role="group" aria-label="Courses">${chips}</div><div class="card ln-cinfo"><b>${course.id} · ${course.name}</b><p class="ln-sub">${course.blurb}</p>${written(course) ? `${bar(s.done, s.total)}<p class="ln-sub">${s.done}/${s.total} lessons · ${s.passed}/${s.tests} tests passed</p>` : ""}${goDeeper(course)}</div>${body}`;
 }
@@ -142,7 +144,10 @@ function nodePanel(trackId, course, node, t) {
   const c = C();
   let info = "",
     btn = "";
-  if (node.kind === "lesson") {
+  if (node.kind === "song") {
+    info = "Learned part by part: listen, note by note, in time, then the whole piece.";
+    btn = `<button class="go" data-ln-song="${node.song.id}" data-ln-go>Open this piece</button>`;
+  } else if (node.kind === "lesson") {
     const l = node.lesson,
       done = !!c[trackId].les[l.id];
     info = `~${lessonMinutes(l, c.noGuitar)} min · ${l.steps.length} parts${needsGuitar(l) ? " · has a guitar part" : ""}`;
@@ -154,7 +159,7 @@ function nodePanel(trackId, course, node, t) {
       : `${COURSE_Q} questions from the whole course. Pass with ${COURSE_PASS}. Already know this? Pass it and every lesson in the course counts as done.`;
     btn = `<button class="go" data-ln-test="${trackId}:${node.id}" data-ln-go>${c[trackId].tst[node.id] ? "Take it again" : "Take the test"}</button>`;
   }
-  return `<div class="card ln-panel"><div class="tag">${node.kind === "lesson" ? "LESSON" : node.kind === "cp" ? "CHECKPOINT" : "COURSE TEST"}</div><h3>${nodeTitle(node)}</h3><p class="ln-sub">${info}</p><p class="ln-sub">${status(trackId, node, t)}</p>${btn}</div>`;
+  return `<div class="card ln-panel"><div class="tag">${node.kind === "song" ? "SONG" : node.kind === "lesson" ? "LESSON" : node.kind === "cp" ? "CHECKPOINT" : "COURSE TEST"}</div><h3>${nodeTitle(node)}</h3><p class="ln-sub">${info}</p><p class="ln-sub">${status(trackId, node, t)}</p>${btn}</div>`;
 }
 
 /* ---------- Lesson player ---------- */
@@ -209,7 +214,7 @@ function lessonView() {
   } else if (st.t === "quiz") {
     h += qCard(s.run, "next");
   } else if (st.t === "do") {
-    h += `<div class="tag">${st.needs === "guitar" ? "🎸 WITH YOUR GUITAR" : "TRY IT"}</div><h2 class="ln-h">Your turn</h2><p class="ln-p">${st.task}</p>${st.fig ? figure(st.fig) : ""}${hearButtons(st.hear)}<button class="go" data-ln-did data-ln-go>Done ✓</button><button class="ln-skip" data-ln-skip>${st.needs === "guitar" ? "I don't have my guitar. Save it for later" : "Skip"}</button>`;
+    h += `<div class="tag">${st.needs === "guitar" ? "WITH YOUR GUITAR" : "TRY IT"}</div><h2 class="ln-h">Your turn</h2><p class="ln-p">${st.task}</p>${st.fig ? figure(st.fig) : ""}${hearButtons(st.hear)}<button class="go" data-ln-did data-ln-go>Done ✓</button><button class="ln-skip" data-ln-skip>${st.needs === "guitar" ? "I don't have my guitar. Save it for later" : "Skip"}</button>`;
   }
   return h + "</div>";
 }
@@ -219,14 +224,14 @@ function deckTools(missed, lessonRef) {
   let h = "";
   if (keys.length) h += `<button data-ln-savemissed>☆ Add the ${keys.length} you missed to my review deck</button>`;
   const l = lessonRef && findLesson(lessonRef.track, lessonRef.id);
-  if (l && decksOfLesson(l).length) h += `<button data-ln-drill="${lessonRef.track}:${lessonRef.id}">🃏 Practise these cards</button>`;
+  if (l && decksOfLesson(l).length) h += `<button data-ln-drill="${lessonRef.track}:${lessonRef.id}">Practise these cards</button>`;
   return h;
 }
 function lessonResult(s) {
   const L = LN(),
     ok = s.pct >= PASS_LESSON,
     t = dayKey();
-  let h = `<div class="card ln-card ln-result"><div class="ln-big">${ok ? "✅" : "🤔"}</div><h2>${ok ? "Lesson complete" : "Not quite yet"}</h2>`;
+  let h = `<div class="card ln-card ln-result"><div class="ln-big">${ok ? "" : ""}</div><h2>${ok ? "Lesson complete" : "Not quite yet"}</h2>`;
   if (s.total) h += `<p class="ln-score">${s.right} of ${s.total} correct · ${s.pct}%</p>`;
   if (ok) {
     h += `<p class="ln-sub">+${s.xp} XP · it comes back for a quick review in ${s.pct >= PASS_LESSON ? "3 days" : "1 day"}.${s.pending ? " <b>The guitar part is saved in “Practice at home”.</b>" : ""}</p>`;
@@ -260,7 +265,7 @@ function qCard(run, mode) {
   if (run.done) {
     const g = run.got[run.got.length - 1];
     h += g.ok ? '<div class="msg good" role="status">✓ Correct</div>' : `<div class="msg badm" role="status">✗ ${q.rev}</div>`;
-    if (q.snd) h += `<button class="ln-listen" data-ln-qplay>🔊 Hear it</button>`;
+    if (q.snd) h += `<button class="ln-listen" data-ln-qplay>Hear it</button>`;
     const key = specKey(q.spec);
     if (key) h += `<button class="ln-save${isMine(key) ? " on" : ""}" data-ln-save="${key}">${isMine(key) ? "★ In my review deck" : "☆ Add to my review deck"}</button>`;
     h += `<button class="go" data-ln-next data-ln-go>${run.i + 1 >= n ? "Finish" : "Next →"}</button>`;
@@ -341,7 +346,7 @@ function quizView() {
     graded = z.need > 0,
     ok = z.pass,
     missed = z.run.got.filter((g) => !g.ok);
-  let h = `<div class="card ln-card ln-result"><div class="ln-big">${graded ? (ok ? "🎉" : "💪") : "👍"}</div><h2>${graded ? (ok ? "Passed" : "Not this time") : "Done"}</h2><p class="ln-score">${sc.right} of ${sc.total} correct · ${sc.pct}%</p>`;
+  let h = `<div class="card ln-card ln-result"><div class="ln-big">${graded ? (ok ? "" : "") : ""}</div><h2>${graded ? (ok ? "Passed" : "Not this time") : "Done"}</h2><p class="ln-score">${sc.right} of ${sc.total} correct · ${sc.pct}%</p>`;
   if (graded) h += `<p class="ln-sub">${ok ? "" : `You needed ${z.need}. `}${z.kind === "review" ? (ok ? "This lesson goes further out in your review schedule." : "It will come back tomorrow.") : ""}</p>`;
   if (z.skipped) h += `<p class="ln-sub"><b>${z.skipped} lesson${z.skipped > 1 ? "s" : ""} in this course now count as done.</b></p>`;
   if (missed.length) h += `<details class="ln-missed" open><summary>${missed.length} to look at again</summary>${missed.map((m) => `<p><span>${m.p}</span><br><b>${m.rev}</b></p>`).join("")}</details>`;
@@ -360,6 +365,7 @@ function runItem(i) {
   if (it.kind === "lesson") startLesson(it.track, it.id, i);
   else if (it.kind === "review") startReview(it.track, it.id, i, "review");
   else if (it.kind === "drill") startReview(it.track, it.id, i, "drill");
+  else if (it.kind === "song") emit("open-song", it.id);
   else startMini(i);
 }
 function planNext() {
@@ -382,10 +388,10 @@ function drillsView() {
     const list = DRILLS.filter((d) => d.group === g)
       .map((d) => `<button class="ln-drow" data-ln-dgo="${d.id}"><b>${d.title}</b><small>${d.blurb}</small></button>`)
       .join("");
-    const motion = g === "Guitar" ? `<button class="ln-drow ln-dmotion" data-ln-motion><b>🎸 Motion drills</b><small>Chord changes, scale runs, or both mixed, built on the fly and played to a metronome. You set how far your hands move and how tight the rhythm is.</small></button>` : "";
+    const motion = g === "Guitar" ? `<button class="ln-drow ln-dmotion" data-ln-motion><b>Motion drills</b><small>Chord changes, scale runs, or both mixed, built on the fly and played to a metronome. You set how far your hands move and how tight the rhythm is.</small></button>` : "";
     return `<section class="card ln-dgroup"><div class="tag">${g.toUpperCase()}</div>${motion}${list}</section>`;
   });
-  return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic">🎯</span><div><h2>Drills</h2><p class="ln-sub">Ten fresh questions every round. Nothing is saved except your streak, so go wild.</p></div></div><section class="card ln-dgroup"><button class="go" data-ln-dgo="mix">🎲 Mixed round</button></section>${groups.join("")}`;
+  return `${header()}<button class="ln-back" data-ln-home>← Learn</button><div class="ln-title"><span class="ln-ic"></span><div><h2>Drills</h2><p class="ln-sub">Ten fresh questions every round. Nothing is saved except your streak, so go wild.</p></div></div><section class="card ln-dgroup"><button class="go" data-ln-dgo="mix">Mixed round</button></section>${groups.join("")}`;
 }
 function startDrill(id) {
   const d = id === "mix" ? { title: "Mixed round" } : drillById(id);
@@ -461,6 +467,7 @@ export function mountLearn() {
     runItem(0);
   }));
   action("lnPlannext", () => planNext());
+  action("lnSong", (D) => emit("open-song", D.lnSong));
   action("lnPracticed", (D) => {
     const [t, id] = D.lnPracticed.split(":");
     clearPending(C(), t, id);
@@ -490,6 +497,7 @@ export function mountLearn() {
     S.onlyMine = 0;
     save();
     ui.page = "cards";
+    ui.cardView = "session";
     nextCard();
     window.scrollTo(0, 0);
   });
@@ -498,6 +506,7 @@ export function mountLearn() {
     S.onlyMine = 1;
     save();
     ui.page = "cards";
+    ui.cardView = "session";
     nextCard();
     window.scrollTo(0, 0);
   });

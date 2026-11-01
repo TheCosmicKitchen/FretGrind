@@ -8,7 +8,7 @@ export const SOURCES = {
   oneills: "From Francis O'Neill's The Music of Ireland (Chicago, 1903).",
   mutopia: "A public-domain score from the Mutopia Project.",
 };
-const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk"];
+const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk", "h"];
 
 let index = null,
   pending = null;

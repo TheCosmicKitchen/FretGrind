@@ -9,6 +9,7 @@ const check = (ok, what) => {
   console.log((ok ? "  ok  " : "  FAIL ") + what);
   if (!ok) fails.push(what);
 };
+const goTo = (page, id) => page.evaluate((p) => { if (p === "cards") __fg.ui.cardView = "session"; __fg.openPage(p); }, id);
 const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
 const page = await browser.newPage({ viewport: { width: 420, height: 900 } }),
   errs = [];
@@ -23,7 +24,7 @@ await page.addInitScript(() => {
   };
 });
 await page.goto(base + "/index.html?debug");
-await page.click("[data-page=cards]");
+await goTo(page, "cards");
 await page.waitForSelector(".card .prompt");
 
 // pure helper used from the page

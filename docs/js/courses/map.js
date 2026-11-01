@@ -38,6 +38,7 @@ export function nodePos(i) {
 
 /* state of each node, from progress: p = the progress object, due = Set of lesson ids with a review waiting */
 export function nodeState(node, trackId, p, due, nextId) {
+  if (node.kind === "song") return p.songs && p.songs[node.song.id] !== undefined ? "done" : "open";
   if (node.kind === "lesson") {
     if (!p[trackId].les[node.id]) return node.id === nextId ? "next" : "open";
     return due.has(node.id) ? "due" : "done";
@@ -66,6 +67,10 @@ export function mapSvg(course, trackId, p, due, sel, nextId) {
       name = `Lesson ${n.i + 1}: ${n.lesson.title}`;
       label = wrap(n.lesson.title);
       body = `${st === "next" ? `<circle class="ln-pulse" cx="${x}" cy="${y}" r="24"/>` : ""}<circle class="ln-c ${st}" cx="${x}" cy="${y}" r="20"/><text class="ln-num ${st}" x="${x}" y="${y + 6}" text-anchor="middle">${st === "done" || st === "due" ? "✓" : n.i + 1}</text>${st === "due" ? `<circle class="ln-badge" cx="${x + 15}" cy="${y - 15}" r="6"/>` : ""}`;
+    } else if (n.kind === "song") {
+      name = `Song: ${n.song.title}`;
+      label = wrap(n.song.title);
+      body = `<rect class="ln-s ${st}" x="${x - 19}" y="${y - 19}" width="38" height="38" rx="11"/><text class="ln-num ln-sn ${st}" x="${x}" y="${y + 6}" text-anchor="middle">${st === "done" ? "✓" : "♪"}</text>`;
     } else {
       const big = n.kind === "test",
         r = big ? 26 : 19;

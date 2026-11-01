@@ -217,7 +217,7 @@ export function renderRhythm() {
     res
       ? resultBlock()
       : run.mic
-        ? `<div class="rh-pad rh-listen" id="rh-pad" role="status">🎤 LISTENING<small>play or clap on the notes</small></div>`
+        ? `<div class="rh-pad rh-listen" id="rh-pad" role="status">LISTENING<small>play or clap on the notes</small></div>`
         : `<button class="rh-pad" id="rh-pad" data-rh-pad aria-label="Tap here, or press Space">TAP<small>or press Space</small></button>`
   }<button class="rs" data-rh-exit>← Games</button></div>`;
 }

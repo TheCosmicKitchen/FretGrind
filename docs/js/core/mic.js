@@ -111,7 +111,7 @@ function micHeard(m) {
 }
 
 export const micBoxLive = () =>
-  `<div class="mic-box"><span aria-hidden="true">🎤</span><span id="mic-note">Play it on your guitar…</span><span class="mic-meter"><i id="mic-level"></i></span></div>`;
+  `<div class="mic-box"><span aria-hidden="true"></span><span id="mic-note">Play it on your guitar…</span><span class="mic-meter"><i id="mic-level"></i></span></div>`;
 export const micBox = () =>
   micBoxLive() + `<button class="rs" data-micskip>Show answer</button><button class="rs" data-page="tuner">Not hearing you? Sample your strings</button>`;
 

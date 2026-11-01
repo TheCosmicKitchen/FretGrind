@@ -76,7 +76,7 @@ function renderLibrary() {
     ${heading(it)}
     ${chord ? `${voiceChips(voicings(P))}<div class="pr-boxwrap">${boxView(it.voice)}</div>` : ""}
     ${notation(it)}
-    <div class="pr-ctl"><button class="go pr-play" data-pr="hear">🔊 Hear it</button><button class="go alt pr-play" data-pr="toPractice">Practice this with the metronome →</button></div>
+    <div class="pr-ctl"><button class="go pr-play" data-pr="hear">Hear it</button><button class="go alt pr-play" data-pr="toPractice">Practice this with the metronome →</button></div>
     <small>${chord ? "Voicings from the open-source chords-db library (MIT)." : "One octave in a single hand position; Up &amp; down is on the Practice tab."}</small>
   </div>`;
 }
@@ -98,7 +98,7 @@ function renderPractice() {
       <button class="go pr-play" data-pr="play">${run ? "■ Stop" : metBusy() ? "…" : "▶ Start"}</button>
       <div class="bpm"><button data-pr="bpm" data-v="-5" aria-label="Slower">−</button><label><b id="bpmv">${P.bpm}</b> BPM<input type="range" id="bpmr" min="40" max="200" step="1" value="${P.bpm}" aria-label="Tempo in beats per minute"/></label><button data-pr="bpm" data-v="5" aria-label="Faster">+</button></div>
     </div>
-    <div class="chips pr-opts">${tog("click", "🕒 Click", P.click)}${tog("notes", "🔊 Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${chord ? "" : tog("sub", "Eighth notes", P.sub === 2) + tog("updown", "Up & down", P.updown)}</div>
+    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${chord ? "" : tog("sub", "Eighth notes", P.sub === 2) + tog("updown", "Up & down", P.updown)}</div>
     <small>${chord ? "The chord is strummed on every beat." : "One note per beat (two with Eighth notes); the loop repeats until you stop it."} The highlight follows the audio. Space starts and stops.</small>
   </div>`;
   if (run && metShown()) show(metShown());

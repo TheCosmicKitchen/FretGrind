@@ -116,7 +116,7 @@ test("path nodes: a checkpoint after every third lesson, a course test last, ids
     assert.equal(cps.length, Math.floor((c.lessons.length - 1) / CHECKPOINT_EVERY));
     for (const cp of cps) assert.ok(cp.to - cp.from + 1 === CHECKPOINT_EVERY, "checkpoint covers " + CHECKPOINT_EVERY + " lessons");
     // tests have enough questions to draw from
-    for (const n of nodes.filter((x) => x.kind !== "lesson")) {
+    for (const n of nodes.filter((x) => x.kind === "cp" || x.kind === "test")) {
       const pool = poolOf(c.lessons.slice(n.from, n.to + 1));
       assert.ok(pool.length >= (n.kind === "cp" ? 9 : 14), `${n.id} has only ${pool.length} questions to draw on`);
       const specs = testSpecs(c, n, n.kind === "cp" ? 10 : 20);

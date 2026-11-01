@@ -11,6 +11,7 @@ import { header } from "../view/chrome.js";
 import { next } from "../cards/scheduler.js";
 import { midi, midiConnect, midiHooks } from "./midi.js";
 import { PASS_MARK, PIANO_LESSONS, PIANO_UNITS, chordName, grade, isBlack, matches, noteName } from "./lessons.js";
+import { PIANO_PATH, loadPiece, pieceLessons } from "./songs.js";
 
 let run = null, // the lesson in progress
   pointer = null; // the drawn key held with the mouse or a finger
@@ -22,6 +23,7 @@ const held = new Set(), // MIDI numbers held down right now
 export function sanitizePiano() {
   const p = S.piano && typeof S.piano === "object" ? S.piano : {};
   if (!p.done || typeof p.done !== "object") p.done = {};
+  if (!p.songs || typeof p.songs !== "object") p.songs = {}; // pieces: { id: { n: lessons finished, stars } }
   if (typeof p.thru !== "boolean") p.thru = true; // the app sounds the keys you press
   if (typeof p.anyOct !== "boolean") p.anyOct = false;
   if (typeof p.midi !== "boolean") p.midi = false; // MIDI was allowed before: reconnect on load
@@ -73,7 +75,7 @@ function voiceOff(m) {
 function playSteps(steps, beat = 0.5) {
   if (S.mute) {
     if (run) {
-      run.msg = "Sound is off. Turn it on (🔊) to hear the notes.";
+      run.msg = "Sound is off. Turn it on () to hear the notes.";
       paintMsg();
     }
     return;
@@ -164,10 +166,17 @@ function stepDone() {
 }
 function finish() {
   const r = run,
-    g = grade(r.hits, r.miss),
-    rec = S.piano.done[r.L.id] || { best: 0, stars: 0 };
+    g = grade(r.hits, r.miss);
   r.result = { ...g, secs: Math.round((performance.now() - r.t0) / 1000) };
-  S.piano.done[r.L.id] = { best: Math.max(rec.best, g.pct), stars: Math.max(rec.stars, g.stars) };
+  if (r.L.song) {
+    const rec = (S.piano.songs[r.L.song] ||= { n: 0, stars: 0 }),
+      k = r.plan.indexOf(r.L);
+    if (g.passed) rec.n = Math.max(rec.n, k + 1);
+    if (g.passed && k === r.plan.length - 1) rec.stars = Math.max(rec.stars, g.stars);
+  } else {
+    const rec = S.piano.done[r.L.id] || { best: 0, stars: 0 };
+    S.piano.done[r.L.id] = { best: Math.max(rec.best, g.pct), stars: Math.max(rec.stars, g.stars) };
+  }
   S.xp += g.passed ? 20 + g.stars * 5 : 5;
   r.phase = "done";
   save();
@@ -178,6 +187,16 @@ function openLesson(id) {
   if (!L) return;
   run = { L, i: 0, hits: 0, miss: 0, stepMiss: 0, reveal: false, phase: "intro", msg: "", msgCls: "" };
   render();
+}
+/* A piece opens at the first part not yet passed. */
+async function openPiece(id) {
+  const piece = await loadPiece(id);
+  if (!piece) return;
+  const plan = pieceLessons(piece),
+    n = Math.min((S.piano.songs[id] || {}).n || 0, plan.length - 1);
+  run = { L: plan[n], plan, piece, i: 0, hits: 0, miss: 0, stepMiss: 0, reveal: false, phase: "intro", msg: "", msgCls: "" };
+  render();
+  window.scrollTo(0, 0);
 }
 function start() {
   const r = run;
@@ -198,6 +217,12 @@ function pianoAction(D) {
   }
   if (a === "open") return openLesson(D.pnArg);
   if ((a === "start" || a === "retry") && r) return start();
+  if (a === "piece") return void openPiece(D.pnArg);
+  if (a === "next" && r && r.plan) {
+    r.L = r.plan[r.plan.indexOf(r.L) + 1];
+    Object.assign(r, { phase: "intro", i: 0, hits: 0, miss: 0, stepMiss: 0, reveal: false, msg: "", msgCls: "" });
+    return render();
+  }
   if (a === "next" && r) {
     const k = PIANO_LESSONS.indexOf(r.L);
     return openLesson((PIANO_LESSONS[k + 1] || PIANO_LESSONS[0]).id);
@@ -220,6 +245,7 @@ function pianoAction(D) {
     run = null;
     pianoAllOff();
     ui.page = "cards";
+    ui.cardView = "session";
     save();
     return next();
   }
@@ -279,35 +305,38 @@ function paintStatus() {
 }
 function connHtml() {
   if (midi.state === "unsupported")
-    return "⚠️ This browser has no Web MIDI (Safari and iPhone/iPad don't support it). Use Chrome or Edge to connect a keyboard. Until then, play with your computer keys or click the keys below.";
-  if (midi.state === "off") return `<button class="go" data-pn="connect">🎹 Connect MIDI keyboard</button>`;
+    return "This browser has no Web MIDI (Safari and iPhone/iPad don't support it). Use Chrome or Edge to connect a keyboard. Until then, play with your computer keys or click the keys below.";
+  if (midi.state === "off") return `<button class="go" data-pn="connect">Connect MIDI keyboard</button>`;
   if (midi.state === "pending") return "Waiting for MIDI permission…";
   if (midi.state === "denied")
     return `MIDI access was blocked. Allow MIDI for this site in your browser settings, then <button data-pn="connect">try again</button>`;
-  if (!midi.names.length) return "🎹 MIDI is on, but no keyboard was found. Plug one in and it will be picked up automatically.";
+  if (!midi.names.length) return "MIDI is on, but no keyboard was found. Plug one in and it will be picked up automatically.";
   return `<span class="pn-dot"></span> Connected: <b>${midi.names.join(", ")}</b>`;
 }
 
 /* Treble + bass staff, with several notes stacked as a chord. Staff steps match the rest of the app (E4 = 30). */
 const SHARP_POS = [[0, ""], [0, "♯"], [1, ""], [1, "♯"], [2, ""], [3, ""], [3, "♯"], [4, ""], [4, "♯"], [5, ""], [5, "♯"], [6, ""]],
   FLAT_POS = [[0, ""], [1, "♭"], [1, ""], [2, "♭"], [2, ""], [3, ""], [4, "♭"], [4, ""], [5, "♭"], [5, ""], [6, "♭"], [6, ""]];
-function grandStaff(notes, flats) {
+function grandStaff(notes, flats, soon = []) {
   const map = flats ? FLAT_POS : SHARP_POS,
     step = (m) => (Math.floor(m / 12) - 1) * 7 + map[m % 12][0],
     yT = (s) => 60 - (s - 38) * 5, // treble: top line F5 (38) ... bottom line E4 (30)
     yB = (s) => 150 - (s - 26) * 5, // bass: top line A3 (26) ... bottom line G2 (18)
     X = 130,
     ledger = (x, y) => `<line x1="${x - 12}" x2="${x + 12}" y1="${y}" y2="${y}"/>`;
-  let h = `<svg class="pn-staff" viewBox="0 0 220 200" role="img" aria-label="Grand staff">`;
+  const W = 220 + soon.length * 46;
+  let h = `<svg class="pn-staff${soon.length ? " wide" : ""}" viewBox="0 0 ${W} 200" role="img" aria-label="Grand staff">`;
   for (let i = 0; i < 5; i++)
-    h += `<line x1="16" x2="206" y1="${yT(30 + i * 2)}" y2="${yT(30 + i * 2)}"/><line x1="16" x2="206" y1="${yB(18 + i * 2)}" y2="${yB(18 + i * 2)}"/>`;
+    h += `<line x1="16" x2="${W - 14}" y1="${yT(30 + i * 2)}" y2="${yT(30 + i * 2)}"/><line x1="16" x2="${W - 14}" y1="${yB(18 + i * 2)}" y2="${yB(18 + i * 2)}"/>`;
   h += `<line x1="16" x2="16" y1="${yT(38)}" y2="${yB(18)}"/><text x="20" y="${yT(30) - 9}" font-size="74">𝄞</text><text x="22" y="${yB(24) + 3}" font-size="58">𝄢</text>`;
-  const ns = notes.map((m) => ({ m, s: step(m), tr: m >= 60 })).sort((a, b) => a.s - b.s);
+  [notes, ...soon].forEach((col, c) => {
+  const X0 = X + c * 46,
+    ns = col.map((m) => ({ m, s: step(m), tr: m >= 60 })).sort((a, b) => a.s - b.s);
   let prev = null,
     accN = 0;
   for (const n of ns) {
     const y = n.tr ? yT(n.s) : yB(n.s);
-    n.x = prev && prev.tr === n.tr && n.s - prev.s === 1 && prev.x === X ? X + 12 : X; // a second sits beside its neighbour
+    n.x = prev && prev.tr === n.tr && n.s - prev.s === 1 && prev.x === X0 ? X0 + 12 : X0; // a second sits beside its neighbour
     prev = n;
     if (n.tr) {
       for (let s = 28; s >= n.s; s -= 2) h += ledger(n.x, yT(s));
@@ -317,10 +346,27 @@ function grandStaff(notes, flats) {
       for (let s = 16; s >= n.s; s -= 2) h += ledger(n.x, yB(s));
     }
     const acc = map[n.m % 12][1];
-    if (acc) h += `<text class="pn-acc" x="${X - 24 - (accN++ % 2) * 11}" y="${y + 6}">${acc}</text>`;
-    h += `<ellipse class="pn-note" cx="${n.x}" cy="${y}" rx="7.5" ry="5.5" transform="rotate(-20 ${n.x} ${y})"/>`;
+    if (acc) h += `<text class="pn-acc${c ? " soon" : ""}" x="${X0 - 18 - (accN++ % 2) * 9}" y="${y + 6}">${acc}</text>`;
+    h += `<ellipse class="pn-note${c ? " soon" : ""}" cx="${n.x}" cy="${y}" rx="7.5" ry="5.5" transform="rotate(-20 ${n.x} ${y})"/>`;
   }
+  });
   return h + "</svg>";
+}
+
+function piecesHtml() {
+  const openAt = PIANO_PATH.findIndex((st) => st.songs.some((x) => !(S.piano.songs[x.id] || {}).stars)),
+    stages = PIANO_PATH.map((st, k) => {
+      const got = st.songs.filter((x) => (S.piano.songs[x.id] || {}).stars).length,
+        rows = st.songs
+          .map((x) => {
+            const rec = S.piano.songs[x.id],
+              mark = rec && rec.stars ? "★".repeat(rec.stars) + "☆".repeat(3 - rec.stars) : rec && rec.n ? "In progress" : "";
+            return `<button class="sp-song" data-pn="piece" data-pn-arg="${x.id}"><span class="sp-t">${x.title.replace(/</g, "&lt;")}</span><small>${x.by}</small><span class="sp-s">${mark}</span></button>`;
+          })
+          .join("");
+      return `<details class="sp-stage" ${k === openAt ? "open" : ""}><summary><span class="sp-n">${k + 1}</span><div><h3>${st.title}</h3><p>${st.blurb}</p></div><small>${got} / ${st.songs.length}</small></summary><div class="sp-list">${rows}</div></details>`;
+    }).join("");
+  return `<h2 class="pn-h">Pieces to learn</h2><p class="pr-sub">Real piano music, easiest first. Each piece goes part by part: right hand, left hand, together, then from the score.</p><div class="sp-path">${stages}</div>`;
 }
 
 function homeHtml() {
@@ -338,10 +384,10 @@ function homeHtml() {
   }).join("");
   return (
     `<div class="card pn-home"><div class="tag">PIANO LESSONS · MIDI</div><div id="pn-conn" class="pn-conn">${connHtml()}</div>` +
-    `<div class="chips pn-opts"><button data-pn="oct" class="${anyOct() ? "a" : ""}" title="Accept the right note in any octave (handy on small keyboards)">${anyOct() ? "✓ " : ""}Any octave</button><button data-pn="thru" class="${S.piano.thru ? "a" : ""}" title="Sound the keys you press (turn off if your keyboard has its own speakers)">${S.piano.thru ? "🔊 App plays my keys" : "🔇 App sound off"}</button></div>` +
+    `<div class="chips pn-opts"><button data-pn="oct" class="${anyOct() ? "a" : ""}" title="Accept the right note in any octave (handy on small keyboards)">${anyOct() ? "✓ " : ""}Any octave</button><button data-pn="thru" class="${S.piano.thru ? "a" : ""}" title="Sound the keys you press (turn off if your keyboard has its own speakers)">${S.piano.thru ? "App plays my keys" : "App sound off"}</button></div>` +
     `<div class="pn-kb">${keyboard(48, 83)}</div><div id="pn-free" class="pn-free"></div>` +
     `<small class="pn-kbhint">No MIDI keyboard? Use the computer keys <b>A W S E D F T G Y H U J K</b> (Z / X change octave) or click the keys.</small></div>` +
-    `<button class="go" data-pn="open" data-pn-arg="${nx.id}">${started ? "Continue" : "Start"}: ${nx.title}</button><div class="card pn-units">${units}</div>`
+    `<button class="go" data-pn="open" data-pn-arg="${nx.id}">${started ? "Continue" : "Start"}: ${nx.title}</button><div class="card pn-units">${units}</div>${piecesHtml()}`
   );
 }
 
@@ -352,7 +398,8 @@ function lessonHtml() {
     all = L.parsed.flat(),
     lo = Math.min(...all) - (Math.min(...all) % 12),
     hi = Math.max(lo + 23, Math.max(...all) + 11 - (Math.max(...all) % 12)),
-    modeLabel = { keys: "keys light up", read: "read from the staff", ear: "play by ear" }[L.mode];
+    modeLabel = { keys: "keys light up", read: "read from the staff", ear: "play by ear" }[L.mode],
+    plan = r.plan;
   let body;
   if (r.phase === "intro") {
     body = `<h2>${L.title}</h2><p class="pn-intro">${L.intro}</p><div class="pn-meta">${n} steps · ${modeLabel} · pass with ${PASS_MARK}%</div>${L.mode === "ear" ? "" : `<button class="sound-toggle" data-pn="hear">▶ Hear the start</button>`}<button class="go" data-pn="start">Start lesson</button>`;
@@ -375,23 +422,24 @@ function lessonHtml() {
       chord = /^[A-G]♯?(\/|$)/.test(cn) ? cn.replace(/^([A-G]♯?)/, "$1 major") : cn;
     body =
       `<div class="prompt">${prompt}${chord ? ` <span class="pn-chip">${chord}</span>` : ""}${f && f !== "-" ? ` <span class="pn-chip">finger ${f}</span>` : ""}</div>` +
-      (L.mode === "ear" && !r.reveal ? `<div class="pn-ear" aria-hidden="true">🎧</div>` : grandStaff(T, L.flats)) +
+      (L.mode === "ear" && !r.reveal ? `<div class="pn-ear" aria-hidden="true"></div>` : grandStaff(T, L.flats, L.song ? L.parsed.slice(r.i + 1, r.i + 6) : [])) +
       `<div class="pn-kb">${keyboard(lo, hi)}</div><div id="pn-msg" class="msg pn-msg ${r.msgCls || ""}" role="status">${r.msg}</div>` +
       `<div class="pn-bar"><i style="width:${(100 * r.i) / n}%"></i></div>` +
       `<div class="g2"><button data-pn="hear">▶ Hear it</button>${L.mode !== "keys" && !r.reveal ? `<button data-pn="show">Show me</button>` : `<button data-pn="oct" class="${anyOct() ? "on" : ""}">Any octave</button>`}</div>` +
       `<div id="pn-conn" class="pn-conn small">${connHtml()}</div>`;
   } else {
     const x = r.result,
-      more = PIANO_LESSONS.indexOf(L) < PIANO_LESSONS.length - 1;
+      more = plan ? plan.indexOf(L) < plan.length - 1 : PIANO_LESSONS.indexOf(L) < PIANO_LESSONS.length - 1,
+      finished = plan && x.passed && !more;
     body =
-      `<h2>${x.passed ? "Lesson passed!" : "Almost there"}</h2><div class="pn-stars">${"★".repeat(x.stars)}${"☆".repeat(3 - x.stars)}</div>` +
+      `<h2>${finished ? `You learned ${L.pieceTitle}` : x.passed ? "Passed" : "Almost there"}</h2><div class="pn-stars">${"★".repeat(x.stars)}${"☆".repeat(3 - x.stars)}</div>` +
       `<p>${x.pct}% accuracy · ${r.miss} wrong ${r.miss === 1 ? "note" : "notes"} · ${x.secs}s</p>` +
       (x.passed ? "" : `<p class="pn-intro">You need ${PASS_MARK}% to pass. Go slowly; accuracy matters, not speed.</p>`) +
-      (x.passed && more ? `<button class="go" data-pn="next">Next lesson →</button>` : "") +
+      (x.passed && more ? `<button class="go" data-pn="next">${plan ? "Next step →" : "Next lesson →"}</button>` : "") +
       `<button class="${x.passed ? "sound-toggle" : "go"}" data-pn="retry">↻ Try again</button>` +
       (L.drill ? `<button class="sound-toggle" data-pn="drill">Drill this in Cards (your keyboard answers)</button>` : "");
   }
-  return `<div class="card pn-lesson"><div class="tag">PIANO · ${PIANO_UNITS[L.unit].name.toUpperCase()}${r.phase === "play" ? ` · STEP ${r.i + 1} / ${n}` : ""}</div>${body}<button class="rs" data-pn="exit">← All piano lessons</button></div>`;
+  return `<div class="card pn-lesson"><div class="tag">${plan ? `${L.pieceTitle} · ${plan.indexOf(L) + 1} of ${plan.length}`.replace(/</g, "&lt;") : `PIANO · ${PIANO_UNITS[L.unit].name.toUpperCase()}`}${r.phase === "play" ? ` · STEP ${r.i + 1} / ${n}` : ""}</div>${body}<button class="rs" data-pn="exit">← All piano lessons</button></div>`;
 }
 
 function renderPiano() {

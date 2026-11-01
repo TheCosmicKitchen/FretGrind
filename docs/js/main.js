@@ -1,8 +1,9 @@
 /* Fret Grind: entry point. Loads saved state, registers every page and click handler, and starts the app.
    Plain ES modules, no build step: this file is loaded straight from index.html. */
 import { S, ui, load, save } from "./core/store.js";
-import { action, mountClicks, render } from "./core/bus.js";
+import { action, mountClicks, on, render } from "./core/bus.js";
 import { app } from "./core/dom.js";
+import { paintFrame } from "./view/chrome.js";
 import { ctx } from "./core/audio.js";
 import { mic, micStop } from "./core/mic.js";
 import { sanitizeListen, listenStop } from "./core/listen-io.js";
@@ -41,8 +42,15 @@ function openPage(id) {
   if (id !== "songs") stopSongs();
   if (id !== "games" && id !== "songs") listenStop(); // the microphone only runs where it is used
   if (id !== "piano") pianoAllOff(); // release keys held on the Piano tab
+  const swap = () => {
+    ui.page = id;
+    render();
+    scrollTo(0, 0);
+  };
+  // a soft cross-fade between pages where the browser has it; it runs a frame later, so the page is set for the caller now
+  if (id === ui.page || !document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return swap();
   ui.page = id;
-  render();
+  document.startViewTransition(swap);
 }
 
 mountLearn();
@@ -60,7 +68,17 @@ action("snd", () => {
   save();
   render();
 });
-mountClicks(app);
+action("themeToggle", () => {
+  const root = document.documentElement,
+    isDark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = isDark ? "light" : "dark";
+  try {
+    localStorage.setItem("fg-theme", root.dataset.theme);
+  } catch (e) {}
+  paintFrame();
+});
+on("drawn", paintFrame);
+mountClicks(document.body); // the frame sits outside #app
 
 document.addEventListener("keydown", (e) => {
   if (rhythmKey(e)) return; // taps in the rhythm game

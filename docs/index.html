@@ -5,14 +5,24 @@
     <title>Fret Grind – sight-reading &amp; fretboard trainer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Free guitar fretboard and music sight-reading trainer with spaced-repetition flash cards, chord and scale spelling, and ear-training games. Works offline." />
-    <meta name="theme-color" content="#5b5ce2" />
+    <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      try {
+        var t = localStorage.getItem("fg-theme");
+        if (t) document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
-    <main id="app"></main>
+    <div class="shell">
+      <div id="nav"></div>
+      <main id="app"></main>
+    </div>
     <noscript>Fret Grind needs JavaScript enabled to run.</noscript>
     <script type="module" src="js/main.js"></script>
     <script>

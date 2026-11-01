@@ -21,12 +21,13 @@ import { G7 } from "./guitar/g7.js";
 import { G8 } from "./guitar/g8.js";
 import { G9 } from "./guitar/g9.js";
 import { G10 } from "./guitar/g10.js";
+import { stageOfCourse } from "../songs/path.js";
 
 export const TRACKS = [
   {
     id: "guitar",
     name: "Guitar",
-    icon: "🎸",
+    icon: "",
     blurb: "From holding the guitar to folk songs and chord changes.",
     courses: [
       G1, G2, G3, G4, G5, G6, G7, G8, G9, G10,
@@ -35,7 +36,7 @@ export const TRACKS = [
   {
     id: "theory",
     name: "Music theory",
-    icon: "🎼",
+    icon: "",
     blurb: "Notes, rhythm, scales, keys and chords. Works without a guitar.",
     courses: [
       T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,
@@ -54,7 +55,7 @@ export const courseOf = (trackId, courseId) => track(trackId)?.courses.find((c) 
 export const written = (c) => c.lessons.length > 0;
 
 /* The nodes of a course in path order:
-   { kind: "lesson", id, i, lesson } | { kind: "cp", id, from, to } (a checkpoint over lessons from..to) | { kind: "test", id } (the course test) */
+   { kind: "lesson", id, i, lesson } | { kind: "cp", id, from, to } (a checkpoint over lessons from..to) | { kind: "test", id } (the course test) | { kind: "song", id, song } (a piece from the course's stage of the song path) */
 export function nodesOf(course) {
   const out = [],
     n = course.lessons.length;
@@ -67,6 +68,7 @@ export function nodesOf(course) {
       from = i + 1;
     }
   });
+  (stageOfCourse(course.id)?.songs || []).forEach((song) => out.push({ kind: "song", id: `song:${song.id}`, song }));
   out.push({ kind: "test", id: `${course.id}.t`, from: 0, to: n - 1 });
   return out;
 }
@@ -82,7 +84,7 @@ export function validIds() {
     v[t.id] = { les: new Set(), tst: new Set() };
     for (const c of t.courses) {
       c.lessons.forEach((l) => v[t.id].les.add(l.id));
-      nodesOf(c).filter((n) => n.kind !== "lesson").forEach((n) => v[t.id].tst.add(n.id));
+      nodesOf(c).filter((n) => n.kind === "cp" || n.kind === "test").forEach((n) => v[t.id].tst.add(n.id));
     }
   }
   return v;
@@ -155,7 +157,7 @@ export function courseStats(progress, trackId, course) {
   const les = progress[trackId].les,
     done = course.lessons.filter((l) => les[l.id]).length,
     nodes = nodesOf(course),
-    tests = nodes.filter((n) => n.kind !== "lesson"),
+    tests = nodes.filter((n) => n.kind === "cp" || n.kind === "test"),
     passed = tests.filter((n) => progress[trackId].tst[n.id]?.ok).length;
   return { done, total: course.lessons.length, tests: tests.length, passed, complete: done === course.lessons.length && passed === tests.length && tests.length > 0 };
 }

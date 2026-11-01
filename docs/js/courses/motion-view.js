@@ -69,7 +69,7 @@ function setupHtml() {
     needScale = P.content !== "chords",
     showKey = true;
   return `${header()}<button class="ln-back" data-ln-drills>← Drills</button>
-  <div class="ln-title"><span class="ln-ic">🎸</span><div><h2>Motion drills</h2><p class="ln-sub">Chord changes and scale runs, built on the spot and played in time. Pick how far your hands travel and how little time you get to do it.</p></div></div>
+  <div class="ln-title"><span class="ln-ic"></span><div><h2>Motion drills</h2><p class="ln-sub">Chord changes and scale runs, built on the spot and played in time. Pick how far your hands travel and how little time you get to do it.</p></div></div>
   <section class="card mo-set">
     <div class="tag">WHAT TO PRACTISE</div>${seg("content", CONTENT, P.content)}
     <div class="tag">HAND MOTION</div>${seg("motion", MOTION_NAMES.map((n, i) => [i + 1, n]), P.motion)}
@@ -83,7 +83,7 @@ function setupHtml() {
     <div class="bpm mo-bpm"><button data-mo-set="bpm" data-v="-5" aria-label="Slower">−</button><label><b id="mo-bpmv">${P.bpm}</b> BPM<input type="range" id="mo-bpm" min="30" max="200" step="1" value="${P.bpm}" aria-label="Tempo in beats per minute"></label><button data-mo-set="bpm" data-v="5" aria-label="Faster">+</button></div>
     <p class="ln-sub mo-load">At this tempo it feels like: <b>${word}</b>. <button class="tg" data-mo-set="suggest" data-v="${sug}">Use ${sug} BPM</button></p>
     ${(() => { const ex = example(P); return `<div class="tag">ONE BAR OF THIS</div>${strip(ex.bar, -1)}<p class="ln-sub mo-ex">${ex.names}</p>`; })()}
-    <div class="chips pr-opts">${tog("click", "🕒 Click", P.click)}${tog("notes", "🔊 Play the notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}</div>
+    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Play the notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}</div>
     <button class="go" data-mo-start>${run ? "…" : "▶ Start"}</button>
     <small>Every round is made fresh, so you can keep going as long as you like. The difficulty score is a rough guide: tune it by feel.</small>
   </section>`;
@@ -108,7 +108,7 @@ function runHtml() {
     <div id="mo-strip"></div>
     <div class="pr-ctl"><button class="go alt pr-play" data-mo-stop>■ Stop</button><button class="go alt pr-play" data-mo-new>New pattern</button>
       <div class="bpm"><button data-mo-set="bpm" data-v="-5" aria-label="Slower">−</button><label><b id="mo-bpmv">${P.bpm}</b> BPM<input type="range" id="mo-bpm" min="30" max="200" step="1" value="${P.bpm}" aria-label="Tempo in beats per minute"></label><button data-mo-set="bpm" data-v="5" aria-label="Faster">+</button></div></div>
-    <div class="chips pr-opts">${tog("click", "🕒 Click", P.click)}${tog("notes", "🔊 Play the notes", P.notes)}</div>
+    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Play the notes", P.notes)}</div>
   </section>`;
 }
 export const motionView = () => (run ? runHtml() : setupHtml());

@@ -9,10 +9,13 @@ const screens = {},
   events = {};
 
 export const screen = (name, fn) => (screens[name] = fn);
-export const render = () => (screens[ui.page] || screens.cards)();
-
 export const on = (name, fn) => (events[name] ||= []).push(fn);
 export const emit = (name, ...args) => (events[name] || []).forEach((fn) => fn(...args));
+
+export function render() {
+  (screens[ui.page] || screens.cards)();
+  emit("drawn");
+}
 
 export const action = (key, fn) => (handlers[key] = fn); // key is camelCase: "scoreStart" <-> data-score-start
 const kebab = (k) => k.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());

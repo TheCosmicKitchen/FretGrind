@@ -84,7 +84,7 @@ function draw() {
     `<div class="card tb-run"><div class="tag">TABS · ${Math.min(r.i + 1, r.tab.ev.length)} / ${r.tab.ev.length}</div><h2>${esc(r.tab.title)}</h2>${strip(r)}${
       !e
         ? `<div class="msg good" role="status">✓ You reached the end</div><button class="go" data-tb="restart">Play it again</button>`
-        : `<p class="tb-next">${where}${e.n.length > 1 ? "<small>Chord: any one of its notes moves you on</small>" : ""}</p>${mic.on ? micBoxLive() : `<button class="go" data-mic>🎤 Start listening</button>`}${mic.err ? `<div class="msg badm" role="alert">${mic.err}</div>` : ""}<div class="tb-controls"><button data-tb="back">← Back</button><button data-tb="skip">Skip →</button><button data-tb="restart">Restart</button></div>`
+        : `<p class="tb-next">${where}${e.n.length > 1 ? "<small>Chord: any one of its notes moves you on</small>" : ""}</p>${mic.on ? micBoxLive() : `<button class="go" data-mic>Start listening</button>`}${mic.err ? `<div class="msg badm" role="alert">${mic.err}</div>` : ""}<div class="tb-controls"><button data-tb="back">← Back</button><button data-tb="skip">Skip →</button><button data-tb="restart">Restart</button></div>`
     }<button class="rs" data-tb="exit">← All tabs</button></div>`;
 }
 

@@ -2,7 +2,8 @@
      node tools/import-music.mjs <folder with ryans/, oneills/ and mutopia/>
    ryans/ and oneills/ hold the ABC files from music21's corpus (Ryan's Mammoth Collection, 1883; O'Neill's Music of
    Ireland, 1903). mutopia/ holds pieces.json and each piece's .mid and .ly, only for pieces Mutopia marks Public Domain.
-   A tune that can't be written faithfully in the song format is left out rather than bent to fit. */
+   A tune that can't be written faithfully in the song format is left out rather than bent to fit.
+   piano/ holds the same for solo piano. The run also writes the guitar and piano paths. */
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -356,7 +357,7 @@ function readMidi(buf) {
         if (hi === 0x90 && v > 0) (on[n] ||= []).push(now);
         else if (on[n] && on[n].length) {
           const s = on[n].shift();
-          notes.push({ n, s, e: now });
+          notes.push({ n, s, e: now, trk: t });
         }
       } else p += hi === 0xc0 || hi === 0xd0 ? 1 : 2;
     }
@@ -445,7 +446,7 @@ function parseMidiPiece(p, dir) {
     r = toBars(flat, barLen, pick);
   if (r.why) throw r.why;
   return {
-    title: p.title.replace(/\s+/g, " "),
+    title: p.title.replace(/\s+/g, " ").replace(/^Nº\. \d+\.\s*/, "").replace(/^No\. \d+:\s*/, "").replace(/[“”]/g, "").replace(/\.+$/, ""),
     by: p.by.replace(/\s*\(.*$/, ""),
     style: "classical",
     dance: "",
@@ -515,6 +516,7 @@ const seen = new Set(),
   slug = (t) => t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40),
   ids = new Set(),
   hards = [],
+  hardOf = new Map(),
   good = [];
 for (const t of lib) {
   const dup = (t.bars.match(/[A-G][#b]?\d/g) || []).join("");
@@ -534,6 +536,7 @@ for (const t of lib) {
     const g = gradeOf(s);
     def.level = g.level;
     hards.push(g.h);
+    hardOf.set(id, Math.round(g.h * 100) / 100);
     const check2 = build(def);
     if (playability(check2, tabify(check2)).length) { miss("no playable tab"); continue; }
   } catch (e) {
@@ -561,11 +564,140 @@ const rows = [];
 for (let c = 0; c * CHUNK < good.length; c++) {
   const part = good.slice(c * CHUNK, (c + 1) * CHUNK);
   writeFileSync(join(out, `songs-${c}.json`), JSON.stringify(part));
-  part.forEach((d) => rows.push([d.id, d.title, d.by, d.style, d.level, d.key, d.time, d.tempo, c]));
+  part.forEach((d) => rows.push([d.id, d.title, d.by, d.style, d.level, d.key, d.time, d.tempo, c, hardOf.get(d.id)]));
 }
 writeFileSync(join(out, "index.json"), JSON.stringify(rows));
 const tally = (f) => good.reduce((a, d) => ((a[f(d)] = (a[f(d)] || 0) + 1), a), {});
 console.log({ parsed: lib.length, kept: good.length, levels: tally((d) => d.level), styles: tally((d) => d.style), sources: tally((d) => d.src) });
 console.log(Object.entries(why).sort((a, b) => b[1] - a[1]));
+
+/* ---------- the guitar path: stages that sit beside the courses ---------- */
+const easiest = (test, n, skip = new Set()) => {
+  const list = good.filter((d) => test(d) && !skip.has(d.id)).sort((a, b) => hardOf.get(a.id) - hardOf.get(b.id)).slice(0, n);
+  list.forEach((d) => skip.add(d.id));
+  return list.map((d) => ({ id: d.id, title: d.title, by: d.by }));
+};
+const own = (id, title, by) => ({ id, title, by });
+const ex = (id, title, by) => ({ id, title, by, ex: 1 });
+const used = new Set(),
+  named = (re, by) => good.filter((d) => re.test(d.title) && (!by || by.test(d.by))).slice(0, 1).map((d) => (used.add(d.id), { id: d.id, title: d.title, by: d.by })),
+  folk = (lv, n) => easiest((d) => d.level === lv && d.style === "air", n, used),
+  dance = (lv, n) => easiest((d) => d.level === lv && ["reel", "jig", "hornpipe"].includes(d.style), n, used),
+  classical = (lo, hi, n) => easiest((d) => d.style === "classical" && d.level >= lo && d.level <= hi, n, used);
+const GUITAR_PATH = [
+  { course: "G1", title: "First notes", blurb: "Three or four notes on the top strings. Slow, clean, and yours.", songs: [own("hotcross", "Hot Cross Buns", "English street cry"), own("mary", "Mary Had a Little Lamb", "American, 1830s"), own("twinkle", "Twinkle, Twinkle, Little Star", "French melody, 1761"), ...folk(1, 1)] },
+  { course: "G2", title: "Finding the notes", blurb: "Tunes that make you find notes across the first position.", songs: [own("joy", "Ode to Joy", "Beethoven"), own("jacques", "Frère Jacques", "French round"), own("london", "London Bridge Is Falling Down", "English nursery rhyme"), ...folk(1, 2)] },
+  { course: "G3", title: "First chord changes", blurb: "Move between your first shapes on the beat.", songs: [ex("ex:c:G:I-IV-V-I:open:block:4:60", "I – IV – V – I in G", "Open chords"), ex("ex:c:C:I-V-vi-IV:open:block:4:60", "I – V – vi – IV in C", "Open chords"), ex("ex:c:D:I-IV-V-I:open:block:4:60", "I – IV – V – I in D", "Open chords"), ex("ex:c:A:i-iv-V-i:open:block:4:60", "i – iv – V – i in A minor", "Open chords")] },
+  { course: "G4", title: "Songs in time", blurb: "Keep the beat steady with rests, pick-ups and strums.", songs: [own("saints", "When the Saints Go Marching In", "American spiritual"), own("susanna", "Oh! Susanna", "Stephen Foster, 1848"), own("birthday", "Happy Birthday to You", "Mildred J. Hill, 1893"), ex("ex:c:G:I-IV-V-I:open:strum:2:72", "Strumming I – IV – V – I in G", "Open chords"), ...folk(2, 1)] },
+  { course: "G5", title: "Folk melodies", blurb: "Real tunes from the old collections, one line at a time.", songs: [own("boat", "Row, Row, Row Your Boat", "Eliphalet Oram Lyte, 1852"), ...named(/^Auld Lang Syne/), ...named(/Last Rose of Summer/), ...folk(2, 2), ...dance(2, 2)] },
+  { course: "G6", title: "Songs with changes", blurb: "Melodies with more shape, and progressions that keep moving.", songs: [own("greensleeves", "Greensleeves", "English, 16th century"), ...named(/Rule Britannia/), ex("ex:c:C:I-vi-IV-V:open:strum:4:72", "I – vi – IV – V in C", "Open chords"), ...folk(3, 1), ...dance(3, 2)] },
+  { course: "G7", title: "Fingerstyle pieces", blurb: "Bass and melody together: your first real classical guitar.", songs: [ex("ex:c:Am:i-iv-V-i:open:arp:4:60".replace("Am", "A"), "Picked arpeggios in A minor", "Open chords"), ...classical(3, 3, 2), ...named(/^Menuet in G/, /Bach/), ...classical(4, 4, 2)] },
+  { course: "G8", title: "Up the neck", blurb: "Shapes that move, and tunes that need them.", songs: [ex("ex:c:A:shift:barre:block:4:60", "One barre shape up the neck", "Barre chords"), ex("ex:c:E:blues:barre:block:4:72", "12-bar blues in E", "Barre chords"), ...dance(4, 2), ...classical(4, 4, 1)] },
+  { course: "G9", title: "Speed and scales", blurb: "Scale patterns that turn into fast fiddle tunes.", songs: [ex("ex:s:A:minpent:thirds:5:e:72", "A minor pentatonic in thirds", "Position 5"), ex("ex:s:G:major:fours:2:e:72", "G major in groups of four", "Position 2"), ...dance(4, 2), ...dance(5, 2)] },
+  { course: "G10", title: "Concert pieces", blurb: "Full pieces to finish and perform.", songs: [...named(/Sicilienne/), ...named(/Etude 1$/), ...named(/Prelude in D Minor/), ...named(/Etude in A minor/), ...named(/Lute Suite BWV 997: 1/), ...named(/Vals no\. 3/)] },
+];
+writeFileSync(join(here, "js/songs/path-data.js"), `/* Generated by tools/import-music.mjs: the guitar song path, easiest first, one stage beside each course. */\nexport const GUITAR_PATH = ${JSON.stringify(GUITAR_PATH, null, 1)};\n`);
+
+/* ---------- piano: both hands kept apart, written as "right/left:length" ---------- */
+function parsePiano(p, dir) {
+  const mid = readMidi(readFileSync(join(dir, `${p.id}.mid`))),
+    info = lyInfo(readFileSync(join(dir, `${p.id}.ly`), "latin1"));
+  if (mid.times > 1) throw "meter changes";
+  const time = mid.time || "4/4",
+    meter = METERS[time];
+  if (!meter) throw "unsupported meter " + time;
+  const q = mid.ppq,
+    flats = /^(F|Bb|Eb|Ab|Db|Gb|Dm|Gm|Cm|Fm|Bbm)/.test(info.key),
+    name = (m) => (flats ? SPELL_FLAT : SPELL_SHARP)[m % 12] + (Math.floor(m / 12) - 1),
+    keep = mid.notes.filter((n) => n.e - n.s >= q / 12),
+    trks = [...new Set(keep.map((n) => n.trk))],
+    mean = (t) => { const ns = keep.filter((n) => n.trk === t); return ns.reduce((a, n) => a + n.n, 0) / ns.length; },
+    low = trks.length > 1 ? new Set(trks.filter((t) => mean(t) < 60)) : null,
+    isLeft = (n) => (low ? low.has(n.trk) : n.n < 60);
+  if (low && (!low.size || low.size === trks.length)) throw "can't tell the hands apart";
+  const groups = new Map();
+  let off = 0;
+  for (const n of keep) {
+    const raw = (n.s * (4 * T)) / q,
+      six = Math.round(raw / (T / 2)) * (T / 2), // nearest thirty-second
+      tri = Math.round(raw / 16) * 16,
+      t = Math.abs(raw - six) <= 1 ? six : Math.abs(raw - tri) <= 1.5 ? tri : null;
+    if (t === null) { off++; continue; }
+    const g = groups.get(t) || groups.set(t, { r: new Set(), l: new Set() }).get(t);
+    g[isLeft(n) ? "l" : "r"].add(n.n);
+  }
+  if (off > keep.length * 0.02) throw "rhythm finer than the format";
+  const ts = [...groups.keys()].sort((a, b) => a - b);
+  if (ts.length < 16) throw "too short";
+  if (ts.length > 1100) throw "too long for one sitting";
+  const barLen = meter.bar * T,
+    pick = Math.round(info.pickupQ * 4 * T),
+    barOf = (t) => (t < pick ? 0 : Math.floor((t - pick) / barLen) + (pick ? 1 : 0)),
+    bars = [],
+    fmt = (v) => +(v / T).toFixed(3);
+  let onDown = 0, seenBars = new Set();
+  ts.forEach((t, i) => {
+    const g = groups.get(t),
+      b = barOf(t),
+      side = (s) => [...s].sort((x, y) => x - y).map(name).join("+"),
+      next = i + 1 < ts.length ? ts[i + 1] : t + 4 * T;
+    if (!seenBars.has(b)) (seenBars.add(b), (onDown += t === pick + (b - (pick ? 1 : 0)) * barLen || t < pick ? 1 : 0));
+    (bars[b] ||= []).push(`${side(g.r)}/${side(g.l)}:${fmt(next - t)}`);
+  });
+  if (onDown < seenBars.size * 0.8) throw "bars don't line up with the music";
+  const steps = ts.map((t) => groups.get(t)),
+    n = steps.length,
+    quarters = (ts[n - 1] - ts[0]) / (4 * T) + 1,
+    both = steps.filter((g) => g.r.size && g.l.size).length / n,
+    chords = steps.filter((g) => g.r.size > 1 || g.l.size > 1).length / n,
+    all = steps.flatMap((g) => [...g.r, ...g.l]),
+    blackKeys = all.filter((m) => [1, 3, 6, 8, 10].includes(m % 12)).length / all.length,
+    h = (n / quarters) * 1.3 + both * 1 + chords * 6 + blackKeys * 3 + ((Math.max(...all) - Math.min(...all)) / 12) * 0.28 + Math.min(1.5, n / 400);
+  return {
+    title: p.title.replace(/\s+/g, " "),
+    by: p.by.replace(/\s*\(.*$/, ""),
+    key: info.key,
+    time,
+    tempo: Math.max(40, Math.min(132, Math.round(((mid.tempo || 80) * 4) / meter.beat))),
+    bars: bars.filter(Boolean).map((b) => b.join(" ")),
+    note: [p.opus, p.edition].filter((x) => x && x.trim() && !/^mutopia$/i.test(x.trim())).join(", "),
+    ref: `Mutopia piece ${p.id}`,
+    h: Math.round(h * 100) / 100,
+    n,
+  };
+}
+const pdir = join(raw, "piano"),
+  piano = [],
+  pianoWhy = {};
+for (const p of JSON.parse(readFileSync(join(pdir, "pieces.json"), "utf8")))
+  try {
+    piano.push(parsePiano(p, pdir));
+  } catch (e) {
+    if (typeof e !== "string") throw e;
+    pianoWhy[e] = (pianoWhy[e] || 0) + 1;
+  }
+piano.sort((a, b) => a.h - b.h);
+const ranks = piano.length,
+  pslug = new Set();
+piano.forEach((d, i) => {
+  d.level = 1 + Math.min(5, Math.floor((i / ranks) * 6)); // pieces spread evenly: a level is a stretch of the ladder
+  let id = `p-${slug(`${d.by.split(" ").pop()}-${d.title}`)}`;
+  for (let k = 2; pslug.has(id); k++) id = `p-${slug(`${d.by.split(" ").pop()}-${d.title}`)}-${k}`;
+  pslug.add(id);
+  d.id = id;
+});
+const prows = [];
+for (let c = 0; c * 40 < piano.length; c++) {
+  const part = piano.slice(c * 40, (c + 1) * 40);
+  writeFileSync(join(out, `piano-${c}.json`), JSON.stringify(part));
+  part.forEach((d) => prows.push([d.id, d.title, d.by, d.level, d.key, d.time, d.n, c]));
+}
+writeFileSync(join(out, "piano-index.json"), JSON.stringify(prows));
+const PSTAGES = [["First pieces", "One idea at a time, hands mostly apart."], ["Two hands talking", "Melody over a simple left hand."], ["Studies and dances", "Short studies, minuets and waltzes."], ["Romantic miniatures", "More colour, more of the keyboard."], ["Bigger forms", "Inventions, rags and longer pieces."], ["Concert repertoire", "The real thing, at length."]];
+const PIANO_PATH = PSTAGES.map(([title, blurb], i) => ({ title, blurb, songs: piano.filter((d) => d.level === i + 1).sort((a, b) => /Chorale|Ermuntre/.test(a.title) - /Chorale|Ermuntre/.test(b.title)).map((d) => ({ id: d.id, title: d.title, by: d.by })) }));
+writeFileSync(join(here, "js/piano/path-data.js"), `/* Generated by tools/import-music.mjs: the piano song path, easiest first. */\nexport const PIANO_PATH = ${JSON.stringify(PIANO_PATH, null, 1)};\n`);
+console.log("piano", piano.length, pianoWhy, PIANO_PATH.map((s) => s.title + ": " + s.songs.slice(0, 3).map((x) => x.by.split(" ").pop() + " " + x.title.slice(0, 26)).join("; ")));
+console.log("path", GUITAR_PATH.map((s) => `${s.course} ${s.songs.length}: ${s.songs.map((x) => x.title.slice(0, 22)).join(" | ")}`));
+
 hards.sort((a, b) => a - b);
 console.log("hardness percentiles", [5, 15, 30, 50, 70, 85, 95, 99].map((p) => `${p}%=${hards[Math.floor((hards.length * p) / 100)].toFixed(2)}`).join(" "));

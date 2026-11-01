@@ -1,8 +1,9 @@
 /* The daily plan: what to do in 5, 10 or 20 minutes. Pure, so Node can test it.
-   Order: reviews that are due, then the next lesson (in the track you've touched least recently), then a quick drill of
+   Order: reviews that are due, then the next lesson (in the track you've touched least recently), a piece from the song path, a quick drill of
    your weakest lesson, then a mixed quiz to fill what is left. Nothing is locked: it is a suggestion. */
 import { TRACKS, findLesson, nextLesson, poolOf } from "./curriculum.js";
 import { dueReviews } from "./progress.js";
+import { nextPathSong } from "../songs/path.js";
 
 export const needsGuitar = (lesson) => lesson.steps.some((s) => s.t === "do" && s.needs === "guitar");
 /* Minutes a lesson takes: shorter when its guitar steps are saved for later. */
@@ -33,14 +34,17 @@ export function makePlan(p, mins, today) {
       lessons++;
     }
   }
-  // 3. a drill for your weakest finished lesson
+  // 3. the next piece on the song path: playing real music is why anyone is here
+  const song = nextPathSong(p.songs || {});
+  if (song && left >= 4) add({ kind: "song", id: song.id, title: song.title }, 5);
+  // 4. a drill for your weakest finished lesson
   if (left >= 3) {
     const weak = TRACKS.flatMap((t) => Object.entries(p[t.id].les).map(([id, v]) => ({ track: t.id, id, b: v.b, f: v.f })))
       .filter((x) => x.b < 85 && x.f !== today && !items.some((i) => i.id === x.id))
       .sort((a, b) => a.b - b.b)[0];
     if (weak) add({ kind: "drill", track: weak.track, id: weak.id, title: findLesson(weak.track, weak.id)?.title || weak.id }, 3);
   }
-  // 4. a mixed quiz with what is left
+  // 5. a mixed quiz with what is left
   const finished = TRACKS.some((t) => Object.keys(p[t.id].les).length);
   if (left >= 2 && finished) add({ kind: "mini", title: "Mixed quiz" }, 2);
   if (!items.length && finished) add({ kind: "mini", title: "Mixed quiz" }, 2);

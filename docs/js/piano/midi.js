@@ -61,4 +61,4 @@ export function midiConnect() {
 
 /* Under a flash card that a played note can answer. */
 export const midiBox = (text = "Play it on your keyboard…") =>
-  `<div class="mic-box"><span aria-hidden="true">🎹</span><span id="midi-note">${text}</span></div>`;
+  `<div class="mic-box"><span aria-hidden="true"></span><span id="midi-note">${text}</span></div>`;
