@@ -9,7 +9,8 @@ import { build, keyLabel } from "./format.js";
 import { GUITAR_PATH, PASS_MARK, PATH_SONGS, coachPlan, formOf, freshNotes, lessonsIn, notesPerSecond, sliceDef, speedWord, starsFor } from "./path.js";
 import { LIMITS, demandsOf } from "./demands.js";
 import { chordChart } from "./harmony.js";
-import { chartFor, chordId, chordPlan, chordSong, shapeOf } from "./changes.js";
+import { SIZES, changeKey, chartFor, chordId, chordPlan, chordSong, generateRun, recommendChanges, runById, runPlan, shapeOf } from "./changes.js";
+import { CHANGE_USE } from "./changes-data.js";
 import { boxView } from "../library/draw.js";
 import { SKILLS } from "./moments-data.js";
 import { recordSong } from "../courses/progress.js";
@@ -45,6 +46,7 @@ const STYLE_TABS = [
     ["classical", "Classical"],
     ["folk", "Folk"],
     ["skills", "Skills"],
+    ["changes", "Chord changes"],
     ["song", "Art songs"],
     ["air", "Airs"],
     ["reel", "Reels"],
@@ -73,6 +75,13 @@ function tidyLearn(raw, isId) {
   return out;
 }
 
+/* Best score for each chord change practised: { "C>G": 0.85 } */
+function tidyMoved(raw) {
+  const out = {};
+  if (raw && typeof raw === "object") for (const [k, v] of Object.entries(raw)) if (k.length < 12 && Number.isFinite(v)) out[k] = Math.max(0, Math.min(1, v));
+  return out;
+}
+
 export function sanitizeSongs() {
   const p = S.songs && typeof S.songs === "object" ? S.songs : {},
     ok = (v, a, d) => (a.includes(v) ? v : d),
@@ -93,6 +102,9 @@ export function sanitizeSongs() {
     loop: p.loop === true,
     lyrics: p.lyrics !== false,
     names: p.names === true,
+    size: ok(p.size, SIZES.map((x) => x.id), "small"),
+    runSeed: Number.isFinite(p.runSeed) ? p.runSeed | 0 : 1,
+    moved: tidyMoved(p.moved),
     done,
     style: ok(p.style, STYLE_TABS.map((t) => t[0]), "path"),
     learn: tidyLearn(p.learn, isId),
@@ -141,6 +153,18 @@ function matching() {
     return words.every((w) => text.includes(w));
   });
 }
+/* Chord changes by size: what to practise next, and a button that makes up a fresh run. */
+function changesHtml() {
+  const P = S.songs,
+    size = SIZES.find((x) => x.id === P.size),
+    known = [...new Set(GUITAR_PATH.flatMap((st) => st.songs).filter((x) => x.ch && learned(x.id)).flatMap((x) => x.by.split(" ")))],
+    list = recommendChanges(size.id, CHANGE_USE, P.moved, known),
+    top = list[0],
+    pairId = (c) => `chg:${c.a},${c.b}:4:66`,
+    row = (c) => `<button class="sp-song" data-song-open="${esc(pairId(c))}"><span class="sp-t">${esc(c.a)} to ${esc(c.b)}</span><small>${c.n ? `In ${c.n} piece${c.n === 1 ? "" : "s"}` : "Not common in this library"}${c.songs[0] ? `, like ${esc(c.songs[0].title)}` : ""}</small><span class="sp-s">${c.best >= 0.7 ? `✓ ${Math.round(c.best * 100)}%` : ""}</span></button>`;
+  return `${chipRow("csize", SIZES.map((x) => [x.id, x.name]), size.id)}<div class="sp-next"><small>${esc(size.blurb)}</small><h3>Recommended: ${esc(top.a)} to ${esc(top.b)}</h3><p>${esc(top.tip)}</p><div class="sc-acts"><button class="go" data-song-open="${esc(pairId(top))}">Practise this change</button> <button class="rs" data-sl="genrun">Generate a run of ${size.word} changes</button></div></div><section class="sp-stage"><header><div><h3>More ${size.word} changes</h3><p>The ones real songs use most come first, and changes you've mastered drop down.</p></div></header><div class="sp-list">${list.slice(1, 11).map(row).join("")}</div></section>`;
+}
+
 function skillsHtml() {
   const on = SKILLS.find((k) => k.id === S.songs.skill),
     row = (x) => `<button class="sp-song" data-song-open="${esc(x.id)}"><span class="sp-t">${esc(x.title)}</span><small>${esc(x.by)} · bars ${x.bars}</small><span class="sp-s">Level ${x.level}</span></button>`;
@@ -208,6 +232,7 @@ function renderList() {
   if (P.style === "exercise") h += exercisePanel();
   else if (P.style === "path") h += pathHtml();
   else if (P.style === "skills") h += skillsHtml();
+  else if (P.style === "changes") h += changesHtml();
   else
     h += `<input id="sg-q" class="sg-q" type="search" placeholder="Search by title or composer" aria-label="Search the library" value="${esc(query)}" />${chipRow("level", [[0, "Any level"], ...[1, 2, 3, 4, 5, 6].map((l) => [l, l])], P.level)}${P.level ? `<p class="pr-sub">${LEVEL_NAMES[P.level]}</p>` : ""}${chipRow("speed", [["", "Any speed"], ["Slow", "Slow"], ["Moderate", "Moderate"], ["Fast", "Fast"]], P.speed)}<div id="sg-results">${results()}</div>`;
   app.innerHTML = h + `<small>Everything here is public domain: the composers died long ago, or the tune is traditional. Sources are credited on each piece. Tabs are chosen by the program, so if a fingering feels awkward, trust your hand.</small></div>`;
@@ -243,7 +268,7 @@ function onStand(full) {
   return byId[id];
 }
 /* From the start of a chosen lesson, or else where you left off. */
-const planFor = (full) => (full.chart ? chordPlan(full) : coachPlan(full, full.style === "exercise" ? undefined : tabFor(full)));
+const planFor = (full) => (full.names ? runPlan(full) : full.chart ? chordPlan(full) : coachPlan(full, full.style === "exercise" ? undefined : tabFor(full)));
 function coachStart(full, lesson) {
   const plan = planFor(full),
     L = S.songs.learn[full.id] || {},
@@ -269,6 +294,16 @@ function coachNext(skipped) {
   if (last) {
     const stars = skipped ? 1 : starsFor(coach.score ?? 0);
     L.stars = Math.max(L.stars, stars);
+    if (full.names) {
+      full.names.slice(1).forEach((n, i) => {
+        const key = changeKey(full.names[i], n);
+        if (!skipped) S.songs.moved[key] = Math.max(S.songs.moved[key] || 0, coach.score ?? 0);
+      });
+      coach.done = true;
+      coach.stars = stars;
+      save();
+      return render();
+    }
     S.songs.done[coach.id] = 1;
     S.xp += 30 + stars * 10;
     recordSong(S.courses, coach.id, Math.round((coach.score ?? 0.7) * 100));
@@ -307,6 +342,11 @@ function chordBoxes(full, names) {
     return sp ? `<figure><figcaption>${esc(n)}</figcaption>${boxView(shapeOf(sp.root, sp.suf, chart.shapes).v)}</figure>` : "";
   }).join("")}</div>`;
 }
+/* Real music that uses a change. */
+function changeSongs(full) {
+  const songs = full.names.length === 2 ? CHANGE_USE[changeKey(...full.names)]?.songs || [] : [];
+  return songs.length ? `<p class="sc-ch">Songs with this change: ${songs.map((x) => `<button class="rs" data-song-open="ch:${esc(x.id)}">${esc(x.title)}</button>`).join(" ")}</p>` : "";
+}
 /* Every tune has chords in it, even if nobody wrote them down. */
 function suggested(full) {
   if (full.id.includes("@") || full.style === "exercise" || full.sounding.filter((n) => n.pitches.length > 1).length > full.sounding.length * 0.2) return "";
@@ -319,6 +359,8 @@ function coachBar(full) {
     const next = coach.plan[coach.i];
     return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Lesson ${coach.rest} of ${next.lessons} finished</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${formStrip(full, { from: 0, to: Math.max(...coach.plan.slice(0, coach.i).map((st) => st.to)) })}<h3>Good place to stop</h3><p>Practice sticks better spread over a few days, and the next lesson opens by warming this one up. Or carry on now.</p><div class="sc-acts"><button class="go" data-sp="cgo">Next: ${next.lessonName} →</button></div></div>`;
   }
+  if (coach && coach.done && full.names)
+    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}<button class="go" data-sp="cquit">Back</button></div>`;
   if (coach && coach.done)
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>Come back to it next week and it will still be yours.</p><button class="go" data-sp="cquit">Back to the path</button></div>`;
   if (full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
@@ -327,8 +369,8 @@ function coachBar(full) {
       plan = planFor(full),
       { parts, lessons } = plan[0],
       fresh = L && L.n && !L.stars,
-      intro = full.chart ? `${full.chart.names.length} chords and ${full.chart.moves} changes. Drill the changes this song uses, then play it with the tune.${full.chart.capo ? ` Played in ${full.chart.key} for easy shapes. A capo at fret ${full.chart.capo} matches the original key.` : ""} These chords are suggested from the melody.` : `${parts > 1 ? `${parts} phrases to learn, in ${lessons} short lessons` : "Learn it step by step"}. Each one builds on the last until you can play the whole piece.`;
-    return `<div class="sc-card" id="sg-coach"><p>${intro}${L && L.stars ? ` Your best: ${"★".repeat(L.stars)}` : ""}</p>${full.chart ? chordBoxes(full, full.chart.names) : formStrip(full)}${fresh ? `<div class="ln-bar"><i style="width:${(100 * L.n) / plan.length}%"></i></div>` : ""}<button class="go" data-sp="cstart">${L && L.stars ? "Learn it again" : fresh ? "Carry on learning" : "Start lesson 1"}</button>${lessonList(full, plan, L)}${full.chart ? "" : suggested(full)}</div>`;
+      intro = full.names ? (full.names.length === 2 ? "Slow to quick: the same change with less and less time to make it." : "A generated run of chord changes, each one of the size you asked for.") : full.chart ? `${full.chart.names.length} chords and ${full.chart.moves} changes. Drill the changes this song uses, then play it with the tune.${full.chart.capo ? ` Played in ${full.chart.key} for easy shapes. A capo at fret ${full.chart.capo} matches the original key.` : ""} These chords are suggested from the melody.` : `${parts > 1 ? `${parts} phrases to learn, in ${lessons} short lessons` : "Learn it step by step"}. Each one builds on the last until you can play the whole piece.`;
+    return `<div class="sc-card" id="sg-coach"><p>${intro}${L && L.stars ? ` Your best: ${"★".repeat(L.stars)}` : ""}</p>${full.chart ? chordBoxes(full, full.chart.names) : formStrip(full)}${fresh ? `<div class="ln-bar"><i style="width:${(100 * L.n) / plan.length}%"></i></div>` : ""}<button class="go" data-sp="cstart">${L && L.stars ? "Learn it again" : fresh ? "Carry on learning" : "Start lesson 1"}</button>${full.names ? changeSongs(full) : lessonList(full, plan, L)}${full.chart ? "" : suggested(full)}</div>`;
   }
   const st = coach.plan[coach.i],
     span = lessonsIn(coach.plan).find((x) => x.n === st.lesson),
@@ -348,6 +390,8 @@ let lane = null, // the piece as one line: from ribbon(), and whose it is
 function current() {
   const id = S.songs.cur;
   if (byId[id]) return byId[id];
+  const run = runById(id);
+  if (run) return (byId[id] = build(run));
   const chord = chordId(id),
     [base, bars] = chord ? [chord.base] : String(id).split("@");
   if (chord && byId[base]) return (byId[id] = build(chordSong(byId[base], chord)));
@@ -691,7 +735,7 @@ function change(k, v) {
   if (k === "cquit") {
     coach = null;
     res = null;
-    if (P.fromPath) (P.cur = null), (P.style = "path");
+    if (String(P.cur).startsWith("chg:")) P.cur = null; // a drill goes back to the list it came from
     save();
     return render();
   }
@@ -718,6 +762,15 @@ function pick(k, v) {
     return refresh();
   }
   shown = PAGE;
+  if (k === "csize") P.size = v;
+  if (k === "genrun") {
+    P.cur = `chg:${generateRun(P.size, CHANGE_USE, ++P.runSeed).join(",")}:4:66`;
+    coach = null;
+    res = null;
+    save();
+    render();
+    return window.scrollTo(0, 0);
+  }
   if (k === "openskill") {
     P.style = "skills";
     P.skill = v;

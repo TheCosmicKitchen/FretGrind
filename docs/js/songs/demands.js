@@ -80,6 +80,34 @@ export function demandsOf(s, tab, fresh = s.sounding.length) {
   return { ...playing, length, level, limit };
 }
 
+/* Is there any music here? { pitches, same, run, open, turns, gaps, perBar }: different notes, share that repeat the last note, the longest run
+   of one note, share on open strings, how often the line changes direction, share of empty bars, notes a bar. */
+export function musicOf(s, tab) {
+  const m = s.sounding.map((n) => n.midi),
+    n = m.length || 1;
+  let run = 1,
+    now = 1,
+    turns = 0,
+    dir = 0;
+  m.forEach((x, i) => {
+    if (!i) return;
+    now = x === m[i - 1] ? now + 1 : 1;
+    run = Math.max(run, now);
+    const d = Math.sign(x - m[i - 1]);
+    if (d && dir && d !== dir) turns++;
+    if (d) dir = d;
+  });
+  return {
+    pitches: new Set(m).size,
+    same: m.filter((x, i) => i && x === m[i - 1]).length / n,
+    run,
+    open: tab.filter((c) => c[1] === 0).length / n,
+    turns: turns / n,
+    gaps: s.barLens.filter((_, b) => !s.sounding.some((x) => x.bar === b)).length / s.barLens.length,
+    perBar: n / s.barLens.length,
+  };
+}
+
 export const LIMITS = { hand: "Hand position", rhythm: "Rhythm", voices: "Two voices", reading: "Key", length: "Length" };
 
 /* Everything a piece needs, as skill ids, in the order a beginner tends to meet them. */

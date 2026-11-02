@@ -9,8 +9,10 @@ import { GUITAR_PATH, PATH_SONGS, chunksOf, coachPlan, formOf, lessonsIn, lesson
 import { SKILLS } from "../../docs/js/songs/moments-data.js";
 import { demandsOf, skillsOf } from "../../docs/js/songs/demands.js";
 import { chordChart, easiestCapo } from "../../docs/js/songs/harmony.js";
-import { anchorTip, changeDrill, changesOf, chartFor, chordId, chordPlan, chordSong, shapeOf } from "../../docs/js/songs/changes.js";
-import { STAGES } from "../../tools/syllabus.mjs";
+import { SIZES, anchorTip, changeDrill, changeKey, changeRun, changesOf, chartFor, chordId, chordPlan, chordSong, everyChange, generateRun, namedShape, recommendChanges, runById, runPlan, shapeOf } from "../../docs/js/songs/changes.js";
+import { CHANGE_USE } from "../../docs/js/songs/changes-data.js";
+import { STAGES, fitness } from "../../tools/syllabus.mjs";
+import { spawnSync } from "node:child_process";
 import { tabify } from "../../docs/js/songs/tabify.js";
 import { exerciseById } from "../../docs/js/songs/exercises.js";
 import { PIANO_PATH, partsOfPiece, pieceLessons, stepsOf } from "../../docs/js/piano/songs.js";
@@ -313,6 +315,72 @@ test("barre lessons use barres, picked lessons pick", () => {
   const s = every.find((x) => x.id === "hotcross");
   assert.ok(build(chordSong(s, { style: "arp" })).sounding.every((n) => n.pitches.length === 1));
   assert.ok(chartFor(s, "barre").shapes === "barre" && shapeOf(7, "major", "barre").barre);
+});
+
+test("a lesson part always has some music in it", () => {
+  const s = build({ id: "x", title: "x", key: "C", time: "4/4", bars: `${Array(6).fill("C5:2 D5:2 E5:2 F5:2 G5:2 A5:2 G5:2 E5:2").join(" | ")} | D5:2 D5:2 D5:2 D5:2 D5:2 D5:2 D5:2 D5:2` }),
+    plan = coachPlan(s);
+  assert.ok(lessonsOf(s).parts.every((p) => new Set(s.sounding.slice(p.first, p.last + 1).map((n) => n.midi)).size >= 3));
+  assert.equal(plan[plan.length - 1].kind, "full");
+});
+
+test("small changes keep fingers down, big ones rebuild the shape", () => {
+  const moved = (a, b) => namedShape(b).fingered.filter(([s, f]) => !namedShape(a).fingered.some(([t, g]) => t === s && g === f)).length;
+  for (const c of everyChange()) {
+    assert.equal(c.cost <= SIZES.find((x) => x.id === c.size).most, true, c.key);
+    if (c.size === "small") assert.ok(moved(c.a, c.b) <= 2, c.key);
+    assert.ok(c.tip.length > 10, c.key);
+  }
+  assert.equal(everyChange().find((c) => c.key === changeKey("C", "Am")).size, "small");
+  assert.ok(everyChange().filter((c) => c.a === "F" || c.b === "F").every((c) => ["big", "leap"].includes(c.size)));
+});
+
+test("recommended changes are the ones real songs use, and mastered ones drop down", () => {
+  for (const { id } of SIZES) {
+    const list = recommendChanges(id, CHANGE_USE);
+    assert.ok(list.length >= 2, id);
+    assert.ok(list.every((c) => c.size === id), id);
+  }
+  const small = recommendChanges("small", CHANGE_USE);
+  assert.ok(small[0].n >= small[small.length - 1].n);
+  const after = recommendChanges("small", CHANGE_USE, { [small[0].key]: 0.95 });
+  assert.notEqual(after[0].key, small[0].key, "a mastered change gives way");
+  for (const v of Object.values(CHANGE_USE)) assert.ok(v.n >= 1 && v.songs.length >= 1);
+  const known = recommendChanges("medium", CHANGE_USE, {}, ["Em", "G"])[0];
+  assert.ok([known.a, known.b].some((x) => ["Em", "G"].includes(x)), "a recommendation builds on chords you have");
+});
+
+test("generated runs stay in size, keep moving, and can always be played", () => {
+  for (const size of SIZES)
+    for (let seed = 1; seed <= 25; seed++) {
+      const run = generateRun(size.id, CHANGE_USE, seed);
+      assert.ok(run.length >= 4 && new Set(run).size >= 3, `${size.id} ${seed}: ${run}`);
+      assert.ok(run.every((x, i) => !i || x !== run[i - 1]));
+      const s = build(changeRun(run, 2, 72));
+      assert.equal(check(s).length, 0);
+      assert.deepEqual(runById(s.id).names, run);
+      assert.ok(runPlan(s).every((st) => st.def));
+    }
+  assert.deepEqual(generateRun("big", CHANGE_USE, 7), generateRun("big", CHANGE_USE, 7), "the same seed gives the same run");
+  assert.notDeepEqual(generateRun("big", CHANGE_USE, 7), generateRun("big", CHANGE_USE, 8));
+  assert.equal(runById("chg:Nope,C:4:66"), null);
+  assert.equal(runById("hotcross"), null);
+});
+
+test("the adversarial audit finds nothing a teacher would throw out", () => {
+  const out = spawnSync(process.execPath, [fileURLToPath(new URL("../../tools/audit.mjs", import.meta.url)), "20"], { encoding: "utf8" });
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+});
+
+test("hill climbing only ever raises the score, and stays inside each stage's rules", () => {
+  const skill = ["string:5", "string:4"],
+    make = (id, h, extra = {}) => ({ id, title: id, by: "x", level: 1, d: { hand: 1, rhythm: 1, voices: 1, reading: 1, length: 1 }, skills: skill, strings: [5, 4], top: 3, h, nps: 2, time: "4/4", key: "C", q: { pitches: 7, turns: 0.3, same: 0.1, run: 2, open: 0.1 }, fit: 0.9, ...extra });
+  const units = [make("a", 1), make("b", 2)].map((x) => ({ x, chord: false })),
+    st = STAGES[0],
+    base = fitness([{ st, units }]),
+    better = fitness([{ st, units: units.map((u, i) => (i ? { ...u, x: make("c", 2, { q: { pitches: 9, turns: 0.45, same: 0.05, run: 2, open: 0 } }) } : u)) }]),
+    dull = fitness([{ st, units: units.map((u, i) => (i ? { ...u, x: make("d", 2, { q: { pitches: 3, turns: 0.05, same: 0.6, run: 8, open: 0.9 } }) } : u)) }]);
+  assert.ok(better > base && dull < base);
 });
 
 test("a song's lessons open by getting the hands ready for that tune", () => {

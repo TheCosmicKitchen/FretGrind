@@ -17,7 +17,10 @@ const MODES = {
   dor: { scale: [0, 2, 3, 5, 7, 9, 10], sets: [[i_, VII], [i_, IV, VII], [i_, IV, VII, III], [i_, IV, VII, III, v_]] },
 };
 const PCS = { major: [0, 4, 7], minor: [0, 3, 7], 7: [0, 4, 7, 10] };
-const FITS = 0.74; // share of the notes that matter a set of chords must cover
+const SEVENTH = 0.12; // how much of a dominant chord's time the tune must spend on the seventh to call it a seventh chord
+/* The weights, tuned against real accompaniments by tools/tune-harmony.mjs. */
+export const TUNING = { root: 0.766, passing: 0.289, foreign: 0.7, beat1: 4.489, half: 1.425, beat: 1.311, off: 0.6, change: 0.081, midBar: 0.34, back: 0.3, home: 0.127, flow: 0.182 };
+const FITS = 0.74; // share of the notes that matter a set of chords must cover. A teaching choice, not tuned: fewer chords, even if a richer set fits better.
 
 export const chordName = (root, suf, flats) => (flats ? FLAT : SHARP)[root] + (suf === "minor" ? "m" : suf === "7" ? "7" : "");
 
@@ -31,7 +34,7 @@ const flatKey = (key) => /b/.test(key) || /^(F|Dm|Gm|Cm|Fm)$/.test(key);
 function flow(a, b) {
   if (a === b) return 0;
   const step = a.fn + b.fn;
-  return { TS: 0.05, SD: 0.12, DT: 0.18, TD: 0, ST: -0.02, DS: -0.3, TT: -0.12, SS: -0.08, DD: -0.3 }[step] ?? 0;
+  return { TS: 0.05, SD: TUNING.flow, DT: TUNING.home, TD: 0, ST: -0.02, DS: -TUNING.back, TT: -0.12, SS: -0.08, DD: -TUNING.back }[step] ?? 0;
 }
 
 /* The notes that matter in each slot of the piece: [{ pc, w }] */
@@ -45,7 +48,7 @@ function slotsOf(song) {
     const at = n.start - head;
     if (at < 0) continue;
     const i = Math.min(slots.length - 1, Math.floor(at / len + 1e-9)),
-      strong = at % song.bar < 1e-9 ? 3 : at % len < 1e-9 ? 2 : at % song.beat < 1e-9 ? 1.4 : 0.6,
+      strong = at % song.bar < 1e-9 ? TUNING.beat1 : at % len < 1e-9 ? TUNING.half : at % song.beat < 1e-9 ? TUNING.beat : TUNING.off,
       w = strong * Math.min(2, Math.sqrt(n.dur / 2));
     for (const p of n.pitches) slots[i].push({ pc: p.midi % 12, w: w / n.pitches.length });
   }
@@ -58,7 +61,7 @@ function solve(slots, set, tonic, scale, halves) {
     gain = (slot, ch, k) => {
       const root = (tonic + ch.d) % 12,
         tones = PCS[ch.suf].map((p) => (root + p) % 12);
-      return slot.reduce((a, x) => a + x.w * (x.pc === root ? 1.15 : tones.includes(x.pc) ? 1 : inScale.has(x.pc) ? -0.25 : -0.6), 0) / weights[k];
+      return slot.reduce((a, x) => a + x.w * (x.pc === root ? TUNING.root : tones.includes(x.pc) ? 1 : inScale.has(x.pc) ? -TUNING.passing : -TUNING.foreign), 0) / weights[k];
     },
     best = slots.map(() => set.map(() => ({ c: -Infinity, from: -1 })));
   set.forEach((ch, j) => (best[0][j] = { c: gain(slots[0], ch, 0) + (j === 0 ? 0.25 : 0), from: -1 }));
@@ -67,7 +70,7 @@ function solve(slots, set, tonic, scale, halves) {
       const here = gain(slots[k], ch, k),
         midBar = k % halves !== 0;
       set.forEach((was, w) => {
-        const v = best[k - 1][w].c + here + flow(was, ch) - (was !== ch ? (midBar ? 0.3 : 0.08) : 0);
+        const v = best[k - 1][w].c + here + flow(was, ch) - (was !== ch ? (midBar ? TUNING.midBar : TUNING.change) : 0);
         if (v > best[k][j].c) best[k][j] = { c: v, from: w };
       });
     });
@@ -116,9 +119,11 @@ export function chordChart(song) {
     if (sp.deg !== "V") continue;
     const seventh = (sp.root + 10) % 12,
       inside = song.sounding.filter((n) => n.start >= sp.start && n.start < sp.start + sp.len);
-    if (inside.some((n) => n.dur >= 2 && n.midi % 12 === seventh)) sp.suf = "7";
+    sp.seventh = inside.reduce((a, n) => a + (n.midi % 12 === seventh ? n.dur : 0), 0) / Math.max(1, inside.reduce((a, n) => a + n.dur, 0));
   }
-  if (spans.some((sp) => sp.deg === "V" && sp.suf === "7")) spans.forEach((sp) => sp.deg === "V" && (sp.suf = "7")); // one shape for the dominant is enough to learn
+  // one shape for the dominant is enough to learn, and the plain one unless the tune leans on the seventh
+  const fives = spans.filter((sp) => sp.deg === "V");
+  if (fives.length && fives.reduce((a, sp) => a + sp.seventh, 0) / fives.length >= SEVENTH) fives.forEach((sp) => (sp.suf = "7"));
   spans.forEach((sp) => (sp.name = chordName(sp.root, sp.suf, flats)));
   return { spans, fit: +found.fit.toFixed(2), names: [...new Set(spans.map((s) => s.name))], moves: Math.max(0, spans.length - 1), flats };
 }

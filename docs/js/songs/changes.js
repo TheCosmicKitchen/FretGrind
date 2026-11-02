@@ -52,6 +52,113 @@ function play(t, len, style, beat) {
   return left ? [...out, ...held(t, left)] : out;
 }
 
+/* ---------- chord changes on their own: sized, recommended, and generated ---------- */
+export const SIZES = [
+  { id: "small", name: "Small", word: "small", most: 1.6, blurb: "One finger moves, the rest stay down. Get these smooth first." },
+  { id: "medium", name: "Medium", word: "medium", most: 2.6, blurb: "Two fingers move. Most folk songs live here." },
+  { id: "big", name: "Big", word: "big", most: 4.5, blurb: "A whole new shape. Practise the lift, not just the landing." },
+  { id: "leap", name: "Leaps", word: "leap", most: Infinity, blurb: "On and off a barre. The hardest changes in open-chord playing." },
+];
+const VOCAB = ["Em", "Am", "C", "G", "D", "A", "E", "Dm", "E7", "A7", "D7", "G7", "B7", "F"];
+const named = new Map();
+export const namedShape = (name) => {
+  if (!named.has(name)) named.set(name, allShapes().filter((sh) => sh.name === name).sort((a, b) => b.open - a.open || a.barre - b.barre || a.pos - b.pos)[0] || null);
+  return named.get(name);
+};
+export const changeKey = (a, b) => [a, b].sort().join(">");
+const moveOf = (a, b) => {
+  const A = namedShape(a),
+    B = namedShape(b),
+    cost = Math.max(chordCost(A, B), chordCost(B, A));
+  return { a, b, key: changeKey(a, b), cost, size: SIZES.find((x) => cost <= x.most).id, tip: anchorTip(A, B) };
+};
+/* Every change between the chords a beginner meets. */
+export function everyChange(names = VOCAB) {
+  const out = [];
+  names.forEach((a, i) => names.slice(i + 1).forEach((b) => out.push(moveOf(a, b))));
+  return out;
+}
+/* The changes of one size worth doing next: the ones real songs use most, leaving behind what you already have. Chords you know come first.
+   use: { "C>G": { n, songs } }. done: { "C>G": best score 0..1 }. */
+export function recommendChanges(size, use = {}, done = {}, known = []) {
+  const worth = (c) => {
+    const got = done[c.key] || 0,
+      fresh = [c.a, c.b].filter((x) => !known.includes(x)).length;
+    return Math.log(2 + (use[c.key]?.n || 0)) * (got >= 0.9 ? 0.1 : got >= 0.7 ? 0.4 : 1) * (known.length ? [1.2, 1, 0.5][fresh] : 1);
+  };
+  return everyChange().filter((c) => c.size === size).map((c) => ({ ...c, n: use[c.key]?.n || 0, songs: use[c.key]?.songs || [], best: done[c.key] || 0, worth: worth(c) })).sort((p, q) => q.worth - p.worth);
+}
+
+/* A run of chords that stays within a size of change, favouring moves real songs make. The same seed gives the same run. */
+export function generateRun(size, use = {}, seed = 1, length = 6) {
+  const band = SIZES.find((x) => x.id === size),
+    all = everyChange().filter((c) => c.cost <= band.most),
+    next = (at, not = []) => all.filter((c) => c.a === at || c.b === at).map((c) => ({ to: c.a === at ? c.b : c.a, c })).filter((x) => !not.includes(x.to)),
+    reach = (from) => {
+      const seen = new Set([from]);
+      for (const at of seen) next(at).forEach((x) => seen.add(x.to));
+      return seen.size;
+    };
+  let x = seed * 2654435761 % 4294967296;
+  const r = () => ((x = (x * 1664525 + 1013904223) % 4294967296) / 4294967296);
+  // start on a change of the size asked for, so a Big run isn't all small moves
+  const own = all.filter((c) => c.size === size && reach(c.a) >= 3),
+    first = own[Math.floor(r() * own.length)] || all[0],
+    run = [first.a, first.b];
+  while (run.length < length) {
+    const at = run[run.length - 1];
+    let opts = next(at, run); // somewhere new if we can, then anywhere but straight back
+    if (!opts.length) opts = next(at, [run[run.length - 2]]);
+    if (!opts.length) opts = next(at);
+    if (!opts.length) break;
+    const pull = opts.map((o) => Math.log(2 + (use[o.c.key]?.n || 0)) * (o.c.size === size ? 3 : 1)),
+      total = pull.reduce((a, b) => a + b, 0);
+    let pickAt = r() * total,
+      i = 0;
+    while (pickAt > pull[i] && i < pull.length - 1) pickAt -= pull[i++];
+    run.push(opts[i].to);
+  }
+  return run;
+}
+
+/* A change or a run of them as a piece. id: "chg:C,Am:4:66", chords in order, beats each, tempo. */
+export function changeRun(names, beats = 4, tempo = 66) {
+  const shapes = names.map(namedShape);
+  if (shapes.some((x) => !x) || ![1, 2, 4].includes(beats)) return null;
+  const loop = Math.max(names.length, 16 / beats),
+    toks = [],
+    labels = {},
+    tokens = shapes.map((sh) => tokensOf(sh, false));
+  for (let i = 0; i < loop || i % names.length; i++) {
+    const k = i % names.length;
+    labels[toks.length] = names[k];
+    for (let b = 0; b < beats; b++) toks.push(`${tokens[k].all}:4=${tokens[k].fix}`);
+  }
+  while (toks.length % 4) toks.push("r:4");
+  const bars = [];
+  for (let i = 0; i < toks.length; i += 4) bars.push(toks.slice(i, i + 4).join(" "));
+  const pair = names.length === 2,
+    spans = [...new Set(names)].map((n) => { const sh = namedShape(n); return { name: n, root: sh.root, suf: sh.suf }; });
+  return { id: `chg:${names.join(",")}:${beats}:${tempo}`, title: pair ? `${names[0]} to ${names[1]}` : names.join(" – "), by: "Chord changes", level: 2, style: "chords", key: "C", time: "4/4", tempo, tags: [], bars: bars.join(" | "), labels, names, chart: { spans, names: spans.map((x) => x.name), moves: names.length, shapes: "open", flats: false, capo: 0 }, source: "A generated chord change.", reviewed: true };
+}
+export function runById(id) {
+  const m = /^chg:([^:]+):(\d):(\d+)$/.exec(String(id));
+  return m ? changeRun(m[1].split(","), +m[2], +m[3]) : null;
+}
+/* Slow to quick: the same change with less and less time to make it. */
+export function runPlan(song) {
+  const { names } = song,
+    moves = names.slice(1).map((n, i) => moveOf(names[i], n)),
+    tag = { lesson: 1, lessons: 1, lessonName: song.title, parts: 0, part: 0, from: 0, to: 0, chords: [...new Set(names)] },
+    tip = moves.sort((a, b) => b.cost - a.cost)[0].tip;
+  return [
+    { ...tag, kind: "wait", mode: "wait", pct: 100, title: "Find the shapes", say: tip, def: changeRun(names, 4, song.tempo) },
+    { ...tag, kind: "along", mode: "along", pct: 100, title: "A bar each", say: "Land on beat one. Clean or late, but don't stop the click.", def: changeRun(names, 4, 72) },
+    { ...tag, kind: "along", mode: "along", pct: 100, title: "Two beats each", say: "Start moving before you think you need to.", def: changeRun(names, 2, 72) },
+    { ...tag, kind: "along", mode: "along", pct: 100, title: "Every beat", say: "As fast as a song will ever ask at this tempo.", def: changeRun(names, 1, 72) },
+  ];
+}
+
 /* A chart ready to play: the song's chords moved to the easiest shapes, with shapes for each. */
 export function chartFor(song, shapes = "open") {
   const chart = chordChart(song),

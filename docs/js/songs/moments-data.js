@@ -113,102 +113,102 @@ export const SKILLS = [
   "course": "G7",
   "items": [
    {
-    "id": "o-paddy-s-resource@5-8",
-    "title": "Paddy's Resource",
-    "by": "Traditional Irish",
-    "level": 2,
-    "bars": "6–9"
-   },
-   {
     "id": "r-blackwat-er@2-4",
-    "title": "Blackwat:er",
+    "title": "Blackwater",
     "by": "Traditional, American and British Isles",
     "level": 3,
     "bars": "3–5"
    },
    {
-    "id": "r-indeed-then-you-shant@5-8",
-    "title": "Indeed! Then You Shant",
+    "id": "r-the-miller-s-maid@17-20",
+    "title": "The Miller's Maid",
     "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "6–9"
-   },
-   {
-    "id": "o-banks-of-the-ilen@6-9",
-    "title": "Banks of the Ilen",
-    "by": "Traditional Irish",
-    "level": 3,
-    "bars": "7–10"
-   },
-   {
-    "id": "r-charming-mollie-s@15-16",
-    "title": "Charming Mollie's",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "16–17"
-   },
-   {
-    "id": "r-castle-garden@17-20",
-    "title": "Castle Garden",
-    "by": "Harry Carleton",
     "level": 3,
     "bars": "18–21"
    },
    {
-    "id": "o-the-house-in-the-glen-2@5-8",
-    "title": "The House in the Glen",
+    "id": "o-banks-of-the-ilen@14-15",
+    "title": "Banks of the Ilen",
     "by": "Traditional Irish",
     "level": 3,
-    "bars": "6–9"
-   },
-   {
-    "id": "r-brisk-young-lad-s@19-20",
-    "title": "Brisk Young Lad's",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "20–21"
-   },
-   {
-    "id": "o-the-liverpool-hornpipe@18-21",
-    "title": "The Liverpool Hornpipe.",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "19–22"
-   },
-   {
-    "id": "o-leave-my-way@15-16",
-    "title": "Leave My Way",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "16–17"
-   },
-   {
-    "id": "o-tim-the-turncoat@31-32",
-    "title": "Tim the Turncoat",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "32–33"
-   },
-   {
-    "id": "o-the-woods-of-kilkenny@6-9",
-    "title": "The Woods of Kilkenny",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "7–10"
-   },
-   {
-    "id": "o-the-first-of-june@14-15",
-    "title": "The First of June",
-    "by": "Traditional Irish",
-    "level": 5,
     "bars": "15–16"
    },
    {
-    "id": "o-limerick-junction@3-4",
-    "title": "Limerick Junction",
+    "id": "r-castle-garden@21-24",
+    "title": "Castle Garden",
+    "by": "Harry Carleton",
+    "level": 3,
+    "bars": "22–25"
+   },
+   {
+    "id": "o-wallop-the-spot@32-35",
+    "title": "Wallop the Spot",
     "by": "Traditional Irish",
+    "level": 3,
+    "bars": "33–36"
+   },
+   {
+    "id": "o-o-connor-s-favorite-2@0-4",
+    "title": "O'Connor's Favorite",
+    "by": "Traditional Irish",
+    "level": 3,
+    "bars": "1–5"
+   },
+   {
+    "id": "o-father-dollard-s-favorite@16-17",
+    "title": "Father Dollard's Favorite",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "17–18"
+   },
+   {
+    "id": "o-the-munster-lass@0-4",
+    "title": "The Munster Lass",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "1–5"
+   },
+   {
+    "id": "r-the-ladies-delight@0-1",
+    "title": "The Ladies' Delight",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "1–2"
+   },
+   {
+    "id": "r-bonnie-kate-s@22-23",
+    "title": "Bonnie Kate's",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "23–24"
+   },
+   {
+    "id": "l-ich-wandte-mich-und-sahe-serious-songs-o@0-4",
+    "title": "Ich wandte mich und sahe (Serious Songs, Op.121)",
+    "by": "Johannes Brahms",
+    "level": 4,
+    "bars": "1–5"
+   },
+   {
+    "id": "r-bobbing-for-eels@0-1",
+    "title": "Bobbing For Eels",
+    "by": "G.Knowlton",
+    "level": 5,
+    "bars": "1–2"
+   },
+   {
+    "id": "o-the-flowers-of-spring@2-2",
+    "title": "The Flowers of Spring",
+    "by": "Traditional Irish",
+    "level": 5,
+    "bars": "3–3"
+   },
+   {
+    "id": "r-brookside@2-4",
+    "title": "Brookside",
+    "by": "Traditional, American and British Isles",
     "level": 6,
-    "bars": "4–5"
+    "bars": "3–5"
    }
   ]
  },
@@ -226,18 +226,32 @@ export const SKILLS = [
     "bars": "1–4"
    },
    {
-    "id": "o-the-spinners-delight@6-7",
-    "title": "The Spinners Delight",
+    "id": "o-the-first-of-march@14-17",
+    "title": "The First of March",
     "by": "Traditional Irish",
     "level": 4,
-    "bars": "7–8"
+    "bars": "15–18"
    },
    {
-    "id": "r-lucy-campbell-s@2-3",
-    "title": "Lucy Campbell's",
+    "id": "o-the-miltown-maid@3-4",
+    "title": "The Miltown Maid",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "4–5"
+   },
+   {
+    "id": "o-the-western-lasses@23-25",
+    "title": "The Western Lasses",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "24–26"
+   },
+   {
+    "id": "r-green-groves-of-erin@23-24",
+    "title": "Green Groves of Erin",
     "by": "Traditional, American and British Isles",
     "level": 4,
-    "bars": "3–4"
+    "bars": "24–25"
    },
    {
     "id": "o-the-dogs-among-the-bushes@2-3",
@@ -247,74 +261,60 @@ export const SKILLS = [
     "bars": "3–4"
    },
    {
-    "id": "o-nora-with-the-amber-hair@7-10",
-    "title": "Nora With the Amber Hair",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "8–11"
-   },
-   {
-    "id": "o-will-they-ever-return@5-6",
-    "title": "Will They Ever Return?",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "6–7"
-   },
-   {
-    "id": "o-the-old-pensioner@0-1",
-    "title": "The Old Pensioner",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "1–2"
-   },
-   {
-    "id": "o-jennie-rock-the-cradle@0-2",
-    "title": "Jennie Rock the Cradle",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "1–3"
-   },
-   {
-    "id": "o-the-new-demesne-2@0-0",
-    "title": "The New Demesne",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "1–1"
-   },
-   {
-    "id": "o-the-mount-in-lark@8-9",
-    "title": "The Mount in Lark",
+    "id": "o-the-milliner-s-daughter@8-9",
+    "title": "The Milliner's Daughter",
     "by": "Traditional Irish",
     "level": 5,
     "bars": "9–10"
    },
    {
-    "id": "o-the-spinning-wheel@9-11",
+    "id": "o-the-women-s-rock@9-10",
+    "title": "The Women's Rock",
+    "by": "Traditional Irish",
+    "level": 5,
+    "bars": "10–11"
+   },
+   {
+    "id": "o-the-flax-in-bloom@11-11",
+    "title": "The Flax In Bloom",
+    "by": "Traditional Irish",
+    "level": 5,
+    "bars": "12–12"
+   },
+   {
+    "id": "o-the-spinning-wheel@23-23",
     "title": "The Spinning Wheel",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "10–12"
+    "bars": "24–24"
    },
    {
-    "id": "o-the-sligo-chorus@6-6",
+    "id": "o-the-sligo-chorus@2-2",
     "title": "The Sligo Chorus",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "7–7"
+    "bars": "3–3"
    },
    {
-    "id": "o-the-bucks-of-oranmore@13-14",
+    "id": "o-the-bucks-of-oranmore@11-12",
     "title": "The Bucks of Oranmore",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "14–15"
+    "bars": "12–13"
    },
    {
-    "id": "o-the-merry-sisters@2-3",
+    "id": "o-the-merry-sisters@14-14",
     "title": "The Merry Sisters",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "3–4"
+    "bars": "15–15"
+   },
+   {
+    "id": "o-thou-of-the-beautiful-hair@9-12",
+    "title": "Thou of the Beautiful Hair",
+    "by": "Traditional Irish",
+    "level": 6,
+    "bars": "10–13"
    }
   ]
  },
@@ -332,95 +332,95 @@ export const SKILLS = [
     "bars": "3–8"
    },
    {
-    "id": "r-loch-na-gar@0-4",
-    "title": "Loch-Na Gar",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "1–5"
-   },
-   {
-    "id": "r-vestri-s@2-4",
+    "id": "r-vestri-s@14-15",
     "title": "Vestri's",
     "by": "Traditional, American and British Isles",
     "level": 4,
-    "bars": "3–5"
+    "bars": "15–16"
    },
    {
-    "id": "r-cameron-s-favorite-lancashire@20-23",
+    "id": "r-cameron-s-favorite-lancashire@6-9",
     "title": "Cameron's Favorite (Lancashire)",
     "by": "Traditional, American and British Isles",
     "level": 5,
-    "bars": "21–24"
+    "bars": "7–10"
    },
    {
-    "id": "r-village-bells@9-12",
-    "title": "Village Bells",
-    "by": "Traditional, American and British Isles",
-    "level": 5,
-    "bars": "10–13"
-   },
-   {
-    "id": "o-the-first-of-june@20-21",
-    "title": "The First of June",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "21–22"
-   },
-   {
-    "id": "o-hicks-hornpipe@18-21",
-    "title": "Hicks' Hornpipe",
-    "by": "(Collected from F. O'Neill)",
-    "level": 5,
-    "bars": "19–22"
-   },
-   {
-    "id": "o-the-shaskeen-clog@20-23",
-    "title": "The Shaskeen Clog",
+    "id": "o-bonnie-anne@20-23",
+    "title": "Bonnie Anne",
     "by": "Traditional Irish",
     "level": 5,
     "bars": "21–24"
    },
    {
-    "id": "r-duncan-davidson@12-13",
-    "title": "Duncan Davidson",
-    "by": "Traditional, American and British Isles",
+    "id": "o-dancing-on-the-green-2@20-23",
+    "title": "Dancing On The Green",
+    "by": "Traditional Irish",
     "level": 5,
-    "bars": "13–14"
+    "bars": "21–24"
    },
    {
-    "id": "o-the-last-of-the-twins-2@6-9",
-    "title": "The Last of the Twins",
+    "id": "o-the-supple-dancer@2-4",
+    "title": "The Supple Dancer",
     "by": "Traditional Irish",
+    "level": 5,
+    "bars": "3–5"
+   },
+   {
+    "id": "o-hick-s-hornpipe@14-15",
+    "title": "Hick's Hornpipe",
+    "by": "Traditional Irish",
+    "level": 5,
+    "bars": "15–16"
+   },
+   {
+    "id": "r-rememberance-of-dublin@6-9",
+    "title": "Rememberance of Dublin",
+    "by": "Traditional, American and British Isles",
     "level": 5,
     "bars": "7–10"
    },
    {
-    "id": "o-the-pet-of-the-house@18-19",
-    "title": "The Pet Of The House",
+    "id": "o-humphrey-s-hornpipe@20-23",
+    "title": "Humphrey's Hornpipe",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "19–20"
+    "bars": "21–24"
    },
    {
-    "id": "o-limerick-junction-2@9-12",
-    "title": "Limerick Junction",
+    "id": "r-peach-blossom@29-30",
+    "title": "Peach Blossom",
+    "by": "Traditional, American and British Isles",
+    "level": 5,
+    "bars": "30–31"
+   },
+   {
+    "id": "r-miss-stuart-s@8-9",
+    "title": "Miss Stuart's",
+    "by": "Traditional, American and British Isles",
+    "level": 5,
+    "bars": "9–10"
+   },
+   {
+    "id": "o-hugh-mcardle-s-fancy@2-5",
+    "title": "Hugh McArdle's Fancy",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "10–13"
+    "bars": "3–6"
    },
    {
-    "id": "o-byrne-s-hornpipe@18-20",
-    "title": "Byrne's Hornpipe",
+    "id": "o-pretty-maggie-morrissey@2-4",
+    "title": "Pretty Maggie Morrissey",
     "by": "Traditional Irish",
     "level": 5,
-    "bars": "19–21"
+    "bars": "3–5"
    },
    {
-    "id": "r-every-body-s@6-9",
+    "id": "r-every-body-s@4-5",
     "title": "Every-Body's",
     "by": "Traditional, American and British Isles",
     "level": 5,
-    "bars": "7–10"
+    "bars": "5–6"
    }
   ]
  },
@@ -438,60 +438,53 @@ export const SKILLS = [
     "bars": "6–9"
    },
    {
-    "id": "o-the-devil-in-dublin@0-3",
-    "title": "The Devil In Dublin",
+    "id": "o-sergt-cahill-s-favorite@4-7",
+    "title": "Sergt. Cahill's Favorite",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "1–4"
+    "bars": "5–8"
    },
    {
-    "id": "r-belle-of-the-kitchen@0-3",
-    "title": "Belle Of The Kitchen",
-    "by": "Traditional, American and British Isles",
-    "level": 2,
-    "bars": "1–4"
-   },
-   {
-    "id": "o-kiss-me-sweetheart@21-24",
-    "title": "Kiss Me Sweetheart",
+    "id": "o-fragrant-blossoms@11-16",
+    "title": "Fragrant Blossoms",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "22–25"
+    "bars": "12–17"
    },
    {
-    "id": "o-ask-my-father@0-4",
-    "title": "Ask My Father",
+    "id": "o-the-martyr-s-lament@3-6",
+    "title": "The Martyr's Lament",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "1–5"
+    "bars": "4–7"
    },
    {
-    "id": "r-fox-hunters@24-27",
-    "title": "Fox Hunters'",
-    "by": "Traditional, American and British Isles",
+    "id": "o-friendly-jack-2@28-31",
+    "title": "Friendly Jack",
+    "by": "Traditional Irish",
     "level": 2,
-    "bars": "25–28"
+    "bars": "29–32"
    },
    {
-    "id": "o-paddies-evermore@0-2",
+    "id": "o-paddies-evermore@19-22",
     "title": "Paddies Evermore",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "1–3"
+    "bars": "20–23"
    },
    {
-    "id": "o-moll-in-the-wad@0-4",
+    "id": "o-the-grumbling-rustic@17-20",
+    "title": "The Grumbling Rustic",
+    "by": "F. O'Neill.",
+    "level": 2,
+    "bars": "18–21"
+   },
+   {
+    "id": "o-moll-in-the-wad@5-8",
     "title": "Moll In The Wad",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "1–5"
-   },
-   {
-    "id": "r-hop@9-12",
-    "title": "Hop",
-    "by": "Traditional, American and British Isles",
-    "level": 2,
-    "bars": "10–13"
+    "bars": "6–9"
    },
    {
     "id": "o-the-man-with-the-red-cloak@0-3",
@@ -501,11 +494,11 @@ export const SKILLS = [
     "bars": "1–4"
    },
    {
-    "id": "o-the-rejected-lover@5-9",
-    "title": "The Rejected Lover",
-    "by": "Traditional Irish",
+    "id": "l-nachtlied-lieder-op-7@0-4",
+    "title": "Nachtlied (Lieder, Op.7)",
+    "by": "Johanna Kinkel",
     "level": 3,
-    "bars": "6–10"
+    "bars": "1–5"
    },
    {
     "id": "r-fagin-s-holiday@20-23",
@@ -515,18 +508,25 @@ export const SKILLS = [
     "bars": "21–24"
    },
    {
-    "id": "r-the-tempest@17-20",
-    "title": "The Tempest",
-    "by": "Traditional, American and British Isles",
-    "level": 4,
-    "bars": "18–21"
+    "id": "o-the-twopenny-jig@0-3",
+    "title": "The Twopenny Jig",
+    "by": "Traditional Irish",
+    "level": 3,
+    "bars": "1–4"
    },
    {
-    "id": "o-for-freedom-and-for-erin@13-16",
-    "title": "For Freedom and for Erin",
+    "id": "o-the-boys-of-ballysadare@10-13",
+    "title": "The Boys of Ballysadare",
     "by": "Traditional Irish",
-    "level": 5,
-    "bars": "14–17"
+    "level": 3,
+    "bars": "11–14"
+   },
+   {
+    "id": "o-planxty-o-kelly@4-9",
+    "title": "Planxty O'Kelly",
+    "by": "O'Carolan",
+    "level": 4,
+    "bars": "5–10"
    }
   ]
  },
@@ -537,32 +537,25 @@ export const SKILLS = [
   "course": "G5",
   "items": [
    {
-    "id": "r-jackson-s-rolling@0-1",
-    "title": "Jackson's Rolling",
+    "id": "r-pothouge-jig@16-17",
+    "title": "Pothouge - Jig",
     "by": "Traditional, American and British Isles",
+    "level": 2,
+    "bars": "17–18"
+   },
+   {
+    "id": "o-jackson-s-rolling-jig@0-1",
+    "title": "Jackson's Rolling Jig",
+    "by": "Traditional Irish",
     "level": 2,
     "bars": "1–2"
    },
    {
-    "id": "o-drowsy-maggie@6-7",
-    "title": "Drowsy Maggie",
+    "id": "o-the-kilkenny-girl-2@11-12",
+    "title": "The Kilkenny Girl",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "7–8"
-   },
-   {
-    "id": "o-duffy-the-dancer@13-14",
-    "title": "Duffy the Dancer",
-    "by": "Traditional Irish",
-    "level": 2,
-    "bars": "14–15"
-   },
-   {
-    "id": "l-au-bois-dormant-paysages-d-amour@16-19",
-    "title": "Au bois dormant (Paysages d’amour)",
-    "by": "Augusta Holmès",
-    "level": 3,
-    "bars": "17–20"
+    "bars": "12–13"
    },
    {
     "id": "r-around-the-world@2-3",
@@ -572,67 +565,74 @@ export const SKILLS = [
     "bars": "3–4"
    },
    {
-    "id": "o-a-draught-of-ale@31-32",
-    "title": "A Draught of Ale",
-    "by": "Traditional Irish",
+    "id": "o-the-humors-of-whiskey@17-20",
+    "title": "The Humors of Whiskey",
+    "by": "Tobin.",
     "level": 3,
-    "bars": "32–33"
+    "bars": "18–21"
    },
    {
-    "id": "r-fight-about-the-fireside@6-7",
-    "title": "Fight About the Fireside",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "7–8"
-   },
-   {
-    "id": "o-the-day-after-the-fair@3-4",
-    "title": "The Day After the Fair",
+    "id": "o-my-love-will-ne-er-forsake-me@3-4",
+    "title": "My Love Will Ne'er Forsake Me",
     "by": "Traditional Irish",
     "level": 3,
     "bars": "4–5"
    },
    {
-    "id": "r-bella-union@17-18",
-    "title": "Bella Union",
-    "by": "R. TYSON",
+    "id": "o-durang-s-hornpipe@3-4",
+    "title": "Durang's Hornpipe",
+    "by": "Traditional Irish",
     "level": 3,
-    "bars": "18–19"
+    "bars": "4–5"
    },
    {
-    "id": "o-the-day-we-paid-the-rent@6-7",
-    "title": "The Day We Paid the Rent",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "7–8"
+    "id": "r-bella-union@19-20",
+    "title": "Bella Union",
+    "by": "R. Tyson",
+    "level": 3,
+    "bars": "20–21"
    },
    {
-    "id": "o-craig-s-reel@8-9",
-    "title": "Craig's Reel",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "9–10"
-   },
-   {
-    "id": "r-sleepy-maggie@24-25",
+    "id": "o-sleepy-maggie@18-19",
     "title": "Sleepy Maggie",
-    "by": "Traditional, American and British Isles",
+    "by": "Traditional Irish",
     "level": 4,
-    "bars": "25–26"
+    "bars": "19–20"
    },
    {
-    "id": "o-the-halfway-house@16-17",
-    "title": "The Halfway House.",
+    "id": "o-the-top-of-the-hill@0-1",
+    "title": "The Top Of The Hill",
     "by": "Traditional Irish",
+    "level": 4,
+    "bars": "1–2"
+   },
+   {
+    "id": "o-mixing-the-punch@13-14",
+    "title": "Mixing the Punch",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "14–15"
+   },
+   {
+    "id": "o-coming-from-the-wedding-2@18-19",
+    "title": "Coming From The Wedding",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "19–20"
+   },
+   {
+    "id": "r-salamanca@16-17",
+    "title": "Salamanca",
+    "by": "Traditional, American and British Isles",
     "level": 4,
     "bars": "17–18"
    },
    {
-    "id": "o-the-kerry-huntsman@4-5",
-    "title": "The Kerry Huntsman",
-    "by": "Traditional Irish",
-    "level": 4,
-    "bars": "5–6"
+    "id": "l-there-s-a-bird-beneath-your-window-littl@15-20",
+    "title": "There’s a bird beneath your window (Little Love Songs)",
+    "by": "Liza Lehmann",
+    "level": 5,
+    "bars": "16–21"
    }
   ]
  },
@@ -692,13 +692,6 @@ export const SKILLS = [
     "bars": "5–8"
    },
    {
-    "id": "m-six-progressive-studies-no-iv@32-35",
-    "title": "Six Progressive Studies: No. IV",
-    "by": "F. Knjze",
-    "level": 6,
-    "bars": "33–36"
-   },
-   {
     "id": "m-twelve-monferrine-no-4@15-20",
     "title": "Twelve Monferrine: No. 4",
     "by": "F. Knjze",
@@ -711,13 +704,6 @@ export const SKILLS = [
     "by": "F. Knjze",
     "level": 6,
     "bars": "24–27"
-   },
-   {
-    "id": "m-six-progressive-studies-no-ii@54-57",
-    "title": "Six Progressive Studies: No. II",
-    "by": "F. Knjze",
-    "level": 6,
-    "bars": "55–58"
    }
   ]
  },
@@ -728,60 +714,11 @@ export const SKILLS = [
   "course": "G8",
   "items": [
    {
-    "id": "r-neapolitan-threshers@21-24",
-    "title": "Neapolitan Threshers'",
-    "by": "Traditional, American and British Isles",
-    "level": 2,
-    "bars": "22–25"
-   },
-   {
-    "id": "o-the-ladies-of-carrick@4-7",
-    "title": "The Ladies of Carrick",
+    "id": "o-drowsy-maggie@6-7",
+    "title": "Drowsy Maggie",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "5–8"
-   },
-   {
-    "id": "o-courtney-s-favorite@4-7",
-    "title": "Courtney's Favorite",
-    "by": "Carberry.",
-    "level": 2,
-    "bars": "5–8"
-   },
-   {
-    "id": "r-fight-about-the-fireside@10-11",
-    "title": "Fight About the Fireside",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "11–12"
-   },
-   {
-    "id": "r-hey-ca-thro@4-7",
-    "title": "Hey, Ca' Thro'",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "5–8"
-   },
-   {
-    "id": "r-black-eyed-lassie@0-2",
-    "title": "Black-Eyed Lassie",
-    "by": "SCOTCH.",
-    "level": 3,
-    "bars": "1–3"
-   },
-   {
-    "id": "r-marquis-of-bowmont@7-8",
-    "title": "Marquis Of Bowmont",
-    "by": "SCOTCH.",
-    "level": 3,
-    "bars": "8–9"
-   },
-   {
-    "id": "o-the-devil-s-dream@2-4",
-    "title": "The Devil's Dream.",
-    "by": "Traditional Irish",
-    "level": 3,
-    "bars": "3–5"
+    "bars": "7–8"
    },
    {
     "id": "r-ladies-pandeletts@0-3",
@@ -791,18 +728,60 @@ export const SKILLS = [
     "bars": "1–4"
    },
    {
-    "id": "r-all-the-go@8-11",
-    "title": "All the Go",
-    "by": "Traditional, American and British Isles",
+    "id": "o-the-day-we-paid-the-rent@14-17",
+    "title": "The Day We Paid the Rent",
+    "by": "Traditional Irish",
     "level": 4,
-    "bars": "9–12"
+    "bars": "15–18"
    },
    {
-    "id": "r-the-countess-of-louden-s@0-4",
-    "title": "The Countess of Louden's",
+    "id": "r-pretty-jane-s@16-19",
+    "title": "Pretty Jane's",
     "by": "Traditional, American and British Isles",
     "level": 4,
-    "bars": "1–5"
+    "bars": "17–20"
+   },
+   {
+    "id": "o-murtough-mulloy@8-9",
+    "title": "Murtough Mulloy",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "9–10"
+   },
+   {
+    "id": "r-the-ladies-delight@20-20",
+    "title": "The Ladies' Delight",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "21–21"
+   },
+   {
+    "id": "o-music-in-the-glen@11-12",
+    "title": "Music in the Glen",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "12–13"
+   },
+   {
+    "id": "r-bride-of-kildare@8-9",
+    "title": "Bride Of Kildare",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "9–10"
+   },
+   {
+    "id": "o-kiss-the-maid-behind-the-barrel@20-21",
+    "title": "Kiss the Maid Behind the Barrel",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "21–22"
+   },
+   {
+    "id": "r-green-groves-of-erin@11-14",
+    "title": "Green Groves of Erin",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "12–15"
    },
    {
     "id": "o-the-snow-on-the-hills@0-3",
@@ -812,18 +791,25 @@ export const SKILLS = [
     "bars": "1–4"
    },
    {
-    "id": "o-jennie-rock-the-cradle@19-20",
-    "title": "Jennie Rock the Cradle",
-    "by": "Traditional Irish",
-    "level": 5,
-    "bars": "20–21"
-   },
-   {
-    "id": "r-eureka@6-9",
-    "title": "Eureka",
+    "id": "r-donegall-boys@8-9",
+    "title": "Donegall Boys'",
     "by": "Traditional, American and British Isles",
     "level": 5,
-    "bars": "7–10"
+    "bars": "9–10"
+   },
+   {
+    "id": "o-kiss-your-partner@14-15",
+    "title": "Kiss Your Partner",
+    "by": "Traditional Irish",
+    "level": 5,
+    "bars": "15–16"
+   },
+   {
+    "id": "m-pavan-2@10-15",
+    "title": "Pavan 2",
+    "by": "L. Milan",
+    "level": 5,
+    "bars": "11–16"
    }
   ]
  },
@@ -849,10 +835,17 @@ export const SKILLS = [
    },
    {
     "id": "r-o-connell-s-welcome@0-3",
-    "title": "O'connell's Welcome",
+    "title": "O'Connell's Welcome",
     "by": "Traditional, American and British Isles",
     "level": 3,
     "bars": "1–4"
+   },
+   {
+    "id": "o-fair-haired-mary@12-13",
+    "title": "Fair Haired Mary",
+    "by": "Traditional Irish",
+    "level": 3,
+    "bars": "13–14"
    },
    {
     "id": "r-rolling-off-a-log@0-4",
@@ -884,17 +877,17 @@ export const SKILLS = [
    },
    {
     "id": "r-hiawat-ha@2-4",
-    "title": "Hiawat:ha",
+    "title": "Hiawatha",
     "by": "Traditional, American and British Isles",
     "level": 4,
     "bars": "3–5"
    },
    {
-    "id": "l-if-love-be-life-i-long-to-die-songs-of-r@49-54",
-    "title": "If love be life, I long to die (Songs of Remembrance)",
-    "by": "Ann Mounsey",
-    "level": 5,
-    "bars": "50–55"
+    "id": "m-etude-1@24-25",
+    "title": "Etude 1",
+    "by": "M. Carcassi",
+    "level": 4,
+    "bars": "25–26"
    },
    {
     "id": "r-the-unknown@19-20",
@@ -923,13 +916,6 @@ export const SKILLS = [
     "by": "Traditional, American and British Isles",
     "level": 5,
     "bars": "3–6"
-   },
-   {
-    "id": "r-fantastic@18-21",
-    "title": "Fantastic",
-    "by": "Traditional, American and British Isles",
-    "level": 5,
-    "bars": "19–22"
    }
   ]
  },
@@ -947,11 +933,11 @@ export const SKILLS = [
     "bars": "15–18"
    },
    {
-    "id": "o-jim-boulton-s-fancy@18-20",
-    "title": "Jim Boulton's Fancy",
+    "id": "o-cooney-s-hornpipe@15-18",
+    "title": "Cooney's Hornpipe",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "19–21"
+    "bars": "16–19"
    },
    {
     "id": "r-soldiers-joy@5-8",
@@ -968,32 +954,11 @@ export const SKILLS = [
     "bars": "19–22"
    },
    {
-    "id": "r-old-zip-coon@5-8",
-    "title": "Old Zip Coon",
-    "by": "Traditional, American and British Isles",
+    "id": "o-the-midnight-dance@22-25",
+    "title": "The Midnight Dance",
+    "by": "Traditional Irish",
     "level": 3,
-    "bars": "6–9"
-   },
-   {
-    "id": "r-texarkana@18-21",
-    "title": "Texarkana",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "19–22"
-   },
-   {
-    "id": "r-atlanta@0-4",
-    "title": "Atlanta",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "1–5"
-   },
-   {
-    "id": "r-paddy-on-the-railroad@6-9",
-    "title": "Paddy On The Railroad",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
-    "bars": "7–10"
+    "bars": "23–26"
    },
    {
     "id": "r-reilly-s@12-15",
@@ -1010,32 +975,53 @@ export const SKILLS = [
     "bars": "41–44"
    },
    {
-    "id": "r-pushee-s@21-24",
-    "title": "Pushee's",
-    "by": "A. Pushee",
-    "level": 4,
-    "bars": "22–25"
-   },
-   {
-    "id": "r-hopkin-s@19-21",
-    "title": "Hopkin's",
+    "id": "r-sweet-ellen-or-figure-eight@24-27",
+    "title": "SWEET ELLEN, (or Figure Eight.)",
     "by": "Traditional, American and British Isles",
     "level": 4,
-    "bars": "20–22"
+    "bars": "25–28"
    },
    {
-    "id": "r-quindaro@5-8",
-    "title": "Quindaro",
+    "id": "o-the-flowers-of-antrim@0-4",
+    "title": "The Flowers of Antrim",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "1–5"
+   },
+   {
+    "id": "o-glengariff-bay@0-4",
+    "title": "Glengariff Bay",
+    "by": "Traditional Irish",
+    "level": 4,
+    "bars": "1–5"
+   },
+   {
+    "id": "r-root-hog-or-die-jig@11-14",
+    "title": "Root, Hog or Die - Jig",
     "by": "Traditional, American and British Isles",
     "level": 4,
+    "bars": "12–15"
+   },
+   {
+    "id": "r-eileen-alanna-reel@17-18",
+    "title": "Eileen Alanna - Reel",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "bars": "18–19"
+   },
+   {
+    "id": "r-silver-cluster@5-8",
+    "title": "Silver Cluster",
+    "by": "Traditional, American and British Isles",
+    "level": 5,
     "bars": "6–9"
    },
    {
-    "id": "r-california@18-20",
-    "title": "California",
+    "id": "r-ned-kendall-s@6-9",
+    "title": "Ned Kendall's",
     "by": "Traditional, American and British Isles",
     "level": 5,
-    "bars": "19–21"
+    "bars": "7–10"
    }
   ]
  },
@@ -1053,18 +1039,18 @@ export const SKILLS = [
     "bars": "13–16"
    },
    {
-    "id": "m-portuguese-hymn@9-12",
+    "id": "m-portuguese-hymn@13-16",
     "title": "Portuguese Hymn",
     "by": "F. Horetzky",
     "level": 5,
-    "bars": "10–13"
+    "bars": "14–17"
    },
    {
-    "id": "m-russian-hymn@4-7",
+    "id": "m-russian-hymn@12-15",
     "title": "Russian Hymn",
     "by": "F. Horetzky",
     "level": 5,
-    "bars": "5–8"
+    "bars": "13–16"
    },
    {
     "id": "r-essence-of-old-kentucky@29-32",
@@ -1074,11 +1060,11 @@ export const SKILLS = [
     "bars": "30–33"
    },
    {
-    "id": "m-rousseau-s-dream@11-12",
+    "id": "m-rousseau-s-dream@9-10",
     "title": "Rousseau's Dream",
     "by": "F. Horetzky",
     "level": 5,
-    "bars": "12–13"
+    "bars": "10–11"
    },
    {
     "id": "m-cherubini-s-air@2-3",
@@ -1086,6 +1072,13 @@ export const SKILLS = [
     "by": "F. Horetzky",
     "level": 5,
     "bars": "3–4"
+   },
+   {
+    "id": "m-russian-air@20-23",
+    "title": "Russian Air",
+    "by": "F. Horetzky",
+    "level": 5,
+    "bars": "21–24"
    },
    {
     "id": "m-old-german-air@8-11",
@@ -1109,39 +1102,32 @@ export const SKILLS = [
     "bars": "4–5"
    },
    {
-    "id": "m-swedish-air@5-6",
-    "title": "Swedish Air",
-    "by": "F. Horetzky",
-    "level": 5,
-    "bars": "6–7"
-   },
-   {
-    "id": "m-vive-henri-quatre@12-15",
+    "id": "m-vive-henri-quatre@4-7",
     "title": "Vive Henri Quatre",
     "by": "F. Horetzky",
     "level": 5,
-    "bars": "13–16"
+    "bars": "5–8"
    },
    {
-    "id": "m-fra-tante-angoscie@0-3",
-    "title": "Fra Tante Angoscie",
+    "id": "m-kelvin-grove@3-4",
+    "title": "Kelvin Grove",
     "by": "F. Horetzky",
     "level": 5,
-    "bars": "1–4"
+    "bars": "4–5"
    },
    {
-    "id": "m-sicilian-mariner-s-hymn@8-11",
+    "id": "m-sicilian-mariner-s-hymn@0-3",
     "title": "Sicilian Mariner's Hymn",
     "by": "F. Horetzky",
     "level": 6,
-    "bars": "9–12"
+    "bars": "1–4"
    },
    {
-    "id": "m-venetian-air-la-biondina@0-4",
+    "id": "m-venetian-air-la-biondina@5-6",
     "title": "Venetian Air. La Biondina",
     "by": "F. Horetzky",
     "level": 6,
-    "bars": "1–5"
+    "bars": "6–7"
    }
   ]
  },
@@ -1152,102 +1138,102 @@ export const SKILLS = [
   "course": "G7",
   "items": [
    {
-    "id": "o-the-humors-of-ballyconnell@18-21",
-    "title": "The Humors of Ballyconnell",
-    "by": "Traditional Irish",
-    "level": 2,
-    "bars": "19–22"
-   },
-   {
-    "id": "o-biddy-i-m-not-jesting@5-8",
-    "title": "Biddy I'm Not Jesting",
-    "by": "Traditional Irish",
+    "id": "o-young-william-plunkett@5-8",
+    "title": "Young William Plunkett",
+    "by": "O'Carolan",
     "level": 2,
     "bars": "6–9"
    },
    {
-    "id": "o-the-widow-brady-2@21-24",
-    "title": "The Widow Brady",
+    "id": "o-the-poor-old-woman@3-6",
+    "title": "The Poor Old Woman",
     "by": "Traditional Irish",
+    "level": 2,
+    "bars": "4–7"
+   },
+   {
+    "id": "r-lafrican-s@21-24",
+    "title": "Lafrican's",
+    "by": "Traditional, American and British Isles",
     "level": 2,
     "bars": "22–25"
    },
    {
-    "id": "o-cahirciveen@0-4",
-    "title": "Cahirciveen",
+    "id": "o-have-a-drink-on-me@19-22",
+    "title": "Have A Drink On Me",
     "by": "Traditional Irish",
     "level": 2,
-    "bars": "1–5"
+    "bars": "20–23"
    },
    {
-    "id": "l-ici-bas-tous-les-lilas-meurent-vwv-1176-@20-24",
-    "title": "Ici-bas tous les lilas meurent, VWV 1176 (Mélodies, VWV 1133-11371176)",
-    "by": "Pauline Viardot",
-    "level": 3,
-    "bars": "21–25"
-   },
-   {
-    "id": "o-the-bold-soldier-boy@25-28",
-    "title": "The Bold Soldier Boy",
+    "id": "o-achil-air@9-12",
+    "title": "Achil Air",
     "by": "Traditional Irish",
     "level": 3,
-    "bars": "26–29"
+    "bars": "10–13"
    },
    {
-    "id": "o-hull-s-victory@5-8",
-    "title": "Hull's Victory",
-    "by": "Traditional Irish",
-    "level": 3,
-    "bars": "6–9"
-   },
-   {
-    "id": "o-galway-tom@21-24",
-    "title": "Galway Tom",
-    "by": "Traditional Irish",
-    "level": 3,
-    "bars": "22–25"
-   },
-   {
-    "id": "o-the-thief-of-lough-erne@17-20",
-    "title": "The Thief of Lough Erne",
-    "by": "Traditional Irish",
-    "level": 3,
-    "bars": "18–21"
-   },
-   {
-    "id": "r-pat-in-his-glory@5-8",
-    "title": "Pat: in His Glory",
+    "id": "r-league-and-slasher@22-25",
+    "title": "League and Slasher",
     "by": "Traditional, American and British Isles",
     "level": 3,
-    "bars": "6–9"
+    "bars": "23–26"
    },
    {
-    "id": "o-jackson-s-rambles@0-4",
-    "title": "Jackson's Rambles",
+    "id": "o-the-belles-of-clonallan@0-3",
+    "title": "The Belles Of Clonallan",
     "by": "Traditional Irish",
-    "level": 4,
-    "bars": "1–5"
-   },
-   {
-    "id": "o-comely-jane-downing@0-3",
-    "title": "Comely Jane Downing",
-    "by": "Traditional Irish",
-    "level": 5,
+    "level": 3,
     "bars": "1–4"
    },
    {
-    "id": "r-jackson-s-bottle-of-brandy@20-23",
-    "title": "Jackson's Bottle of Brandy",
+    "id": "o-the-limerick-tinker@18-21",
+    "title": "The Limerick Tinker",
+    "by": "Traditional Irish",
+    "level": 3,
+    "bars": "19–22"
+   },
+   {
+    "id": "o-the-joy-of-my-life@0-4",
+    "title": "The Joy of My Life",
+    "by": "F. O'Neill.",
+    "level": 3,
+    "bars": "1–5"
+   },
+   {
+    "id": "o-young-francis-mooney@5-8",
+    "title": "Young Francis Mooney",
+    "by": "Traditional Irish",
+    "level": 3,
+    "bars": "6–9"
+   },
+   {
+    "id": "r-wee-bit@2-5",
+    "title": "Wee Bit",
     "by": "Traditional, American and British Isles",
-    "level": 5,
+    "level": 3,
+    "bars": "3–6"
+   },
+   {
+    "id": "o-fishing-for-eels@20-23",
+    "title": "Fishing for Eels",
+    "by": "Traditional Irish",
+    "level": 4,
     "bars": "21–24"
    },
    {
-    "id": "o-the-mills-are-grinding@8-11",
-    "title": "The Mills are Grinding",
+    "id": "o-bridget-mcbride@2-4",
+    "title": "Bridget McBride",
     "by": "Traditional Irish",
-    "level": 5,
-    "bars": "9–12"
+    "level": 4,
+    "bars": "3–5"
+   },
+   {
+    "id": "o-out-with-the-boys-1st-setting@9-12",
+    "title": "Out With the Boys. 1st Setting",
+    "by": "J. O'Neill.",
+    "level": 4,
+    "bars": "10–13"
    }
   ]
  }

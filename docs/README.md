@@ -15,6 +15,10 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **Levels and the syllabus**: a piece's level is its hardest demand (`songs/demands.js`): left-hand position, rhythm, notes held together, or key, with length counting for one step. Speed stays out, because lessons set the speed. `tools/syllabus.mjs` then builds the path from the music: each stage says what a piece may ask, and songs are picked so each adds a skill or two, followed by one that plays them in.
 
+`tools/audit.mjs` is an adversarial pass over everything a learner meets, and runs as a test, so a piece with no music in it, a lesson step on one note, or a stage that breaks its promise fails the build. `tools/tune-harmony.mjs` scores the worked-out chords against composers' real left hands and tunes the weights, on songs held back from the tuning.
+
+**Chord changes**: every change between the common open chords is sized by how far the hand moves (Small, Medium, Big, Leaps). The app recommends the ones real pieces use most, drops the ones you've mastered, and can generate a fresh run of changes at any size.
+
 **Chords**: most of the library is bare melody, so `songs/harmony.js` works out suggested chords from each tune, using the fewest that fit. `songs/changes.js` turns them into lessons: drill the changes that song really uses, then play its chords with its tune behind you, moved to easier open shapes with a capo where that helps.
 
 **Lessons**: every piece is cut into real phrases (`core/phrases.js`): it finds where the music breathes, learns a repeat once, and spots a phrase that nearly repeats. Phrases group into short lessons that open by recalling the last one and close by running everything so far, then a final lesson brings the whole piece up to speed. Piano pieces build the same way.

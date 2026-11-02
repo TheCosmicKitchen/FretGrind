@@ -12,9 +12,9 @@ import { fileURLToPath } from "node:url";
 import { METERS, build, check } from "../docs/js/songs/format.js";
 import { grips, levelOfTab, playability, tabify } from "../docs/js/songs/tabify.js";
 import { chunksOf } from "../docs/js/songs/path.js";
-import { demandsOf, skillsOf } from "../docs/js/songs/demands.js";
+import { demandsOf, musicOf, skillsOf } from "../docs/js/songs/demands.js";
 import { SONGS } from "../docs/js/songs/data.js";
-import { chartFor } from "../docs/js/songs/changes.js";
+import { changeKey, changesOf, chartFor } from "../docs/js/songs/changes.js";
 import { buildSyllabus } from "./syllabus.mjs";
 
 const T = 12, // twelfths of a sixteenth, as in format.js
@@ -557,6 +557,8 @@ for (const c of readdirSync(join(liedDir, "scores"))) {
   }
 }
 
+/* Stray colons from the old typesetting, and the capital after an O'. */
+const tidyTitle = (t) => t.replace(/(\p{L}):(\p{L})/gu, "$1$2").replace(/^(\p{L}+): (\p{L}+\.?)$/u, "$1 $2").replace(/\.$/, "").replace(/\bO'(\p{Ll})/gu, (_, c) => `O'${c.toUpperCase()}`);
 const seen = new Set(),
   slug = (t) => t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40),
   ids = new Set(),
@@ -571,7 +573,7 @@ for (const t of lib) {
   seen.add(dup);
   let id = `${t.coll[0]}-${slug(t.title)}`;
   for (let n = 2; ids.has(id); n++) id = `${t.coll[0]}-${slug(t.title)}-${n}`;
-  const def = { id, title: t.title, by: t.by, key: t.key, time: t.time, tempo: t.tempo, bars: t.bars, level: 6, tags: [] };
+  const def = { id, title: tidyTitle(t.title), by: /^[^a-z]+$/.test(t.by) ? t.by.replace(/\.$/, "").toLowerCase().replace(/(^|[\s'-])\p{L}/gu, (c) => c.toUpperCase()) : t.by, key: t.key, time: t.time, tempo: t.tempo, bars: t.bars, level: 6, tags: [] };
   if (t.pickup) def.pickup = t.pickup;
   try {
     const s = build(def);
@@ -579,7 +581,8 @@ for (const t of lib) {
     if (s.total % s.beat) { miss("doesn't end on a beat"); continue; }
     if (s.sounding.length < 12) { miss("too short"); continue; }
     if (s.sounding.some((n) => n.midi > 95)) { miss("too high for the guitar"); continue; }
-    if (new Set(s.sounding.map((n) => n.midi)).size < 5 || s.sounding.length / s.barLens.length < 1.5) { miss("too little tune to play"); continue; }
+    const shape = musicOf(s, tabify(s, 6));
+    if (shape.pitches < 5 || shape.perBar < 1.5 || shape.same > 0.5 || shape.run >= 10) { miss("too little tune to play"); continue; }
     s.style = t.style;
     const g = gradeOf(s);
     hards.push(g.h);
@@ -652,6 +655,9 @@ const SKILLS = [
       if (c.same >= 0 || c.to - c.from > 5 || count_ < 6 || count_ > 34) continue;
       const ns = b.sounding.slice(c.first, c.last + 1),
         tab = full.slice(c.first, c.last + 1),
+        phrase = musicOf({ sounding: ns, barLens: [c.from] }, tab);
+      if (phrase.pitches < 4 || phrase.same > 0.4) continue; // a phrase needs some music in it to be worth drilling
+      const
         m = ns.map((n) => n.midi),
         iv = m.slice(1).map((x, i) => x - m[i]);
       SKILLS.forEach((sk, i) => {
@@ -699,19 +705,32 @@ const unit = (def, g, own) => {
   const s = build(def),
     tab = g ? g.tab : tabify(s, 6),
     grade = g || { d: demandsOf(s, tab, chunksOf(s).filter((c) => c.same < 0).reduce((a, c) => a + (c.last - c.first + 1), 0)), skills: skillsOf(s, tab), h: hardness(s) },
+    bars = s.barLens.length,
     gone = s.barLens.filter((_, b) => !s.sounding.some((n) => n.bar === b)).length / s.barLens.length,
-    out = { id: def.id, title: def.title, by: def.by, level: own ? Math.max(grade.d.level, levelOfTab(s)) : def.level, d: grade.d, skills: grade.skills, h: grade.h, nps: npsOf.get(def.id) ?? +(s.sounding.length / ((s.total / s.beat) * (60 / s.tempo))).toFixed(2), known: own || FAMOUS.test(def.title), lied: def.src === "lieder", classical: def.style === "classical", sparse: gone > 0.12 || s.sounding.length / s.barLens.length < 2.5, strings: [...new Set(tab.map((c) => c[0]))], top: Math.max(...tab.flatMap((c) => (c.all || [c]).map((p) => p[1]))), fit: 0 };
+    out = { id: def.id, title: def.title, by: def.by, level: own ? Math.max(grade.d.level, levelOfTab(s)) : def.level, d: grade.d, skills: grade.skills, h: grade.h, nps: npsOf.get(def.id) ?? +(s.sounding.length / ((s.total / s.beat) * (60 / s.tempo))).toFixed(2), own, known: own || FAMOUS.test(def.title), lied: def.src === "lieder", classical: def.style === "classical", sparse: gone > 0.12 || s.sounding.length / s.barLens.length < 2.5, strings: [...new Set(tab.map((c) => c[0]))], top: Math.max(...tab.flatMap((c) => (c.all || [c]).map((p) => p[1]))), q: musicOf(s, tab), time: s.time, key: s.key, fit: 0 };
   if (grade.d.voices === 1) {
     const open = chartFor(s, "open"),
       barre = chartFor(s, "barre"),
       EASY = /^(Em|Am|E|E7|A|A7|D|Dm|D7|C|G|G7|B7)$/;
     out.fit = open.fit;
-    out.open = { names: open.names, easy: open.names.every((n) => EASY.test(n)), moves: open.moves };
-    out.barre = { names: barre.names, moves: barre.moves };
+    const sizeOf = (chart) => ({ names: chart.names, moves: chart.moves, rate: chart.moves / bars, peak: Math.max(0, ...changesOf(chart).map((m) => m.cost)) });
+    out.open = { ...sizeOf(open), easy: open.names.every((n) => EASY.test(n)) };
+    out.barre = sizeOf(barre);
+    out.pairs = [...new Set(open.spans.slice(1).map((sp, i) => (sp.name === open.spans[i].name ? "" : changeKey(sp.name, open.spans[i].name))).filter(Boolean))];
   }
   return out;
 };
-const GUITAR_PATH = buildSyllabus([...SONGS.map((d) => unit(d, null, true)), ...good.map((d) => unit(d, gradeBy.get(d.id), false))]);
+const pool = [...SONGS.map((d) => unit(d, null, true)), ...good.map((d) => unit(d, gradeBy.get(d.id), false))];
+const GUITAR_PATH = buildSyllabus(pool, console.log);
+/* How often real pieces make each chord change, with the easiest few that do. This is what the recommendations lean on. */
+const use = {};
+for (const x of [...pool].filter((p) => p.pairs && p.fit >= 0.74).sort((a, b) => a.level - b.level || a.h - b.h))
+  for (const k of x.pairs) {
+    const u = (use[k] ||= { n: 0, songs: [] });
+    u.n++;
+    if (u.songs.length < 3) u.songs.push({ id: x.id, title: x.title });
+  }
+writeFileSync(join(here, "js/songs/changes-data.js"), `/* Generated by tools/import-music.mjs: how many pieces make each chord change, in the worked-out chords. */\nexport const CHANGE_USE = ${JSON.stringify(use)};\n`);
 writeFileSync(join(here, "js/songs/path-data.js"), `/* Generated by tools/import-music.mjs: the guitar syllabus, one stage beside each course. Each song adds a skill or two to the last: see tools/syllabus.mjs. */\nexport const GUITAR_PATH = ${JSON.stringify(GUITAR_PATH, null, 1)};\n`);
 
 /* ---------- piano: both hands kept apart, written as "right/left:length" ---------- */
