@@ -13,6 +13,10 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 **The song path** is the heart of the app. Songs are graded by how hard they are to play, and the guitar path has a stage beside each course (G1 to G10), so songs appear as stops on the course map and in the daily plan. Any piece can be learned part by part: it is cut into phrases of whole bars (a repeat is learned once), and each part goes Listen, Note by note, In time, then joins the part before it, ending with the whole piece at 75% and at full speed for up to three stars. Pieces can be played without a microphone by moving on by hand. See `songs/path.js`.
 
+**Levels and the syllabus**: a piece's level is its hardest demand (`songs/demands.js`): left-hand position, rhythm, notes held together, or key, with length counting for one step. Speed stays out, because lessons set the speed. `tools/syllabus.mjs` then builds the path from the music: each stage says what a piece may ask, and songs are picked so each adds a skill or two, followed by one that plays them in.
+
+**Chords**: most of the library is bare melody, so `songs/harmony.js` works out suggested chords from each tune, using the fewest that fit. `songs/changes.js` turns them into lessons: drill the changes that song really uses, then play its chords with its tune behind you, moved to easier open shapes with a capo where that helps.
+
 **Lessons**: every piece is cut into real phrases (`core/phrases.js`): it finds where the music breathes, learns a repeat once, and spots a phrase that nearly repeats. Phrases group into short lessons that open by recalling the last one and close by running everything so far, then a final lesson brings the whole piece up to speed. Piano pieces build the same way.
 
 **Skills**: phrases mined from the whole library that show one technique clearly (scale runs, arpeggios, triplets, syncopation, position shifts and more), each opening as a short drill inside its piece. Library tunes also carry a speed, so you can filter by Slow, Moderate or Fast.

@@ -20,7 +20,8 @@ test("the library is big, varied and covers every level", () => {
   assert.equal(rows.length, tunes.length);
   assert.ok(tunes.length > 2000, `${tunes.length} tunes`);
   assert.ok(tunes.filter((t) => t.style === "classical").length >= 70);
-  for (const lv of [1, 2, 3, 4, 5, 6]) assert.ok(tunes.filter((t) => t.level === lv).length >= 40, `level ${lv}`);
+  for (const lv of [2, 3, 4, 5, 6]) assert.ok(tunes.filter((t) => t.level === lv).length >= 40, `level ${lv}`);
+  assert.ok(tunes.some((t) => t.level === 1), "level 1 is short on purpose: only the plainest tunes qualify");
   assert.equal(new Set(tunes.map((t) => t.id)).size, tunes.length);
 });
 

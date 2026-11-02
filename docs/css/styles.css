@@ -2136,6 +2136,17 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sc-l small { color: var(--mu); white-space: nowrap; }
 .sc-l.done small { color: var(--ok); }
 .sc-l.next span { color: var(--ac); }
+.sc-boxes { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.sc-boxes figure { width: 84px; margin: 0; text-align: center; }
+.sc-boxes figcaption { font-weight: 600; font-size: 14px; }
+.sc-boxes svg { display: block; width: 100%; height: auto; }
+.sc-ch { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 10px; }
+.sc-ch .rs { margin: 0; }
+.sp-next { margin-bottom: 14px; padding: 16px; border-radius: var(--r-m); background: var(--raise); }
+.sp-next small { color: var(--mu); }
+.sp-next h3 { margin: 4px 0; }
+.sp-next p { margin: 0 0 10px; color: var(--mu); }
+.sp-song.ch .sp-t::before { content: "♪ "; color: var(--ac); }
 .sc-acts .go { margin-top: 10px; }
 .sc-acts .rs { margin: 6px 0 0; padding-left: 0; }
 .sc-stars { color: var(--ac); font-size: 26px; letter-spacing: 3px; }

@@ -96,19 +96,62 @@ export function sliceDef(song, from, to) {
   return { id: `${id}@${from}-${to}`, title, by, level, style, key, time, tempo, source, reviewed, tags: [], pickup: from === 0 ? song.pickup : 0, bars: bars.slice(from, to + 1).join(" | "), labels };
 }
 
+/* A note as the format writes it. */
+const spell = (p) => `${p.letter}${p.acc > 0 ? "#" : p.acc < 0 ? "b" : ""}${p.oct}`;
+const length = (d) => (Number.isInteger(d) ? d : `${Math.round(d * 3)}/3`);
+
+/* Every place on the neck this tune uses, up and back: the hand learns the map before the music. */
+export function notesDrill(song, tab) {
+  const seen = new Map();
+  song.sounding.forEach((n, i) => {
+    const p = n.pitches[0];
+    if (n.pitches.length === 1 && Math.abs(p.acc) <= 1) seen.set(p.midi, { name: spell(p), s: tab[i][0], f: tab[i][1] });
+  });
+  const up = [...seen.keys()].sort((a, b) => a - b).map((m) => seen.get(m));
+  if (up.length < 4 || up.length > 14) return null;
+  const toks = [...up, ...up.slice(0, -1).reverse()].map((n) => `${n.name}:4=${6 - n.s}.${n.f}`);
+  while (toks.length % 4) toks.push("r:4");
+  const bars = [];
+  for (let i = 0; i < toks.length; i += 4) bars.push(toks.slice(i, i + 4).join(" "));
+  return { id: `${song.id}:notes`, title: `The notes in ${song.title}`, by: song.by, level: song.level, style: "exercise", key: song.key, time: "4/4", tempo: 60, tags: [], bars: bars.join(" | "), source: "The notes of the tune, in the places the tab uses them.", reviewed: true, count: up.length };
+}
+
+/* The trickiest rhythm in the tune on one note: time first, then pitches. */
+export function rhythmDrill(song, tab) {
+  const { parts } = lessonsOf(song),
+    end = song.barLens.length - 1,
+    spice = (p) => new Set(song.sounding.slice(p.first, p.last + 1).map((n) => n.dur)).size,
+    pick = parts.filter((p) => p.to - p.from < 4 && p.to < end && !song.sounding.slice(p.first, p.last + 1).some((n) => n.pitches.length > 1)).sort((a, b) => spice(b) - spice(a))[0];
+  if (!pick || spice(pick) < 3) return null;
+  const home = song.sounding[pick.first],
+    [s, f] = tab[pick.first],
+    tok = `${spell(home.pitches[0])}`,
+    bars = [];
+  for (let b = pick.from; b <= pick.to; b++) bars.push(song.notes.filter((n) => n.bar === b).map((n) => (n.rest ? `r:${length(n.dur)}` : `${tok}:${length(n.dur)}=${6 - s}.${f}`)).join(" "));
+  return { id: `${song.id}:rhythm`, title: `The rhythm of ${song.title}`, by: song.by, level: song.level, style: "exercise", key: song.key, time: song.time, tempo: song.tempo, pickup: pick.from === 0 ? song.pickup : 0, tags: [], bars: bars.join(" | "), source: "The rhythm of one phrase of the tune, on a single note.", reviewed: true, from: pick.from, to: pick.to };
+}
+
 /* The steps that take a piece from nothing to played, lesson by lesson. Each lesson opens by recalling the last one and closes by running
-   everything so far, so what you know keeps growing towards the whole piece. kind: "warm" | "hear" | "wait" | "spot" | "along" | "join" | "run" | "full" */
-export function coachPlan(song) {
+   everything so far, so what you know keeps growing towards the whole piece. With the tab to hand it starts by getting the hands ready for this tune.
+   kind: "prep" | "warm" | "hear" | "wait" | "spot" | "along" | "join" | "run" | "full" */
+export function coachPlan(song, tab) {
   const fast = notesPerSecond(song) >= 4.5,
     slow = fast ? 60 : 75, // a quick tune gets a gentler first run
     ladder = fast ? [60, 80, 100] : [75, 90, 100],
     { chunks, parts, lessons } = lessonsOf(song),
     end = song.barLens.length - 1,
-    total = lessons.length + 1,
+    prep = tab ? [notesDrill(song, tab), rhythmDrill(song, tab)].filter(Boolean) : [],
+    extra = prep.length ? 1 : 0,
+    total = lessons.length + 1 + extra,
     label = (g) => (g.length === 1 ? `Part ${g[0].n}` : g.length === 2 ? `Parts ${g[0].n} and ${g[1].n}` : `Parts ${g[0].n} to ${g[g.length - 1].n}`),
     steps = [];
+  prep.forEach((def) => {
+    const notes = def.count !== undefined,
+      tag = { lesson: 1, lessons: total, lessonName: "Get ready", parts: parts.length, part: 0, from: def.from || 0, to: def.to ?? end, kind: "prep", def };
+    steps.push(notes ? { ...tag, mode: "wait", pct: 100, title: "The notes you'll need", say: `These ${def.count} notes are the whole tune. Find each one, up and back.` } : { ...tag, mode: "along", pct: 75, title: "The rhythm", say: `The trickiest rhythm in the tune, bars ${def.from + 1}–${def.to + 1}, on one note. Get it in your hands before the notes.` });
+  });
   lessons.forEach((g, li) => {
-    const tag = { lesson: li + 1, lessons: total, lessonName: label(g), parts: parts.length },
+    const tag = { lesson: li + 1 + extra, lessons: total, lessonName: label(g), parts: parts.length },
       was = li ? lessons[li - 1][lessons[li - 1].length - 1] : null;
     if (was) steps.push({ ...tag, part: was.n, from: was.from, to: was.to, kind: "warm", mode: "along", pct: slow, title: "Warm up", say: "From last time. Can you still play it?" });
     for (const p of g) {
@@ -140,6 +183,7 @@ export function lessonsIn(plan) {
     let L = out[out.length - 1];
     if (!L || L.n !== st.lesson) out.push((L = { n: st.lesson, name: st.lessonName, first: i, last: i, from: st.from, to: st.to }));
     L.last = i;
+    if (st.def) L.prep = true;
     if (st.kind === "hear" || st.kind === "full") {
       if (plan[L.first].kind === "warm" && L.from === plan[L.first].from) L.from = st.from;
       L.to = Math.max(st.to, plan[L.first].kind === "warm" && L.to === plan[L.first].to ? st.to : L.to);
@@ -147,6 +191,9 @@ export function lessonsIn(plan) {
   });
   return out;
 }
+
+/* How many notes there are to learn once repeats are taken out. */
+export const freshNotes = (song) => chunksOf(song).filter((c) => c.same < 0).reduce((a, c) => a + (c.last - c.first + 1), 0);
 
 export const PASS_MARK = 0.7; // share of a run that must land for it to count
 export const starsFor = (acc) => (acc >= 0.9 ? 3 : acc >= 0.8 ? 2 : acc >= PASS_MARK ? 1 : 0);

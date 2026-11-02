@@ -7,6 +7,11 @@ import { SONGS } from "../../docs/js/songs/data.js";
 import { build, check } from "../../docs/js/songs/format.js";
 import { GUITAR_PATH, PATH_SONGS, chunksOf, coachPlan, formOf, lessonsIn, lessonsOf, nextPathSong, sliceDef, speedWord, starsFor } from "../../docs/js/songs/path.js";
 import { SKILLS } from "../../docs/js/songs/moments-data.js";
+import { demandsOf, skillsOf } from "../../docs/js/songs/demands.js";
+import { chordChart, easiestCapo } from "../../docs/js/songs/harmony.js";
+import { anchorTip, changeDrill, changesOf, chartFor, chordId, chordPlan, chordSong, shapeOf } from "../../docs/js/songs/changes.js";
+import { STAGES } from "../../tools/syllabus.mjs";
+import { tabify } from "../../docs/js/songs/tabify.js";
 import { exerciseById } from "../../docs/js/songs/exercises.js";
 import { PIANO_PATH, partsOfPiece, pieceLessons, stepsOf } from "../../docs/js/piano/songs.js";
 import { TRACKS, courseStats, nodesOf } from "../../docs/js/courses/curriculum.js";
@@ -123,11 +128,11 @@ test("the guitar path sits beside the courses and every piece on it exists", () 
   assert.deepEqual(GUITAR_PATH.map((s) => s.course), courses);
   for (const st of GUITAR_PATH) {
     assert.ok(st.songs.length >= 4, st.course);
-    for (const x of st.songs) assert.ok(x.ex ? exerciseById(x.id) : ids.has(x.id), `${st.course}: ${x.id}`);
+    for (const x of st.songs) assert.ok(x.ex ? exerciseById(x.id) : ids.has(chordId(x.id)?.base || x.id), `${st.course}: ${x.id}`);
   }
   assert.equal(new Set(PATH_SONGS.map((s) => s.id)).size, PATH_SONGS.length, "no piece twice");
-  assert.equal(nextPathSong({}).id, "hotcross");
-  assert.equal(nextPathSong({ hotcross: 90 }).id, "mary");
+  assert.equal(nextPathSong({}).id, PATH_SONGS[0].id);
+  assert.equal(nextPathSong({ [PATH_SONGS[0].id]: 90 }).id, PATH_SONGS[1].id);
 });
 
 test("songs appear on the course map, count for nothing in test scores, and show as learned", () => {
@@ -148,7 +153,7 @@ test("songs appear on the course map, count for nothing in test scores, and show
 
 test("the daily plan includes the next piece", () => {
   const items = makePlan(fresh(), 20, "2026-11-01");
-  assert.ok(items.some((i) => i.kind === "song" && i.id === "hotcross"), JSON.stringify(items));
+  assert.ok(items.some((i) => i.kind === "song" && i.id === PATH_SONGS[0].id), JSON.stringify(items));
 });
 
 test("every piano piece reads, with both hands, and its parts cover it", () => {
@@ -197,9 +202,10 @@ test("the piano path covers the keyboard library, easiest first", () => {
 
 test("levels spread across the ladder and keep a sensible order", () => {
   const rows = JSON.parse(readFileSync(join(lib, "index.json"), "utf8"));
-  for (const lv of [1, 2, 3, 4, 5, 6]) assert.ok(rows.filter((r) => r[4] === lv).length >= 100, "level " + lv);
+  for (const lv of [2, 3, 4, 5, 6]) assert.ok(rows.filter((r) => r[4] === lv).length >= 80, "level " + lv);
+  assert.ok(rows.some((r) => r[4] === 1));
   const mean = (lv) => { const x = rows.filter((r) => r[4] === lv); return x.reduce((a, r) => a + r[9], 0) / x.length; };
-  for (const lv of [1, 2, 3, 4, 5]) assert.ok(mean(lv) < mean(lv + 1), "hardness rises with level");
+  for (const lv of [2, 3, 4, 5]) assert.ok(mean(lv) < mean(lv + 1), "hardness rises with level");
 });
 
 test("the library has real variety of speed, and reels move", () => {
@@ -208,7 +214,8 @@ test("the library has real variety of speed, and reels move", () => {
   for (const w of ["Slow", "Moderate", "Fast"]) assert.ok(share(w) >= 0.12, w + " " + share(w));
   assert.ok(new Set(rows.map((r) => r[7])).size >= 60, "many different tempos");
   const reels = rows.filter((r) => r[3] === "reel" && r[4] >= 4);
-  assert.ok(reels.filter((r) => r[10] >= 4.5).length / reels.length > 0.9, "advanced reels are quick");
+  assert.ok(reels.filter((r) => r[10] >= 4).length / reels.length > 0.8, "advanced reels are quick");
+  assert.ok(rows.filter((r) => r[4] === 2 && ["reel", "jig", "hornpipe"].includes(r[3])).every((r) => r[10] <= 3.3), "early targets are reachable");
 });
 
 test("every skill drill is a real phrase that shows up as its own short piece", () => {
@@ -226,6 +233,136 @@ test("every skill drill is a real phrase that shows up as its own short piece", 
       assert.ok(part.sounding.length >= 6 && b - a <= 5, x.id);
     }
     assert.ok(k.items.every((x, i) => !i || k.items[i - 1].level <= x.level), k.name + " is easiest first");
+  }
+});
+
+test("a level is the hardest demand, and a steady tune is not a hard rhythm", () => {
+  const make = (bars, time = "4/4") => build({ id: "x", title: "x", key: "C", time, level: 6, bars }),
+    steady = make(Array(8).fill("C5:2 D5:2 E5:2 F5:2 G5:2 F5:2 E5:2 D5:2").join(" | ")),
+    even = make(Array(8).fill("C5:1 D5:1 E5:1 F5:1 G5:1 F5:1 E5:1 D5:1").join(" | "), "2/4"),
+    jerky = make(Array(8).fill("C5:3 D5:1 E5:4/3 F5:4/3 G5:4/3 F5:2 E5:1 D5:1 C5:4").join(" | "));
+  assert.ok(demandsOf(steady, tabify(steady, 6)).rhythm <= 2);
+  assert.ok(demandsOf(even, tabify(even, 6)).rhythm <= 2, "written in sixteenths, still even");
+  assert.ok(demandsOf(jerky, tabify(jerky, 6)).rhythm >= 4);
+  for (const s of every.filter((_, i) => i % 13 === 0)) {
+    const d = demandsOf(s, tabify(s, 6));
+    assert.ok(d.level >= Math.max(d.hand, d.rhythm, d.voices, d.reading), s.id);
+    assert.ok(d.level <= 6, s.id);
+  }
+  const lessons = demandsOf(every.find((x) => x.id === "hotcross"), tabify(every.find((x) => x.id === "hotcross"), 6));
+  assert.ok(lessons.level <= 2);
+});
+
+test("a tune's chords sound like its key, end at home, and use few chords", () => {
+  const of = (id) => chordChart(every.find((x) => x.id === id));
+  assert.deepEqual(of("hotcross").names.sort(), ["C", "G"]);
+  assert.deepEqual(of("susanna").names.sort(), ["C", "G"]);
+  assert.ok(of("greensleeves").names.includes("Am"));
+  for (const s of every.filter((_, i) => i % 9 === 0)) {
+    const c = chordChart(s),
+      end = s.key.replace(/(dor|mix|phr|lyd|loc)$/, "").replace(/m$/, "");
+    assert.equal(c.spans[0].start, s.pickup || 0, s.id);
+    assert.ok(c.spans[c.spans.length - 1].name.replace(/m|7/g, "").replace("#", "♯") === end.replace("#", "♯") || c.spans.at(-1).deg.toLowerCase() === "i", s.id);
+    assert.ok(c.names.length <= 7, s.id);
+    assert.ok(c.spans.every((sp, i) => !i || sp.start > c.spans[i - 1].start), s.id);
+  }
+});
+
+test("a capo appears only when it spares the hand", () => {
+  assert.equal(easiestCapo(chordChart(every.find((x) => x.id === "hotcross"))), 0);
+  const inBb = build({ id: "x", title: "x", key: "Bb", time: "4/4", level: 6, bars: "Bb4:4 D5:4 F5:4 D5:4 | Eb5:4 G5:4 Bb5:4 G5:4 | F5:4 A5:4 C6:4 A5:4 | Bb4:16" }),
+    c = chartFor(inBb);
+  assert.ok(c.capo > 0);
+  assert.ok(c.names.every((n) => !/^(Bb|Eb|F)$/.test(n)), c.names.join());
+});
+
+test("a song's chords make a sound piece that follows its bars and carries its tune", () => {
+  for (const s of every.filter((x, i) => i % 5 === 0 && x.sounding.filter((n) => n.pitches.length > 1).length < x.sounding.length * 0.2)) {
+    for (const opt of [{}, { style: "arp" }, { style: "hold" }, { shapes: "barre" }]) {
+      const c = build(chordSong(s, opt));
+      assert.deepEqual(c.barLens, s.barLens, `${s.id} ${JSON.stringify(opt)}`);
+      assert.equal(c.backing.length, s.sounding.length, s.id);
+      assert.equal(check(c).length, 0, s.id);
+    }
+  }
+});
+
+test("chord drills start from the changes the song really uses", () => {
+  const s = every.find((x) => x.id === "greensleeves"),
+    c = build(chordSong(s)),
+    moves = changesOf(c.chart),
+    used = new Set(c.chart.spans.slice(1).flatMap((sp, i) => [`${c.chart.spans[i].name}>${sp.name}`, `${sp.name}>${c.chart.spans[i].name}`]));
+  assert.ok(moves.length);
+  assert.ok(moves.every((m) => used.has(`${m.a}>${m.b}`) && m.tip.length > 10));
+  const plan = chordPlan(c),
+    last = plan[plan.length - 1];
+  assert.equal(last.kind, "full");
+  assert.equal(last.pct, 100);
+  assert.ok(plan.filter((p) => p.def).every((p) => build(p.def).sounding.length >= 2));
+  assert.equal(plan[0].chords.length, 2);
+  const drill = build(changeDrill(c.chart, moves[0].a, moves[0].b, 2));
+  assert.equal(drill.barLens.length, 4);
+  assert.ok(check(drill).length === 0);
+  assert.match(anchorTip(shapeOf(0, "major"), shapeOf(9, "minor")), /Keep/, "C to Am keeps its shared fingers down");
+});
+
+test("barre lessons use barres, picked lessons pick", () => {
+  assert.deepEqual(chordId("ch:bar:tune"), { id: "ch:bar:tune", base: "tune", style: "strum", shapes: "barre" });
+  assert.equal(chordId("ch:arp:tune").style, "arp");
+  assert.equal(chordId("tune"), null);
+  const s = every.find((x) => x.id === "hotcross");
+  assert.ok(build(chordSong(s, { style: "arp" })).sounding.every((n) => n.pitches.length === 1));
+  assert.ok(chartFor(s, "barre").shapes === "barre" && shapeOf(7, "major", "barre").barre);
+});
+
+test("a song's lessons open by getting the hands ready for that tune", () => {
+  const s = every.find((x) => x.id === "greensleeves"),
+    tab = tabify(s, s.level),
+    plan = coachPlan(s, tab),
+    prep = plan.filter((p) => p.kind === "prep");
+  assert.ok(prep.length >= 1 && plan[0].lessonName === "Get ready");
+  for (const p of prep) assert.equal(check(build(p.def)).filter((m) => !/has .* sixteenths/.test(m)).length, 0, p.def.id);
+  const notes = build(prep[0].def);
+  assert.ok(notes.sounding.every((n) => s.sounding.some((x) => x.midi === n.midi)), "only the tune's own notes");
+  assert.equal(lessonsIn(plan)[0].prep, true);
+});
+
+test("the syllabus keeps each stage to what it promises, and each song adds little", () => {
+  const defs = new Map([...SONGS, ...tunes].map((d) => [d.id, d])),
+    heard = new Set(),
+    names = new Set();
+  GUITAR_PATH.forEach((st, i) => {
+    const gate = STAGES[i];
+    assert.equal(st.course, gate.course);
+    for (const x of st.songs.filter((y) => !y.ex && !y.ch)) {
+      const s = build(defs.get(x.id)),
+        tab = tabify(s, 6),
+        d = demandsOf(s, tab, chunksOf(s).filter((c) => c.same < 0).reduce((a, c) => a + (c.last - c.first + 1), 0));
+      for (const k of Object.keys(gate.most)) assert.ok(d[k] <= gate.most[k], `${st.course} ${x.title}: ${k} ${d[k]}`);
+      const fresh = skillsOf(s, tab).filter((k) => !heard.has(k));
+      assert.ok(fresh.length <= 4, `${st.course} ${x.title} adds ${fresh}`);
+      fresh.forEach((k) => heard.add(k));
+      const tune = x.title.toLowerCase().replace(/\(.*?\)|[^a-z ]/g, "").replace(/^(the|sweet) /, "").trim();
+      assert.ok(!names.has(tune), `${x.title} appears twice`);
+      names.add(tune);
+    }
+  });
+  const median = (st) => { const l = st.songs.filter((x) => !x.ex && !x.ch).map((x) => x.level).sort((a, b) => a - b); return l[l.length >> 1]; },
+    tuneStages = GUITAR_PATH.filter((st) => st.songs.some((x) => !x.ex && !x.ch));
+  tuneStages.slice(1).forEach((st, i) => assert.ok(median(st) >= median(tuneStages[i]) - 1, st.course));
+  assert.ok(median(tuneStages[tuneStages.length - 1]) >= 4);
+});
+
+test("chord stages are songs, built from tunes you can already play", () => {
+  const g3 = GUITAR_PATH.find((s) => s.course === "G3");
+  assert.ok(g3.songs.length >= 4 && g3.songs.every((x) => x.ch), "no bare progressions");
+  const earlier = new Set(GUITAR_PATH.slice(0, 3).flatMap((s) => s.songs.map((x) => x.id)));
+  assert.ok(g3.songs.filter((x) => earlier.has(chordId(x.id).base)).length >= g3.songs.length / 2);
+  const seen = new Set();
+  for (const x of g3.songs) {
+    const fresh = x.by.split(" ").filter((n) => !seen.has(n));
+    assert.ok(fresh.length <= 3, x.title);
+    fresh.forEach((n) => seen.add(n));
   }
 });
 

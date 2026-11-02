@@ -9,7 +9,7 @@ export const SOURCES = {
   mutopia: "A public-domain score from the Mutopia Project.",
   lieder: "The vocal melody of a song, from the OpenScore Lieder corpus (CC0).",
 };
-const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk", "h", "nps"];
+const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk", "h", "nps", "limit"];
 
 let index = null,
   pending = null;

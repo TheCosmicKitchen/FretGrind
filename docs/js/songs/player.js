@@ -16,6 +16,7 @@ export function timeline(song) {
   const g0 = song.pickup || 0,
     ev = [];
   song.sounding.forEach((n, i) => ev.push({ u: n.start, note: i }));
+  (song.backing || []).forEach((n) => ev.push({ u: n.u, back: n }));
   for (let u = g0 - Math.ceil(g0 / song.beat) * song.beat; u < song.total; u += song.beat) {
     if (u < 0) continue;
     const rel = u - g0,
@@ -51,7 +52,9 @@ export function songStart(song, opts, hooks) {
             u = ev.u + (run.i < 0 ? 0 : run.pass * total),
             t = run.c0 + u * run.usec;
           if (t > ctx.currentTime + 0.16) break;
-          if (ev.note !== undefined) {
+          if (ev.back) {
+            if (opts.notes) tone(ev.back.midi, t, Math.min(1.8, Math.max(0.3, ev.back.dur * run.usec * 1.2)), 0.26, "sine", true); // the tune over your chords
+          } else if (ev.note !== undefined) {
             const n = song.sounding[ev.note];
             if (opts.notes)
               n.pitches.forEach((p) => tone(p.midi - 12, t, Math.min(1.8, Math.max(0.35, n.dur * run.usec * 1.3)), n.pitches.length > 1 ? 0.18 : 0.3, "triangle", true));

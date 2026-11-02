@@ -1,5 +1,5 @@
 // Offline cache. Bump CACHE when you deploy changes so users get the new files.
-const CACHE = "fret-grind-v25";
+const CACHE = "fret-grind-v26";
 const ASSETS = [
   "./", "index.html", "css/styles.css", "manifest.webmanifest",
   "lib/index.json", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
@@ -70,12 +70,15 @@ const ASSETS = [
     "js/piano/page.js",
     "js/piano/path-data.js",
     "js/piano/songs.js",
+    "js/songs/changes.js",
     "js/songs/data.js",
+    "js/songs/demands.js",
     "js/songs/draw.js",
     "js/songs/exercises.js",
     "js/songs/format.js",
     "js/songs/moments-data.js",
     "js/songs/grade.js",
+    "js/songs/harmony.js",
     "js/songs/library.js",
     "js/songs/page.js",
     "js/songs/path-data.js",
