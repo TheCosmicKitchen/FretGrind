@@ -37,7 +37,7 @@ Static site: no build step, no bundler, no dependencies. The app is native ES mo
 
 Five areas (Learn, Music, Cards, Chords, Tuner), listed in `view/chrome.js`: a sidebar on wide screens, a tab bar on phones, sub-tabs inside an area. Page ids stay flat, so moving a page between areas is a one-line change. The frame steps aside during lessons and while following a score.
 
-The look lives in the tokens at the top of `css/styles.css`: warm graphite and brass, light and dark, one accent. Use the tokens rather than new colours (`--on-ac` is the text colour on the accent), keep surfaces flat, and give each screen one primary action (`.go`). Icons are inline SVG, not emoji.
+The look lives in the tokens at the top of `css/styles.css`: indigo on cool neutrals, light and dark, one accent. Use the tokens rather than new colours (`--on-ac` is the text colour on the accent), keep surfaces flat, and give each screen one primary action (`.go`). Icons are inline SVG, not emoji.
 
 ## Run locally
 

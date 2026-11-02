@@ -1,24 +1,24 @@
-/* Fret Grind design system. Warm graphite and brass, one accent, flat surfaces.
+/* Fret Grind design system. Indigo on cool neutrals, one accent, flat surfaces.
    1 tokens  2 base  3 components  4 app shell  (feature styles follow, page layout closes the file) */
 
 /* ---------- 1 Tokens ---------- */
 :root {
-  --bg: #f6f3ee;
-  --card: #fffdfa;
-  --raise: #efeae2;
-  --tx: #211e19;
-  --mu: #6d665b;
-  --ln: #e2dcd1;
-  --ac: #a9520c;
+  --bg: #f2f5fa;
+  --card: #fff;
+  --raise: #e9eef6;
+  --tx: #172235;
+  --mu: #69778c;
+  --ln: #dce4ef;
+  --ac: #5b5ce2;
   --on-ac: #fff;
-  --ok: #1b7a59;
-  --bad: #c23b2d;
-  --warn: #a8700c;
-  --neck-a: #4b3327;
-  --neck-b: #2d1e17;
-  --wire: #c9c2b4;
-  --string: #e6e1d6;
-  --string-wound: #c9a86c;
+  --ok: #178a68;
+  --bad: #d54c67;
+  --warn: #b9791f;
+  --neck-a: #343b55;
+  --neck-b: #1c2133;
+  --wire: #b9c0d4;
+  --string: #dfe3ee;
+  --string-wound: #c9b48c;
   --r-s: 8px;
   --r-m: 12px;
   --r-l: 16px;
@@ -29,32 +29,34 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #131210;
-    --card: #1c1a18;
-    --raise: #272420;
-    --tx: #f3efe8;
-    --mu: #a59d90;
-    --ln: #322e29;
-    --ac: #eaa53c;
-    --on-ac: #211505;
-    --ok: #55bd92;
-    --bad: #ef7a6b;
-    --warn: #e0b14e;
+    --bg: #101522;
+    --card: #1a2233;
+    --raise: #263046;
+    --tx: #edf2fc;
+    --mu: #a4b0c4;
+    --ln: #303c52;
+    --ac: #8989ff;
+    --ok: #44c69a;
+    --bad: #ff7189;
+    --warn: #e0a62b;
+    --neck-a: #46507a;
+    --neck-b: #2c3352;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #131210;
-  --card: #1c1a18;
-  --raise: #272420;
-  --tx: #f3efe8;
-  --mu: #a59d90;
-  --ln: #322e29;
-  --ac: #eaa53c;
-  --on-ac: #211505;
-  --ok: #55bd92;
-  --bad: #ef7a6b;
-  --warn: #e0b14e;
+  --bg: #101522;
+  --card: #1a2233;
+  --raise: #263046;
+  --tx: #edf2fc;
+  --mu: #a4b0c4;
+  --ln: #303c52;
+  --ac: #8989ff;
+  --ok: #44c69a;
+  --bad: #ff7189;
+  --warn: #e0a62b;
+  --neck-a: #46507a;
+  --neck-b: #2c3352;
   color-scheme: dark;
 }
 
