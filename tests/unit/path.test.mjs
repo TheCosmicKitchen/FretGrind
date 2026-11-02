@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { SONGS } from "../../docs/js/songs/data.js";
 import { build, check } from "../../docs/js/songs/format.js";
-import { GUITAR_PATH, PATH_SONGS, chunksOf, coachPlan, nextPathSong, sliceDef, starsFor } from "../../docs/js/songs/path.js";
+import { GUITAR_PATH, PATH_SONGS, chunksOf, coachPlan, formOf, lessonsIn, lessonsOf, nextPathSong, sliceDef, speedWord, starsFor } from "../../docs/js/songs/path.js";
+import { SKILLS } from "../../docs/js/songs/moments-data.js";
 import { exerciseById } from "../../docs/js/songs/exercises.js";
 import { PIANO_PATH, partsOfPiece, pieceLessons, stepsOf } from "../../docs/js/piano/songs.js";
 import { TRACKS, courseStats, nodesOf } from "../../docs/js/courses/curriculum.js";
@@ -56,9 +57,64 @@ test("a lesson plan walks parts in order and ends with the whole piece at full s
   const last = plan[plan.length - 1];
   assert.equal(last.kind, "full");
   assert.equal(last.pct, 100);
-  assert.equal(plan[plan.length - 2].pct, 75);
-  for (const x of every.filter((_, i) => i % 23 === 0)) assert.ok(coachPlan(x).length >= 2, x.id);
+  assert.deepEqual(plan.filter((p) => p.kind === "full").map((p) => p.pct), [75, 90, 100]);
+  for (const x of every.filter((_, i) => i % 23 === 0)) assert.ok(coachPlan(x).length >= 3, x.id);
   assert.deepEqual([0.95, 0.85, 0.72, 0.5].map(starsFor), [3, 2, 1, 0]);
+});
+
+test("phrases follow the music: they end on a long note, and a repeat after a pick-up is still a repeat", () => {
+  const breath = build({ id: "x", title: "x", key: "C", time: "4/4", bars: "C5:2 D5:2 E5:2 F5:2 G5:2 A5:2 G5:2 F5:2 | E5:2 D5:2 C5:2 D5:2 E5:2 F5:2 G5:2 A5:2 | B5:2 A5:2 G5:16/2 | C5:2 D5:2 E5:2 F5:2 G5:2 A5:2 G5:2 F5:2 | E5:16" }),
+    cut = chunksOf(breath);
+  assert.equal(cut[0].to, 2, JSON.stringify(cut));
+  const tune = Array(4).fill("C5:4 D5:4 E5:4 F5:2 G5:2 | A5:4 G5:4 F5:4 E5:2 D5:2 | C5:4 E5:4 G5:4 A5:4 | G5:12 C5:4").join(" | "),
+    s = build({ id: "y", title: "y", key: "C", time: "4/4", pickup: 4, bars: `C5:4 | ${tune} | C5:12` }),
+    { chunks, parts } = lessonsOf(s);
+  assert.ok(chunks.some((c) => c.same === 0), JSON.stringify(chunks));
+  assert.ok(parts.length < chunks.length);
+});
+
+test("a nearly repeated phrase is recognised, and skips the note-by-note step", () => {
+  const a = "C5:4 D5:4 E5:4 F5:4 | G5:4 F5:4 E5:4 D5:4 | C5:4 E5:4 G5:4 E5:4",
+    s = build({ id: "x", title: "x", key: "C", time: "4/4", bars: `${a} | D5:16 | ${a} | C5:16` }),
+    { parts } = lessonsOf(s);
+  assert.ok(parts.some((p) => p.was === 1), JSON.stringify(parts));
+  const n = parts.find((p) => p.was === 1).n,
+    steps = coachPlan(s).filter((x) => x.part === n && x.kind !== "warm").map((x) => x.kind);
+  assert.ok(steps.includes("hear") && !steps.includes("wait"), steps.join());
+});
+
+test("lessons build towards the whole piece", () => {
+  for (const s of every.filter((_, i) => i % 7 === 0)) {
+    const plan = coachPlan(s),
+      lessons = lessonsIn(plan),
+      end = s.barLens.length - 1,
+      { parts } = lessonsOf(s);
+    assert.equal(lessons.length, plan[0].lessons, s.id);
+    assert.equal(lessons[lessons.length - 1].name, "Put it together", s.id);
+    assert.equal(lessons[0].first, 0, s.id);
+    lessons.forEach((L, i) => {
+      if (i) assert.equal(L.first, lessons[i - 1].last + 1, s.id);
+      if (i && i < lessons.length - 1) assert.equal(plan[L.first].kind, "warm", `${s.id} lesson ${L.n} recalls the last`);
+    });
+    assert.deepEqual([...new Set(plan.filter((x) => x.kind === "hear").map((x) => x.part))], parts.map((p) => p.n), s.id);
+    assert.ok(plan.every((x) => x.from >= 0 && x.to <= end && x.from <= x.to), s.id);
+    plan.filter((x) => x.kind === "spot").forEach((x) => assert.ok(build(sliceDef(s, x.from, x.to)).sounding.length >= 4, s.id));
+    const tally = (k) => plan.filter((x) => x.kind === k).length;
+    assert.equal(tally("full"), 3, s.id);
+    assert.equal(tally("join"), Math.max(0, parts.length - 1), s.id);
+  }
+  const g = coachPlan(every.find((x) => x.id === "greensleeves")),
+    runs = g.filter((x) => x.kind === "run");
+  assert.ok(runs.length && runs.every((x) => x.from === 0), "runs go from the top");
+  assert.ok(runs.every((x, i) => !i || x.to > runs[i - 1].to), "and reach further each time");
+});
+
+test("the form strip covers the piece and marks repeats by the part they play", () => {
+  for (const s of every.filter((_, i) => i % 29 === 0)) {
+    const form = formOf(s);
+    assert.equal(form.reduce((a, f) => a + f.bars, 0), s.barLens.length, s.id);
+    assert.ok(form.filter((f) => f.repeat).every((f) => f.n >= 0), s.id);
+  }
 });
 
 test("the guitar path sits beside the courses and every piece on it exists", () => {
@@ -117,10 +173,65 @@ test("a piano part goes right hand, left hand, together", () => {
   assert.deepEqual(les[2].parsed[0], [72, 48]);
 });
 
+test("a piano piece joins each part to the last and runs what you have so far", () => {
+  const bar = (a, b) => `${a}5/C3:4 ${b}5/E3:4 ${a}5/G3:4 ${b}5/C3:4`,
+    tunes = [["C", "D"], ["E", "F"], ["G", "A"], ["B", "A"], ["F", "E"], ["D", "E"]].flatMap(([a, b]) => [bar(a, b), bar(b, a), bar(a, a), bar(b, b)]),
+    p = { id: "x", title: "x", key: "C", bars: tunes },
+    les = pieceLessons(p),
+    parts = partsOfPiece(p);
+  assert.ok(parts.length >= 4, parts.length + " parts");
+  assert.equal(les.filter((l) => l.id.endsWith("j")).length, parts.length - 1);
+  assert.ok(les.some((l) => l.id.endsWith("s")));
+  assert.equal(les[les.length - 1].mode, "read");
+  const twice = { id: "y", title: "y", key: "C", bars: [...tunes.slice(0, 4), ...tunes.slice(0, 4), ...tunes.slice(4, 8)] };
+  assert.ok(partsOfPiece(twice).reduce((a, x) => a + x.steps.length, 0) < stepsOf(twice).length, "a repeat is learned once");
+});
+
 test("the piano path covers the keyboard library, easiest first", () => {
   assert.equal(PIANO_PATH.length, 6);
   const ids = new Set(pieces.map((p) => p.id));
   assert.equal(PIANO_PATH.flatMap((s) => s.songs).length, pieces.length);
   for (const s of PIANO_PATH) for (const x of s.songs) assert.ok(ids.has(x.id), x.id);
   assert.ok(!/Chorale/.test(PIANO_PATH[0].songs[0].title), "a first piece should not be a four-voice chorale");
+});
+
+test("levels spread across the ladder and keep a sensible order", () => {
+  const rows = JSON.parse(readFileSync(join(lib, "index.json"), "utf8"));
+  for (const lv of [1, 2, 3, 4, 5, 6]) assert.ok(rows.filter((r) => r[4] === lv).length >= 100, "level " + lv);
+  const mean = (lv) => { const x = rows.filter((r) => r[4] === lv); return x.reduce((a, r) => a + r[9], 0) / x.length; };
+  for (const lv of [1, 2, 3, 4, 5]) assert.ok(mean(lv) < mean(lv + 1), "hardness rises with level");
+});
+
+test("the library has real variety of speed, and reels move", () => {
+  const rows = JSON.parse(readFileSync(join(lib, "index.json"), "utf8")),
+    share = (w) => rows.filter((r) => speedWord(r[10]) === w).length / rows.length;
+  for (const w of ["Slow", "Moderate", "Fast"]) assert.ok(share(w) >= 0.12, w + " " + share(w));
+  assert.ok(new Set(rows.map((r) => r[7])).size >= 60, "many different tempos");
+  const reels = rows.filter((r) => r[3] === "reel" && r[4] >= 4);
+  assert.ok(reels.filter((r) => r[10] >= 4.5).length / reels.length > 0.9, "advanced reels are quick");
+});
+
+test("every skill drill is a real phrase that shows up as its own short piece", () => {
+  assert.ok(SKILLS.length >= 10);
+  const byId = new Map(tunes.map((t) => [t.id, t]));
+  for (const k of SKILLS) {
+    assert.ok(k.items.length >= 5, k.name + " has " + k.items.length);
+    assert.ok(TRACKS[0].courses.some((c) => c.id === k.course), k.course);
+    for (const x of k.items) {
+      const [id, bars] = x.id.split("@"),
+        [a, b] = bars.split("-").map(Number),
+        t = byId.get(id);
+      assert.ok(t, x.id);
+      const part = build(sliceDef(build(t), a, b));
+      assert.ok(part.sounding.length >= 6 && b - a <= 5, x.id);
+    }
+    assert.ok(k.items.every((x, i) => !i || k.items[i - 1].level <= x.level), k.name + " is easiest first");
+  }
+});
+
+test("art songs are in the library, and only from composers who died before 1926", () => {
+  const songs = tunes.filter((t) => t.src === "lieder");
+  assert.ok(songs.length >= 300, songs.length + " songs");
+  for (const who of ["Webern", "Berg", "Schoenberg", "Strauss", "Ives", "Warlock"]) assert.ok(!songs.some((t) => t.by.includes(who)), who);
+  assert.ok(songs.some((t) => /Schubert/.test(t.by)));
 });

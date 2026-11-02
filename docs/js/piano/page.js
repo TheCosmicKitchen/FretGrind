@@ -366,7 +366,7 @@ function piecesHtml() {
           .join("");
       return `<details class="sp-stage" ${k === openAt ? "open" : ""}><summary><span class="sp-n">${k + 1}</span><div><h3>${st.title}</h3><p>${st.blurb}</p></div><small>${got} / ${st.songs.length}</small></summary><div class="sp-list">${rows}</div></details>`;
     }).join("");
-  return `<h2 class="pn-h">Pieces to learn</h2><p class="pr-sub">Real piano music, easiest first. Each piece goes part by part: right hand, left hand, together, then from the score.</p><div class="sp-path">${stages}</div>`;
+  return `<h2 class="pn-h">Pieces to learn</h2><p class="pr-sub">Real piano music, easiest first. Each piece is cut into phrases and builds up: right hand, left hand, together, join it to the last part, then the whole thing from the score.</p><div class="sp-path">${stages}</div>`;
 }
 
 function homeHtml() {

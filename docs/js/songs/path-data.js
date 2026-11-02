@@ -21,9 +21,9 @@ export const GUITAR_PATH = [
     "by": "French melody, 1761"
    },
    {
-    "id": "o-margaret-sheehan",
-    "title": "Margaret Sheehan",
-    "by": "Traditional Irish"
+    "id": "l-ein-ton-trauer-und-trost-op-3",
+    "title": "Ein Ton (Trauer und Trost, Op.3)",
+    "by": "Peter Cornelius"
    }
   ]
  },
@@ -48,13 +48,13 @@ export const GUITAR_PATH = [
     "by": "English nursery rhyme"
    },
    {
-    "id": "o-my-darling-i-am-fond-of-you",
-    "title": "My Darling I Am Fond of You",
-    "by": "Traditional Irish"
+    "id": "l-the-bonnie-wee-wife",
+    "title": "The Bonnie Wee Wife",
+    "by": "Jane Mary Guest"
    },
    {
-    "id": "o-sweet-molly-malone",
-    "title": "Sweet Molly Malone",
+    "id": "o-my-darling-i-am-fond-of-you",
+    "title": "My Darling I Am Fond of You",
     "by": "Traditional Irish"
    }
   ]
@@ -117,9 +117,9 @@ export const GUITAR_PATH = [
     "ex": 1
    },
    {
-    "id": "o-kitty-o-neill",
-    "title": "Kitty O'neill",
-    "by": "Traditional Irish"
+    "id": "l-bye-and-bye",
+    "title": "Bye-and-Bye",
+    "by": "Elizabeth Philp"
    }
   ]
  },
@@ -144,23 +144,23 @@ export const GUITAR_PATH = [
     "by": "F. Horetzky"
    },
    {
-    "id": "o-the-rising-of-the-moon",
-    "title": "The Rising of the Moon",
+    "id": "o-kitty-o-neill",
+    "title": "Kitty O'neill",
     "by": "Traditional Irish"
    },
    {
-    "id": "o-the-banquet",
-    "title": "The Banquet",
+    "id": "o-how-paddy-was-fooled",
+    "title": "How Paddy Was Fooled",
     "by": "Traditional Irish"
    },
    {
-    "id": "r-barney-s-goat",
-    "title": "Barney's Goat",
+    "id": "r-let-s-be-gay",
+    "title": "Let's be Gay",
     "by": "Traditional, American and British Isles"
    },
    {
-    "id": "r-paddy-carey-s-fortune",
-    "title": "Paddy Carey's Fortune",
+    "id": "r-golden-wreath",
+    "title": "Golden Wreath",
     "by": "Traditional, American and British Isles"
    }
   ]
@@ -187,9 +187,9 @@ export const GUITAR_PATH = [
     "ex": 1
    },
    {
-    "id": "o-the-croppy-tailor",
-    "title": "The Croppy Tailor",
-    "by": "Traditional Irish"
+    "id": "l-aufmunterung-zur-freude-lieder",
+    "title": "Aufmunterung zur Freude (Lieder)",
+    "by": "Corona Schröter"
    },
    {
     "id": "o-the-besom-in-bloom",
@@ -197,9 +197,9 @@ export const GUITAR_PATH = [
     "by": "F. O'Neill."
    },
    {
-    "id": "r-clemens",
-    "title": "Clemens'",
-    "by": "Traditional, American and British Isles"
+    "id": "o-barney-o-neill",
+    "title": "Barney O'Neill",
+    "by": "Traditional Irish"
    }
   ]
  },
@@ -220,8 +220,8 @@ export const GUITAR_PATH = [
     "by": "F. Horetzky"
    },
    {
-    "id": "m-post-horn-waltz",
-    "title": "Post Horn Waltz",
+    "id": "m-portuguese-hymn",
+    "title": "Portuguese Hymn",
     "by": "F. Horetzky"
    },
    {
@@ -230,13 +230,13 @@ export const GUITAR_PATH = [
     "by": "J. S. Bach"
    },
    {
-    "id": "m-russian-hymn",
-    "title": "Russian Hymn",
+    "id": "m-scots-wha-hae-wi-wallace-bled",
+    "title": "Scots Wha Hae Wi' Wallace Bled",
     "by": "F. Horetzky"
    },
    {
-    "id": "m-portuguese-hymn",
-    "title": "Portuguese Hymn",
+    "id": "m-c-est-l-amour-a-french-air",
+    "title": "C'est L'Amour a French Air",
     "by": "F. Horetzky"
    }
   ]
@@ -264,14 +264,14 @@ export const GUITAR_PATH = [
     "by": "Traditional Irish"
    },
    {
-    "id": "r-weel-may-the-keel-row",
-    "title": "Weel May the Keel Row",
+    "id": "r-the-banks-of-enverness",
+    "title": "The Banks of Enverness",
     "by": "Traditional, American and British Isles"
    },
    {
-    "id": "m-pavan-2",
-    "title": "Pavan 2",
-    "by": "L. Milan"
+    "id": "m-sicilian-mariner-s-hymn",
+    "title": "Sicilian Mariner's Hymn",
+    "by": "F. Horetzky"
    }
   ]
  },
@@ -293,24 +293,24 @@ export const GUITAR_PATH = [
     "ex": 1
    },
    {
-    "id": "r-the-banks-of-enverness",
-    "title": "The Banks of Enverness",
+    "id": "r-the-legacy",
+    "title": "The Legacy",
     "by": "Traditional, American and British Isles"
    },
    {
-    "id": "o-you-re-right-my-love",
-    "title": "You're Right My Love",
-    "by": "Traditional Irish"
+    "id": "r-tom-and-jerry",
+    "title": "Tom And Jerry",
+    "by": "SCOTCH."
    },
    {
-    "id": "o-mcelligott-s-fancy",
-    "title": "McElligott's Fancy",
-    "by": "Traditional Irish"
+    "id": "r-princess",
+    "title": "Princess",
+    "by": "Traditional, American and British Isles"
    },
    {
-    "id": "o-caroline-o-neill-s-hornpipe",
-    "title": "Caroline O'Neill's Hornpipe",
-    "by": "Traditional Irish"
+    "id": "r-get-on-the-train",
+    "title": "Get on the Train",
+    "by": "FRANK LIVINGSTONE"
    }
   ]
  },

@@ -2125,6 +2125,17 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sc-steps i { flex: 1; height: 4px; max-width: 28px; border-radius: 2px; background: color-mix(in srgb, var(--tx) 14%, transparent); }
 .sc-steps i.d { background: var(--ok); }
 .sc-steps i.n { background: var(--ac); }
+.sc-form { display: flex; gap: 2px; margin: 10px 0 8px; }
+.sc-form span { flex: 1 1 0; min-width: 0; height: 20px; overflow: hidden; border-radius: 3px; background: color-mix(in srgb, var(--ac) 22%, transparent); color: var(--mu); font-size: 11px; line-height: 20px; text-align: center; }
+.sc-form span.rep { background: color-mix(in srgb, var(--tx) 8%, transparent); }
+.sc-form span.on { background: var(--ac); color: var(--on-ac); }
+.sc-card h3 small { margin-left: 8px; color: var(--mu); font-size: 13px; font-weight: 400; }
+.sc-lessons { margin-top: 10px; }
+.sc-lessons summary { min-height: 32px; color: var(--mu); font-size: 14px; line-height: 32px; cursor: pointer; }
+.sc-l { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 8px 0; border: 0; border-top: 1px solid var(--ln); border-radius: 0; background: none; text-align: left; font-weight: 500; }
+.sc-l small { color: var(--mu); white-space: nowrap; }
+.sc-l.done small { color: var(--ok); }
+.sc-l.next span { color: var(--ac); }
 .sc-acts .go { margin-top: 10px; }
 .sc-acts .rs { margin: 6px 0 0; padding-left: 0; }
 .sc-stars { color: var(--ac); font-size: 26px; letter-spacing: 3px; }
@@ -2154,3 +2165,6 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .cd-name .ln-bar i { display: block; }
 .cd-top { justify-content: flex-start; }
 .cd-top > small { margin-left: auto; }
+.sp-drills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; border-top: 1px solid var(--ln); }
+.sp-drills small { width: 100%; }
+.sp-drills button { min-height: 32px; padding: 4px 12px; border-radius: 99px; background: none; font-size: 14px; font-weight: 500; }

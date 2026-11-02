@@ -7,8 +7,9 @@ export const SOURCES = {
   ryans: "From Ryan's Mammoth Collection of Fiddle Tunes (Boston, 1883).",
   oneills: "From Francis O'Neill's The Music of Ireland (Chicago, 1903).",
   mutopia: "A public-domain score from the Mutopia Project.",
+  lieder: "The vocal melody of a song, from the OpenScore Lieder corpus (CC0).",
 };
-const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk", "h"];
+const COLS = ["id", "title", "by", "style", "level", "key", "time", "tempo", "chunk", "h", "nps"];
 
 let index = null,
   pending = null;
@@ -29,7 +30,7 @@ export function loadIndex() {
 
 const sourceText = (d) => {
   const by = d.enc ? ` Encoded by ${d.enc}.` : "",
-    ref = d.src === "mutopia" ? ` ${[d.note, d.ref].filter(Boolean).join(", ")}. Every voice is written on one line, so a held bass can show shorter than it rings.` : d.ref ? ` ${d.ref}.` : "";
+    ref = d.src === "lieder" ? "" : d.src === "mutopia" ? ` ${[d.note, d.ref].filter(Boolean).join(", ")}. Every voice is written on one line, so a held bass can show shorter than it rings.` : d.ref ? ` ${d.ref}.` : "";
   return `${SOURCES[d.src] || ""}${ref}${by}`;
 };
 

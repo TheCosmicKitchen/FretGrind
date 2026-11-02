@@ -5,14 +5,164 @@ export const PIANO_PATH = [
   "blurb": "One idea at a time, hands mostly apart.",
   "songs": [
    {
+    "id": "p-chausson-les-papillons-me-lodies-op-2",
+    "title": "Les Papillons (Mélodies, Op.2)",
+    "by": "Ernest Chausson"
+   },
+   {
+    "id": "p-stanford-o-swallow-swallow-a-cycle-of-so",
+    "title": "O swallow, swallow (A Cycle of Songs, Op.68)",
+    "by": "Charles Villiers Stanford"
+   },
+   {
+    "id": "p-schro-ter-die-drei-fragen-lieder",
+    "title": "Die drei Fragen (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-holme-s-les-lavandie-res-chanson-populai",
+    "title": "Les lavandières, chanson populaire (Mélodies)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-chausson-he-be-me-lodies-op-2",
+    "title": "Hébé (Mélodies, Op.2)",
+    "by": "Ernest Chausson"
+   },
+   {
+    "id": "p-kinkel-rheinfahrt-lieder-op-16",
+    "title": "Rheinfahrt (Lieder, Op.16)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-butterworth-when-the-lad-for-longing-sig",
+    "title": "When the Lad for Longing Sighs (Bredon Hill and Other Songs)",
+    "by": "George Butterworth"
+   },
+   {
     "id": "p-bach-minuet-in-a-minor",
     "title": "Minuet in A minor",
     "by": "J. S. Bach"
    },
    {
+    "id": "p-paradis-an-meine-entfernte-lieben-lieder",
+    "title": "An meine entfernte Lieben (Lieder, 1786)",
+    "by": "Maria Theresia von Paradis"
+   },
+   {
+    "id": "p-schro-ter-brautlied-lieder",
+    "title": "Brautlied (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-brahms-ich-schell-mein-horn-ins-jammerta",
+    "title": "Ich schell mein Horn ins Jammertal (Songs, Op.43)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-duchambge-prie-re-des-laboureurs",
+    "title": "Prière des laboureurs",
+    "by": "Pauline Duchambge"
+   },
+   {
+    "id": "p-schumann-am-leuchtenden-sommermorgen-dic",
+    "title": "Am leuchtenden Sommermorgen (Dichterliebe, Op.48)",
+    "by": "Robert Schumann"
+   },
+   {
+    "id": "p-schro-ter-der-brautschmuck-lieder",
+    "title": "Der Brautschmuck (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-viardot-chanson-me-lancolique-me-lodies-",
+    "title": "Chanson mélancolique (Mélodies et une havanaise)",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-butterworth-oh-fair-enough-are-sky-and-p",
+    "title": "Oh Fair Enough are Sky and Plain (Bredon Hill and Other Songs)",
+    "by": "George Butterworth"
+   },
+   {
+    "id": "p-schro-ter-der-wassermann-lieder",
+    "title": "Der Wassermann (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-schro-ter-die-wachtel-lieder",
+    "title": "Die Wachtel (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-viardot-la-main-me-lodies-et-une-havanai",
+    "title": "La main (Mélodies et une havanaise)",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-kinkel-klage-lieder-op-16",
+    "title": "Klage (Lieder, Op.16)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-schubert-an-die-musik-d-547",
+    "title": "An die Musik, D.547",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-brahms-vom-verwundeten-knaben-lieder-and",
+    "title": "Vom verwundeten Knaben (Lieder and Romances, Op.14)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-grandval-chanson-nouvelles-me-lodies",
+    "title": "Chanson (Nouvelles mélodies)",
+    "by": "Clémence de Grandval"
+   },
+   {
+    "id": "p-beethoven-marmotte-lieder-op-52",
+    "title": "Marmotte (Lieder, Op.52)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-schro-ter-an-einer-freundin-geburtstag-l",
+    "title": "An einer Freundin Geburtstag (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-lang-am-wasserfall-lieder-op-12",
+    "title": "Am Wasserfall (Lieder, Op.12)",
+    "by": "Josephine Lang"
+   },
+   {
     "id": "p-bach-minuet-in-c-minor",
     "title": "Minuet in C minor",
     "by": "J. S. Bach"
+   },
+   {
+    "id": "p-paradis-die-tanne-sieh-doris-wie-vom-mon",
+    "title": "Die Tanne (Sieh Doris, wie vom Mond bestrahlt ) (Lieder, 1786)",
+    "by": "Maria Theresia von Paradis"
+   },
+   {
+    "id": "p-beethoven-das-blu-mchen-wunderhold-liede",
+    "title": "Das Blümchen Wunderhold (Lieder, Op.52)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-gray-yes-and-no",
+    "title": "Yes and No",
+    "by": "Louisa Gray"
+   },
+   {
+    "id": "p-schro-ter-jugendlied-lieder",
+    "title": "Jugendlied (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-grandval-mignonne-nouvelles-me-lodies",
+    "title": "Mignonne (Nouvelles mélodies)",
+    "by": "Clémence de Grandval"
    },
    {
     "id": "p-burgmu-ller-la-candeur",
@@ -70,26 +220,6 @@ export const PIANO_PATH = [
     "by": "J. Wanhal"
    },
    {
-    "id": "p-handel-sonatina-in-b-flat-major",
-    "title": "Sonatina in B-flat Major",
-    "by": "G. F. Handel"
-   },
-   {
-    "id": "p-grieg-luala-t-the-mountaineer-s-song",
-    "title": "Lualåt (The Mountaineer's Song)",
-    "by": "E. Grieg"
-   },
-   {
-    "id": "p-satie-gymnope-die-no-2",
-    "title": "Gymnopédie No. 2",
-    "by": "E. Satie"
-   },
-   {
-    "id": "p-burgmu-ller-le-courant-limpide",
-    "title": "Le Courant Limpide",
-    "by": "J. F. F. Burgmüller"
-   },
-   {
     "id": "p-bach-chorale-setting-gib-dich-zufrieden-",
     "title": "Chorale setting \"Gib dich zufrieden und sei stille\" in F major",
     "by": "J. S. Bach"
@@ -116,6 +246,176 @@ export const PIANO_PATH = [
   "blurb": "Melody over a simple left hand.",
   "songs": [
    {
+    "id": "p-cornelius-an-den-traum-trauer-und-trost-",
+    "title": "An den Traum (Trauer und Trost, Op.3)",
+    "by": "Peter Cornelius"
+   },
+   {
+    "id": "p-holme-s-noe-l-me-lodies-pour-piano-et-ch",
+    "title": "Noël (Mélodies pour piano et chant)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-schubert-halt-die-scho-ne-mu-llerin-d-79",
+    "title": "Halt! (Die schöne Müllerin, D.795)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-lang-sa-ngers-trost-deutsche-lieder-op-1",
+    "title": "Sängers Trost (Deutsche Lieder, Op.11)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-schubert-der-greise-kopf-winterreise-d-9",
+    "title": "Der greise Kopf (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-brahms-auf-dem-see-lieder-und-gesa-nge-o",
+    "title": "Auf dem See (Lieder und Gesänge, Op.59)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-beethoven-urians-reise-um-die-welt-liede",
+    "title": "Urians Reise um die Welt (Lieder, Op.52)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-parry-willow-song-english-lyrics-1st-set",
+    "title": "Willow song (English Lyrics (1st Set))",
+    "by": "Hubert Parry"
+   },
+   {
+    "id": "p-handel-sonatina-in-b-flat-major",
+    "title": "Sonatina in B-flat Major",
+    "by": "G. F. Handel"
+   },
+   {
+    "id": "p-franz-abends-gesa-nge-op-16",
+    "title": "Abends (Gesänge, Op.16)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-stanford-assynt-of-the-shadows-songs-of-",
+    "title": "Assynt of the Shadows (Songs of a Roving Celt, Op.157)",
+    "by": "Charles Villiers Stanford"
+   },
+   {
+    "id": "p-paradis-wenn-ich-der-kaiser-wa-re-lieder",
+    "title": "Wenn ich der Kaiser wäre (Lieder, 1786)",
+    "by": "Maria Theresia von Paradis"
+   },
+   {
+    "id": "p-kinkel-untitled-war-hinaus-gezogen-lusti",
+    "title": "untitled („War hinaus gezogen, lustig singend“) (Lieder, Op.15)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-schubert-ungeduld-die-scho-ne-mu-llerin-",
+    "title": "Ungeduld (Die schöne Müllerin, D.795)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-franz-auf-dem-meere-lieder-op-25",
+    "title": "Auf dem Meere (Lieder, Op.25)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-paradis-sophia-an-siegwart-lieder-1786",
+    "title": "Sophia an Siegwart (Lieder, 1786)",
+    "by": "Maria Theresia von Paradis"
+   },
+   {
+    "id": "p-jae-ll-male-diction-les-orientales",
+    "title": "Malédiction (Les Orientales)",
+    "by": "Marie Jaëll"
+   },
+   {
+    "id": "p-franz-weisst-du-noch-gesa-nge-op-16",
+    "title": "Weisst du noch (Gesänge, Op.16)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-schro-ter-das-ma-dchen-am-ufer-lieder",
+    "title": "Das Mädchen am Ufer (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-schro-ter-die-liebe-lieder",
+    "title": "Die Liebe (Lieder)",
+    "by": "Corona Schröter"
+   },
+   {
+    "id": "p-bizet-a-une-fleur-feuilles-d-album",
+    "title": "À une Fleur (Feuilles d’album)",
+    "by": "Georges Bizet"
+   },
+   {
+    "id": "p-brahms-erinnerung-lieder-und-gesa-nge-op",
+    "title": "Erinnerung (Lieder und Gesänge, Op.63)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-kinkel-lust-und-qual-lieder-op-15",
+    "title": "Lust und Qual (Lieder, Op.15)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-lang-zusammen-lieder-op-26",
+    "title": "Zusammen (Lieder, Op.26)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-lehmann-along-the-sunny-lane-little-love",
+    "title": "Along the sunny lane (Little Love Songs)",
+    "by": "Liza Lehmann"
+   },
+   {
+    "id": "p-brahms-lied-songs-op-3",
+    "title": "Lied (Songs, Op.3)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-schubert-tra-nenregen-die-scho-ne-mu-lle",
+    "title": "Tränenregen (Die schöne Müllerin, D.795)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-kinkel-nachgefu-hl-lieder-op-10",
+    "title": "Nachgefühl (Lieder, Op.10)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-parry-my-true-love-hath-my-heart-english",
+    "title": "My true love hath my heart (English Lyrics (1st Set))",
+    "by": "Hubert Parry"
+   },
+   {
+    "id": "p-puget-le-bon-cure-patience",
+    "title": "Le bon curé patience",
+    "by": "Loïsa Puget"
+   },
+   {
+    "id": "p-viardot-hai-luli-me-lodies-et-une-havana",
+    "title": "Hai Luli ! (Mélodies et une havanaise)",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-grieg-luala-t-the-mountaineer-s-song",
+    "title": "Lualåt (The Mountaineer's Song)",
+    "by": "E. Grieg"
+   },
+   {
+    "id": "p-satie-gymnope-die-no-2",
+    "title": "Gymnopédie No. 2",
+    "by": "E. Satie"
+   },
+   {
+    "id": "p-burgmu-ller-le-courant-limpide",
+    "title": "Le Courant Limpide",
+    "by": "J. F. F. Burgmüller"
+   },
+   {
     "id": "p-pleyel-rondo",
     "title": "Rondo",
     "by": "I. J. Pleyel"
@@ -139,11 +439,167 @@ export const PIANO_PATH = [
     "id": "p-bach-polonaise-in-f-major",
     "title": "Polonaise in F major",
     "by": "J. S. Bach"
+   }
+  ]
+ },
+ {
+  "title": "Studies and dances",
+  "blurb": "Short studies, minuets and waltzes.",
+  "songs": [
+   {
+    "id": "p-grandval-la-de-laisse-e",
+    "title": "La délaissée",
+    "by": "Clémence de Grandval"
+   },
+   {
+    "id": "p-holme-s-chanson-persane-me-lodies",
+    "title": "Chanson persane (Mélodies)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-zumsteeg-religion-lieder-op-4",
+    "title": "Religion (Lieder, Op.4)",
+    "by": "Emilie Zumsteeg"
+   },
+   {
+    "id": "p-parratt-with-wisdom-goodness-grace-chora",
+    "title": "With wisdom, goodness, grace (Choral Songs in Honour of Her Majesty Queen Victoria)",
+    "by": "Walter Parratt"
+   },
+   {
+    "id": "p-lehmann-my-sister-nell-songs-of-a-flappe",
+    "title": "My sister Nell (Songs of a “Flapper”)",
+    "by": "Liza Lehmann"
+   },
+   {
+    "id": "p-viardot-lamento-vwv-1139",
+    "title": "Lamento, VWV 1139",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-holme-s-noe-l-d-irlande-me-lodies",
+    "title": "Noël d’Irlande (Mélodies)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-mendelssohn-volkslied-mwv-j-10-duets-op-",
+    "title": "Volkslied, MWV J 10 (Duets, Op.63)",
+    "by": "Felix Mendelssohn"
+   },
+   {
+    "id": "p-schumann-die-stille-liederkreis-op-39",
+    "title": "Die Stille (Liederkreis, Op.39)",
+    "by": "Robert Schumann"
+   },
+   {
+    "id": "p-franz-umsonst-gesa-nge-op-10",
+    "title": "Umsonst (Gesänge, Op.10)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-holme-s-se-re-nade-d-automne-les-se-re-n",
+    "title": "Sérénade d’automne (Les Sérénades)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-kinkel-durch-carthago-s-tru-mmerhallen-l",
+    "title": "Durch Carthago’s Trümmerhallen (Lieder, Op.19)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-parratt-the-triumph-of-victoria-choral-s",
+    "title": "The Triumph of Victoria (Choral Songs in Honour of Her Majesty Queen Victoria)",
+    "by": "Walter Parratt"
+   },
+   {
+    "id": "p-stanford-sweet-and-low-a-cycle-of-songs-",
+    "title": "Sweet and low (A Cycle of Songs, Op.68)",
+    "by": "Charles Villiers Stanford"
+   },
+   {
+    "id": "p-lang-gib-dich-dahin-in-gottes-sinn-liede",
+    "title": "Gib dich dahin in Gottes Sinn (Lieder des Leids, Op.29)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-schubert-wehmut-d-772-op-22",
+    "title": "Wehmut, D.772 (Op.22)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-brahms-die-liebende-schreibt-lieder-op-4",
+    "title": "Die Liebende schreibt (Lieder, Op.47)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-franz-im-wunderscho-nen-monat-mai-lieder",
+    "title": "Im wunderschönen Monat Mai (Lieder, Op.25)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-brahms-sta-ndchen-lieder-and-romances-op",
+    "title": "Ständchen (Lieder and Romances, Op.14)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-bizet-berceuse-me-lodies-op-21",
+    "title": "Berceuse (Mélodies, Op.21)",
+    "by": "Georges Bizet"
+   },
+   {
+    "id": "p-kinkel-so-wahr-die-sonne-scheinet-lieder",
+    "title": "So wahr die Sonne scheinet (Lieder, Op.10)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-philp-forgiven",
+    "title": "Forgiven",
+    "by": "Elizabeth Philp"
+   },
+   {
+    "id": "p-brahms-parole-songs-op-7",
+    "title": "Parole (Songs, Op.7)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-lang-mignons-klage-lieder-op-10",
+    "title": "Mignons Klage (Lieder, Op.10)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-brahms-nicht-mehr-zu-dir-zu-gehen-lieder",
+    "title": "Nicht mehr zu dir zu gehen (Lieder und Gesänge, Op.32)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-gounod-le-lever-me-lodies",
+    "title": "Le lever (Mélodies)",
+    "by": "Charles Gounod"
+   },
+   {
+    "id": "p-kinkel-voru-berfahrt-lieder-op-7",
+    "title": "Vorüberfahrt (Lieder, Op.7)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-lehmann-in-the-garden-songs-of-a-flapper",
+    "title": "In the garden (Songs of a “Flapper”)",
+    "by": "Liza Lehmann"
+   },
+   {
+    "id": "p-schubert-greisengesang-d-778-op-60",
+    "title": "Greisengesang, D.778 (Op.60)",
+    "by": "Franz Schubert"
    },
    {
     "id": "p-mozart-fugue-in-g-minor-kv-154-385k",
     "title": "Fugue in G Minor KV 154/385k",
     "by": "W. A. Mozart"
+   },
+   {
+    "id": "p-schubert-die-stadt-schwanengesang-d-957",
+    "title": "Die Stadt (Schwanengesang, D.957)",
+    "by": "Franz Schubert"
    },
    {
     "id": "p-burgmu-ller-la-chasse",
@@ -196,6 +652,167 @@ export const PIANO_PATH = [
     "by": "P. I. Tchaikovsky"
    },
    {
+    "id": "p-bach-chorale-prelude-wer-nur-den-lieben-",
+    "title": "Chorale prelude “Wer nur den lieben Gott läßt walten”",
+    "by": "J. S. Bach"
+   }
+  ]
+ },
+ {
+  "title": "Romantic miniatures",
+  "blurb": "More colour, more of the keyboard.",
+  "songs": [
+   {
+    "id": "p-kinkel-traumdeutung-lieder-op-10",
+    "title": "Traumdeutung (Lieder, Op.10)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-haydn-the-mermaid-s-song-hob-xxvia25-can",
+    "title": "The Mermaid’s Song, Hob.XXVIa25 (Canzonets)",
+    "by": "Joseph Haydn"
+   },
+   {
+    "id": "p-kinkel-der-kuss-lieder-op-10",
+    "title": "Der Kuss (Lieder, Op.10)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-lang-lied-immer-sich-rein-kindlich-erfre",
+    "title": "Lied (Immer sich rein kindlich erfreu’n) (Lieder, Op.25)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-holme-s-le-chemin-du-ciel-contes-divins",
+    "title": "Le chemin du ciel (Contes divins)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-lang-abermals-am-see-lieder-op-12",
+    "title": "Abermals am See (Lieder, Op.12)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-cornelius-simeon-weihnachtslieder-op-8",
+    "title": "Simeon (Weihnachtslieder, Op.8)",
+    "by": "Peter Cornelius"
+   },
+   {
+    "id": "p-boulanger-je-garde-une-me-daille-d-elle-",
+    "title": "Je garde une médaille d’elle (Clairières dans le ciel)",
+    "by": "Lili Boulanger"
+   },
+   {
+    "id": "p-horrocks-the-blackbird",
+    "title": "The Blackbird",
+    "by": "Amy Elsie Horrocks"
+   },
+   {
+    "id": "p-browne-the-reply-of-the-messenger-bird",
+    "title": "The Reply of the Messenger Bird",
+    "by": "Augusta Browne"
+   },
+   {
+    "id": "p-beethoven-das-liedchen-von-der-ruhe-lied",
+    "title": "Das Liedchen von der Ruhe (Lieder, Op.52)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-franz-vom-auge-zum-herzen-gesa-nge-op-26",
+    "title": "Vom Auge zum Herzen (Gesänge, Op.26)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-stanford-the-pibroch-songs-of-a-roving-c",
+    "title": "The Pibroch (Songs of a Roving Celt, Op.157)",
+    "by": "Charles Villiers Stanford"
+   },
+   {
+    "id": "p-beethoven-feuerfarb-lieder-op-52",
+    "title": "Feuerfarb (Lieder, Op.52)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-lang-ewige-na-he-lieder-op-8",
+    "title": "Ewige Nähe (Lieder, Op.8)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-schubert-lied-der-mignon-heiss-mich-nich",
+    "title": "Lied der Mignon (Heiss mich nicht reden) (Gesänge aus „Wilhelm Meister“, D.877)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-viardot-le-re-ve-de-je-sus-vwv-1074",
+    "title": "Le rêve de Jésus, VWV 1074",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-haydn-recollection-hob-xxvia26-canzonets",
+    "title": "Recollection, Hob.XXVIa26 (Canzonets)",
+    "by": "Joseph Haydn"
+   },
+   {
+    "id": "p-mendelssohn-herbstlied-mwv-j-11-duets-op",
+    "title": "Herbstlied, MWV J 11 (Duets, Op.63)",
+    "by": "Felix Mendelssohn"
+   },
+   {
+    "id": "p-munktell-si-tu-le-voulais-songs",
+    "title": "Si tu le voulais (Songs)",
+    "by": "Helena Munktell"
+   },
+   {
+    "id": "p-bizet-adieux-de-l-ho-tesse-arabe-me-lodi",
+    "title": "Adieux de l’hôtesse arabe (Mélodies, Op.21)",
+    "by": "Georges Bizet"
+   },
+   {
+    "id": "p-coleridge-taylor-oh-the-summer",
+    "title": "Oh, the Summer",
+    "by": "Samuel Coleridge-Taylor"
+   },
+   {
+    "id": "p-lang-du-denkst-an-mich-so-selten-lieder-",
+    "title": "Du denkst an mich so selten (Lieder, Op.26)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-satie-tendrement",
+    "title": "Tendrement",
+    "by": "Erik Satie"
+   },
+   {
+    "id": "p-schubert-die-nebensonnen-winterreise-d-9",
+    "title": "Die Nebensonnen (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-brahms-gold-u-berwiegt-die-liebe-lieder-",
+    "title": "Gold überwiegt die Liebe (Lieder, Op.48)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-mendelssohn-der-mond-mwv-k-122-gesa-nge-",
+    "title": "Der Mond, MWV K 122 (Gesänge, Op.86)",
+    "by": "Felix Mendelssohn"
+   },
+   {
+    "id": "p-brahms-der-fru-hling-songs-op-6",
+    "title": "Der Frühling (Songs, Op.6)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-schumann-wenn-ich-in-deine-augen-seh-dic",
+    "title": "Wenn ich in deine Augen seh’ (Dichterliebe, Op.48)",
+    "by": "Robert Schumann"
+   },
+   {
+    "id": "p-holme-s-le-clairon-fleuri-me-lodies-pour",
+    "title": "Le clairon fleuri (Mélodies pour piano et chant)",
+    "by": "Augusta Holmès"
+   },
+   {
     "id": "p-kuhlau-sonatine-i-allegro",
     "title": "Sonatine I - Allegro",
     "by": "F. Kuhlau"
@@ -215,17 +832,6 @@ export const PIANO_PATH = [
     "title": "Sonata No. 1 (3rd Movement: Allegretto)",
     "by": "L. V. Beethoven"
    },
-   {
-    "id": "p-bach-chorale-prelude-wer-nur-den-lieben-",
-    "title": "Chorale prelude “Wer nur den lieben Gott läßt walten”",
-    "by": "J. S. Bach"
-   }
-  ]
- },
- {
-  "title": "Studies and dances",
-  "blurb": "Short studies, minuets and waltzes.",
-  "songs": [
    {
     "id": "p-beethoven-sonata-no-20-2nd-movement-temp",
     "title": "Sonata No. 20 (2nd Movement: Tempo di Menuetto)",
@@ -260,6 +866,37 @@ export const PIANO_PATH = [
     "id": "p-beethoven-prelude-op-woo-55",
     "title": "Prelude Op. WoO 55",
     "by": "L. V. Beethoven"
+   }
+  ]
+ },
+ {
+  "title": "Bigger forms",
+  "blurb": "Inventions, rags and longer pieces.",
+  "songs": [
+   {
+    "id": "p-kinkel-an-den-mond-lieder-op-7",
+    "title": "An den Mond (Lieder, Op.7)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-schubert-letzte-hoffnung-winterreise-d-9",
+    "title": "Letzte Hoffnung (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-franz-mutter-o-sing-mich-zur-ruh-gesa-ng",
+    "title": "Mutter, o sing’ mich zur Ruh’! (Gesänge, Op.10)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-schubert-bootgesang-d-835-op-52",
+    "title": "Bootgesang, D.835 (Op.52)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-schumann-widmung-myrthen-op-25",
+    "title": "Widmung (Myrthen, Op.25)",
+    "by": "Robert Schumann"
    },
    {
     "id": "p-burgmu-ller-la-babillarde",
@@ -267,14 +904,139 @@ export const PIANO_PATH = [
     "by": "J. F. F. Burgmüller"
    },
    {
+    "id": "p-franz-in-meinem-garten-die-nelken-gesa-n",
+    "title": "In meinem Garten die Nelken (Gesänge, Op.1)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-kinkel-ro-mische-nacht-lieder-op-15",
+    "title": "Römische Nacht (Lieder, Op.15)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-brahms-strahlt-zuweilen-auch-ein-mildes-",
+    "title": "Strahlt zuweilen auch ein mildes Licht (Lieder und Gesänge, Op.57)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-satie-l-omnibus-automobile",
+    "title": "L’omnibus automobile",
+    "by": "Erik Satie"
+   },
+   {
+    "id": "p-kinkel-die-lorelei-lieder-op-7",
+    "title": "Die Lorelei (Lieder, Op.7)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-brahms-spanisches-lied-songs-op-6",
+    "title": "Spanisches Lied (Songs, Op.6)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-kinkel-abreise-gedichte-op-8",
+    "title": "Abreise (Gedichte, Op.8)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-cornelius-wie-lieb-ich-dich-hab-an-berth",
+    "title": "Wie lieb ich dich hab (An Bertha, Op.15)",
+    "by": "Peter Cornelius"
+   },
+   {
+    "id": "p-coleridge-taylor-viking-song",
+    "title": "Viking Song",
+    "by": "Samuel Coleridge-Taylor"
+   },
+   {
+    "id": "p-wieck-warum-willst-du-and-re-fragen-lied",
+    "title": "Warum willst du And’re fragen (Lieder, Op.12)",
+    "by": "Clara Wieck"
+   },
+   {
+    "id": "p-stanford-home-they-brought-her-warrior-d",
+    "title": "Home they brought her warrior dead (A Cycle of Songs, Op.68)",
+    "by": "Charles Villiers Stanford"
+   },
+   {
+    "id": "p-holme-s-chanson-catalane-me-lodies-pour-",
+    "title": "Chanson catalane (Mélodies pour piano et chant)",
+    "by": "Augusta Holmès"
+   },
+   {
     "id": "p-pejacsevich-gondellied",
     "title": "Gondellied",
     "by": "D. Pejacsevich"
    },
    {
+    "id": "p-franz-vergiss-mein-nicht-gesa-nge-op-26",
+    "title": "Vergiss mein nicht! (Gesänge, Op.26)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-wagner-schmerzen-gedichte-fu-r-eine-frau",
+    "title": "Schmerzen (Gedichte für eine Frauenstimme (Wesendonck-Lieder), WWV 91)",
+    "by": "Richard Wagner"
+   },
+   {
+    "id": "p-horrocks-the-cuckoo",
+    "title": "The Cuckoo",
+    "by": "Amy Elsie Horrocks"
+   },
+   {
+    "id": "p-lang-schilflied-lieder-op-26",
+    "title": "Schilflied (Lieder, Op.26)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-schubert-wasserfluth-winterreise-d-911",
+    "title": "Wasserfluth (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-wagner-der-engel-gedichte-fu-r-eine-frau",
+    "title": "Der Engel (Gedichte für eine Frauenstimme (Wesendonck-Lieder), WWV 91)",
+    "by": "Richard Wagner"
+   },
+   {
+    "id": "p-lang-in-die-ferne-lieder-op-8",
+    "title": "In die Ferne (Lieder, Op.8)",
+    "by": "Josephine Lang"
+   },
+   {
+    "id": "p-holme-s-la-guerrie-re-ballade-he-roi-que",
+    "title": "La guerrière, ballade héroïque (Mélodies)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-schubert-das-wirthshaus-winterreise-d-91",
+    "title": "Das Wirthshaus (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
     "id": "p-burgmu-ller-inquie-tude",
     "title": "Inquiétude",
     "by": "J. F. F. Burgmüller"
+   },
+   {
+    "id": "p-dickson-drifting",
+    "title": "Drifting",
+    "by": "Ellen Dickson"
+   },
+   {
+    "id": "p-bizet-apre-s-l-hiver-me-lodies-op-21",
+    "title": "Après l’hiver (Mélodies, Op.21)",
+    "by": "Georges Bizet"
+   },
+   {
+    "id": "p-viardot-sce-ne-d-hermione-vwv-1007",
+    "title": "Scène d’Hermione, VWV 1007",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-satie-chanson-petites-me-lodies",
+    "title": "Chanson (Petites mélodies)",
+    "by": "Erik Satie"
    },
    {
     "id": "p-grieg-ases-tod",
@@ -330,13 +1092,7 @@ export const PIANO_PATH = [
     "id": "p-brahms-2-intermezzo",
     "title": "2. Intermezzo",
     "by": "J. Brahms"
-   }
-  ]
- },
- {
-  "title": "Romantic miniatures",
-  "blurb": "More colour, more of the keyboard.",
-  "songs": [
+   },
    {
     "id": "p-kuhlau-sonatine-i-rondo",
     "title": "Sonatine I - Rondo",
@@ -351,6 +1107,17 @@ export const PIANO_PATH = [
     "id": "p-adam-giselle-pas-de-deux-1er-acte",
     "title": "Giselle - Pas de deux (1er Acte)",
     "by": "A. Adam"
+   }
+  ]
+ },
+ {
+  "title": "Concert repertoire",
+  "blurb": "The real thing, at length.",
+  "songs": [
+   {
+    "id": "p-brahms-murrays-ermordung-lieder-and-roma",
+    "title": "Murrays Ermordung (Lieder and Romances, Op.14)",
+    "by": "Johannes Brahms"
    },
    {
     "id": "p-grieg-in-the-hall-of-the-mountain-king",
@@ -363,9 +1130,44 @@ export const PIANO_PATH = [
     "by": "F. Mendelssohn-Bartholdy"
    },
    {
+    "id": "p-franz-die-lotosblume-gesa-nge-op-1",
+    "title": "Die Lotosblume (Gesänge, Op.1)",
+    "by": "Robert Franz"
+   },
+   {
+    "id": "p-joplin-please-say-you-will",
+    "title": "Please Say You Will",
+    "by": "Scott Joplin"
+   },
+   {
     "id": "p-mozart-sonate-opus-kv-331-tema",
     "title": "Sonate Opus KV 331 - Tema",
     "by": "W. A. Mozart"
+   },
+   {
+    "id": "p-viardot-gentilles-hirondelles-me-lodies-",
+    "title": "Gentilles hirondelles (Mélodies et une havanaise)",
+    "by": "Pauline Viardot"
+   },
+   {
+    "id": "p-haydn-sailor-s-song-hob-xxvia31-canzonet",
+    "title": "Sailor’s Song, Hob.XXVIa31 (Canzonets)",
+    "by": "Joseph Haydn"
+   },
+   {
+    "id": "p-beethoven-die-ehre-gottes-aus-der-natur-",
+    "title": "Die Ehre Gottes aus der Natur (Lieder, Op.48)",
+    "by": "Ludwig van Beethoven"
+   },
+   {
+    "id": "p-faure-en-sourdine-cinq-me-lodies-op-58",
+    "title": "En sourdine (Cinq Mélodies, Op.58)",
+    "by": "Gabriel Fauré"
+   },
+   {
+    "id": "p-debussy-c-est-l-extase-langoureuse-ariet",
+    "title": "C’est l’extase langoureuse (Ariettes Oubliées)",
+    "by": "Claude Debussy"
    },
    {
     "id": "p-beethoven-sonata-no-25-2nd-movement-anda",
@@ -378,6 +1180,16 @@ export const PIANO_PATH = [
     "by": "F. F. Chopin"
    },
    {
+    "id": "p-wolf-der-soldat-i-eichendorff-lieder",
+    "title": "Der Soldat I (Eichendorff-Lieder)",
+    "by": "Hugo Wolf"
+   },
+   {
+    "id": "p-haydn-she-never-told-her-love-hob-xxvia3",
+    "title": "She never told her love, Hob.XXVIa34 (Canzonets)",
+    "by": "Joseph Haydn"
+   },
+   {
     "id": "p-burgmu-ller-ballade",
     "title": "Ballade",
     "by": "J. F. F. Burgmüller"
@@ -388,9 +1200,29 @@ export const PIANO_PATH = [
     "by": "E. Grieg"
    },
    {
+    "id": "p-lang-im-herbst-deutsche-lieder-op-11",
+    "title": "Im Herbst (Deutsche Lieder, Op.11)",
+    "by": "Josephine Lang"
+   },
+   {
     "id": "p-mendelssohn-bartholdy-lied-ohne-worte-op",
     "title": "Lied Ohne Worte - Opus 53, No. 5 - Volkslied",
     "by": "F. Mendelssohn-Bartholdy"
+   },
+   {
+    "id": "p-cornelius-ode-lieder-op-5",
+    "title": "Ode (Lieder, Op.5)",
+    "by": "Peter Cornelius"
+   },
+   {
+    "id": "p-schubert-sta-ndchen-schwanengesang-d-957",
+    "title": "Ständchen (Schwanengesang, D.957)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-schubert-fru-hlingssehnsucht-schwanenges",
+    "title": "Frühlingssehnsucht (Schwanengesang, D.957)",
+    "by": "Franz Schubert"
    },
    {
     "id": "p-mozart-fugue-in-e-flat-major-kv-153-375f",
@@ -403,6 +1235,26 @@ export const PIANO_PATH = [
     "by": "L. V. Beethoven"
    },
    {
+    "id": "p-wolf-heimweh-eichendorff-lieder",
+    "title": "Heimweh (Eichendorff-Lieder)",
+    "by": "Hugo Wolf"
+   },
+   {
+    "id": "p-holme-s-hymne-au-soleil-me-lodies",
+    "title": "Hymne au Soleil (Mélodies)",
+    "by": "Augusta Holmès"
+   },
+   {
+    "id": "p-kinkel-der-mu-llerinn-nachbar-lieder-op-",
+    "title": "Der Müllerinn Nachbar (Lieder, Op.10)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-kinkel-na-chtliche-fahrt-lieder-op-16",
+    "title": "Nächtliche Fahrt (Lieder, Op.16)",
+    "by": "Johanna Kinkel"
+   },
+   {
     "id": "p-tchaikovsky-the-seasons-august",
     "title": "The Seasons: August",
     "by": "P. I. Tchaikovsky"
@@ -413,9 +1265,34 @@ export const PIANO_PATH = [
     "by": "A. Scriabin"
    },
    {
+    "id": "p-brahms-wie-bist-du-meine-ko-nigin-lieder",
+    "title": "Wie bist du, meine Königin (Lieder und Gesänge, Op.32)",
+    "by": "Johannes Brahms"
+   },
+   {
+    "id": "p-kinkel-trennung-gedichte-op-8",
+    "title": "Trennung (Gedichte, Op.8)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-wolf-der-freund-eichendorff-lieder",
+    "title": "Der Freund (Eichendorff-Lieder)",
+    "by": "Hugo Wolf"
+   },
+   {
     "id": "p-beethoven-sonata-no-19-1st-movement-anda",
     "title": "Sonata No. 19 (1st Movement: Andante)",
     "by": "L. V. Beethoven"
+   },
+   {
+    "id": "p-kinkel-die-gefangenen-lieder-op-16",
+    "title": "Die Gefangenen (Lieder, Op.16)",
+    "by": "Johanna Kinkel"
+   },
+   {
+    "id": "p-cornelius-trauer-trauer-und-trost-op-3",
+    "title": "Trauer (Trauer und Trost, Op.3)",
+    "by": "Peter Cornelius"
    },
    {
     "id": "p-mozart-sonate-opus-kv-331-variation-1",
@@ -433,6 +1310,11 @@ export const PIANO_PATH = [
     "by": "P. I. Tchaikovsky"
    },
    {
+    "id": "p-franz-und-die-rosen-die-prangen-gesa-nge",
+    "title": "Und die Rosen, die prangen (Gesänge, Op.10)",
+    "by": "Robert Franz"
+   },
+   {
     "id": "p-beethoven-sonata-no-6-3rd-movement-prest",
     "title": "Sonata No. 6 (3rd Movement: Presto)",
     "by": "L. V. Beethoven"
@@ -441,22 +1323,46 @@ export const PIANO_PATH = [
     "id": "p-verdi-la-traviata-preludio",
     "title": "La Traviata - Preludio",
     "by": "G. Verdi"
-   }
-  ]
- },
- {
-  "title": "Bigger forms",
-  "blurb": "Inventions, rags and longer pieces.",
-  "songs": [
+   },
+   {
+    "id": "p-schumann-zum-schluss-myrthen-op-25",
+    "title": "Zum Schluss (Myrthen, Op.25)",
+    "by": "Robert Schumann"
+   },
+   {
+    "id": "p-schubert-ru-ckblick-winterreise-d-911",
+    "title": "Rückblick (Winterreise, D.911)",
+    "by": "Franz Schubert"
+   },
+   {
+    "id": "p-wolf-seemans-abschied-eichendorff-lieder",
+    "title": "Seemans Abschied (Eichendorff-Lieder)",
+    "by": "Hugo Wolf"
+   },
+   {
+    "id": "p-kinkel-nachtlied-lieder-op-7",
+    "title": "Nachtlied (Lieder, Op.7)",
+    "by": "Johanna Kinkel"
+   },
    {
     "id": "p-brahms-waltz-no-10",
     "title": "Waltz No. 10",
     "by": "J. Brahms"
    },
    {
+    "id": "p-coleridge-taylor-oh-roses-for-the-flush-",
+    "title": "Oh, Roses for the flush of youth (Sorrow Songs, Op.57)",
+    "by": "Samuel Coleridge-Taylor"
+   },
+   {
     "id": "p-hunter-possum-and-taters",
     "title": "Possum And Taters",
     "by": "C. Hunter"
+   },
+   {
+    "id": "p-mendelssohn-gruss-mwv-j-8-duets-op-63",
+    "title": "Gruss, MWV J 8 (Duets, Op.63)",
+    "by": "Felix Mendelssohn"
    },
    {
     "id": "p-verdi-la-traviata-n8-scena-e-duettino",
@@ -552,13 +1458,7 @@ export const PIANO_PATH = [
     "id": "p-joplin-the-strenuous-life",
     "title": "The Strenuous Life",
     "by": "S. Joplin"
-   }
-  ]
- },
- {
-  "title": "Concert repertoire",
-  "blurb": "The real thing, at length.",
-  "songs": [
+   },
    {
     "id": "p-verdi-la-traviata-n2-brindisi",
     "title": "La Traviata - N2 Brindisi",

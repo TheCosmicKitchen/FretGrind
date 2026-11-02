@@ -3,12 +3,15 @@
    ryans/ and oneills/ hold the ABC files from music21's corpus (Ryan's Mammoth Collection, 1883; O'Neill's Music of
    Ireland, 1903). mutopia/ holds pieces.json and each piece's .mid and .ly, only for pieces Mutopia marks Public Domain.
    A tune that can't be written faithfully in the song format is left out rather than bent to fit.
-   piano/ holds the same for solo piano. The run also writes the guitar and piano paths. */
+   piano/ holds the same for solo piano. lieder/ is a clone of github.com/OpenScore/Lieder (CC0): only composers who
+   died before 1926 are used, the vocal line for guitar, and melody over the left hand for piano.
+   The run also writes the guitar and piano paths. */
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { METERS, build, check } from "../docs/js/songs/format.js";
 import { grips, levelOfTab, playability, tabify } from "../docs/js/songs/tabify.js";
+import { chunksOf } from "../docs/js/songs/path.js";
 
 const T = 12, // twelfths of a sixteenth, as in format.js
   LEGAL = new Map([[8, "2/3"], [12, "1"], [16, "4/3"], [24, "2"], [32, "8/3"], [36, "3"], [48, "4"], [72, "6"], [96, "8"], [144, "12"], [192, "16"], [288, "24"]]),
@@ -32,25 +35,23 @@ function toBars(stream, barLen, pickup) {
       room = barLen;
     }
   }
-  if (cur.length) {
-    // the piece stops mid-bar: a rest completes it unless that is just the other half of a pick-up
-    if (!(pickup && barLen - room === barLen - pickup))
-      for (const r of LEGAL_DESC)
-        while (room >= r) {
-          cur.push(`r:${LEGAL.get(r)}`);
-          room -= r;
-        }
-    if (room && !(pickup && room === pickup)) return { why: "last bar can't be completed" };
-    out.push(cur.join(" "));
-  } else if (pickup) {
-    // a full last bar after a pick-up: a short rest bar gives the pick-up its time back, so a loop stays on the beat
-    let left = barLen - pickup;
-    for (const r of LEGAL_DESC)
-      while (left >= r) {
+  // close the piece so a loop lands on the beat: after a pick-up the last bar gives that pick-up its time back
+  const fill = (n) => {
+    for (const r of [...LEGAL.keys()].sort((x, y) => y - x))
+      while (n >= r) {
         cur.push(`r:${LEGAL.get(r)}`);
-        left -= r;
+        n -= r;
       }
-    if (left) return { why: "last bar can't be completed" };
+    return n === 0;
+  };
+  if (cur.length || pickup) {
+    if (pickup && room < pickup) {
+      if (!fill(room)) return { why: "last bar can't be completed" };
+      out.push(cur.join(" "));
+      cur = [];
+      room = barLen;
+    }
+    if (!fill(room - pickup)) return { why: "last bar can't be completed" };
     out.push(cur.join(" "));
   }
   return { bars: out.join(" | ") };
@@ -460,30 +461,42 @@ function parseMidiPiece(p, dir) {
 }
 
 /* ---------- grading ---------- */
-/* How hard a piece is to get under the fingers. Tempo stays out of it: the player sets the speed, so what counts is how
-   busy the rhythm is, how far the hand goes, how much strays from the key, and how much is held at once. */
+/* How hard a piece is to get under the fingers. Tempo stays out of it, since the player sets the speed. What counts is
+   how busy and irregular the rhythm is, what the hands must do on the actual tab, how much strays from the key, how
+   much is held at once, and how much there is to learn: a repeat is not new material, so it adds nothing. */
 function hardness(s) {
   const notes = s.sounding,
     n = notes.length,
-    perBeat = n / (s.total / 4),
+    tab = tabify(s, 6),
+    beats = s.total / 4,
+    perBeat = n / beats,
     fine = notes.filter((x) => x.dur <= 1 || !Number.isInteger(x.dur)).length / n,
+    kinds = new Set(notes.map((x) => x.dur)).size,
+    offBeat = notes.filter((x) => x.dur >= 3 && (x.start - (s.pickup || 0)) % 4 !== 0).length / n,
     accs = notes.filter((x) => x.show).length / n,
     chords = notes.filter((x) => x.pitches.length > 1).length / n,
     midis = notes.map((x) => x.midi),
     leap = midis.slice(1).reduce((a, m, i) => a + Math.abs(m - midis[i]), 0) / Math.max(1, n - 1),
     range = Math.max(...midis) - Math.min(...midis),
-    tab = tabify(s, 6),
-    hand = tab.map((c) => c[1]).reduce((a, f) => a + f, 0) / n;
-  return (perBeat - 1) * 1.1 + fine * 3 + accs * 9 + leap * 0.28 + range * 0.035 + chords * 2.2 + hand * 0.22 + Math.max(0, Math.abs(sigOf(s.key)) - 2) * 0.5 + (s.pickup ? 0.2 : 0) + Math.min(1, n / 500);
+    frets = tab.map((c) => c[1]).filter((f) => f > 0),
+    hand = frets.length ? frets.reduce((a, f) => a + f, 0) / frets.length : 0,
+    shifts = tab.slice(1).filter((c, i) => c[1] > 0 && tab[i][1] > 0 && Math.abs(c[1] - tab[i][1]) >= 4).length / n,
+    cross = tab.slice(1).filter((c, i) => c[0] !== tab[i][0]).length / n,
+    fresh = chunksOf(s).filter((c) => c.same < 0).reduce((a, c) => a + (c.last - c.first + 1), 0);
+  return (perBeat - 1) * 0.9 + fine * 2.5 + (kinds - 1) * 0.16 + offBeat * 2.5 + accs * 8 + leap * 0.22 + range * 0.03 + chords * 1.2 + hand * 0.16 + shifts * 2.5 + cross * 0.9 + Math.max(0, Math.abs(sigOf(s.key)) - 2) * 0.4 + (s.pickup ? 0.15 : 0) + Math.min(1.4, fresh / 220);
 }
-const CUTS = [2.75, 3.25, 3.8, 4.7, 6.5]; // where each level ends; set so the library spreads across all six
+const SHARE = [0.1, 0.2, 0.25, 0.2, 0.15, 0.1]; // how the library spreads across the six levels
 
 function gradeOf(s) {
-  const h = hardness(s),
-    lv = 1 + CUTS.filter((c) => h > c).length;
-  return { level: Math.max(lv, levelOfTab(s), s.sounding.some((n) => n.pitches.length > 1) && s.style === "classical" ? 3 : 1), h };
+  return { h: hardness(s), floor: Math.max(levelOfTab(s), s.style === "classical" && s.sounding.some((n) => n.pitches.length > 1) ? 3 : 1) };
 }
 const sigOf = (k) => (TONIC[k.replace(/(m|dor|phr|lyd|mix|loc)$/, "")] || 0) + (MODE[(/(m|dor|phr|lyd|mix|loc)$/.exec(k) || [""])[0]] || ["", 0])[1];
+
+const DUR = { whole: 192, half: 96, quarter: 48, eighth: 24, "16th": 12, "32nd": 6, "64th": 3, breve: 384 },
+  MAJ = { 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F#", 7: "C#", "-1": "F", "-2": "Bb", "-3": "Eb", "-4": "Ab", "-5": "Db", "-6": "Gb" },
+  MIN = { 0: "Am", 1: "Em", 2: "Bm", 3: "F#m", 4: "C#m", 5: "G#m", "-1": "Dm", "-2": "Gm", "-3": "Cm", "-4": "Fm", "-5": "Bbm", "-6": "Ebm" },
+  tag = (x, t) => (new RegExp(`<${t}>([^<]*)</${t}>`).exec(x) || [])[1];
+const frac = (v) => { const [n, d] = v.split("/").map(Number); return (n * 192) / d; };
 
 /* ---------- main ---------- */
 const raw = process.argv[2];
@@ -512,11 +525,39 @@ for (const p of JSON.parse(readFileSync(join(mdir, "pieces.json"), "utf8")))
     miss("classical: " + e);
   }
 
+const liedDir = join(raw, "lieder"),
+  dead = new Map(),
+  liedPiano = [];
+for (const b of readFileSync(join(liedDir, "data/composers.yaml"), "utf8").split(/\n(?=\S)/)) {
+  const p = /\n\s+path: (.+)/.exec(b), n = /\n\s+name: (.+)/.exec(b), d = /\n\s+died: (\d+)/.exec(b);
+  if (p && n && d) dead.set(p[1].trim(), { name: n[1].trim().replace(/^['"]|['"]$/g, ""), died: +d[1] });
+}
+const walkDir = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkDir(join(d, e.name)) : e.name.endsWith(".mscx") ? [join(d, e.name)] : []));
+const pretty = (x) => x.replace(/^\d+[a-z]?[_.]+/, "").replace(/_/g, " ").trim();
+let liedNo = 0;
+for (const c of readdirSync(join(liedDir, "scores"))) {
+  const who = dead.get(c);
+  if (!who || who.died >= 1926) { miss("songs: composer too recent or undated", walkDir(join(liedDir, "scores", c)).length); continue; }
+  for (const f of walkDir(join(liedDir, "scores", c))) {
+    const bits = f.split(/[\\/]/), song = pretty(bits[bits.length - 2]), set = bits[bits.length - 3] === "_" ? "" : pretty(bits[bits.length - 3]);
+    try {
+      const r = parseLied(f, who.name, song, set);
+      lib.push({ ...r.guitar, coll: "lieder", no: ++liedNo });
+      if (r.piano) liedPiano.push(r.piano);
+    } catch (e) {
+      if (typeof e !== "string") throw e;
+      miss("songs: " + e);
+    }
+  }
+}
+
 const seen = new Set(),
   slug = (t) => t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40),
   ids = new Set(),
   hards = [],
   hardOf = new Map(),
+  floorOf = new Map(),
+  npsOf = new Map(),
   good = [];
 for (const t of lib) {
   const dup = (t.bars.match(/[A-G][#b]?\d/g) || []).join("");
@@ -534,9 +575,9 @@ for (const t of lib) {
     if (s.sounding.some((n) => n.midi > 95)) { miss("too high for the guitar"); continue; }
     s.style = t.style;
     const g = gradeOf(s);
-    def.level = g.level;
     hards.push(g.h);
     hardOf.set(id, Math.round(g.h * 100) / 100);
+    floorOf.set(id, g.floor);
     const check2 = build(def);
     if (playability(check2, tabify(check2)).length) { miss("no playable tab"); continue; }
   } catch (e) {
@@ -548,10 +589,87 @@ for (const t of lib) {
   def.style = t.style;
   def.tags = [t.dance, t.style === "classical" ? "chords and melody" : ""].filter(Boolean);
   def.src = t.coll;
+  if (t.coll === "lieder") def.tags = ["melody"];
   def.ref = t.coll === "mutopia" ? `Mutopia piece ${m.id}` : t.coll === "oneills" ? `No. ${t.no}` : "";
   if (t.enc) def.enc = t.enc;
   if (m) def.note = [m.opus, m.edition].filter((x) => x && x.trim() && !/^mutopia$/i.test(x.trim())).join(", ");
   good.push(def);
+}
+
+/* Levels: rank everything, then cut the ladder by SHARE, never below what the tab itself demands. */
+{
+  const ranked = [...good].sort((a, b) => hardOf.get(a.id) - hardOf.get(b.id));
+  let edge = 0;
+  const cuts = SHARE.map((x) => Math.round((edge += x) * ranked.length));
+  ranked.forEach((d, i) => (d.level = Math.max(cuts.findIndex((c) => i < c) + 1, floorOf.get(d.id))));
+}
+
+/* Speeds: a dance has a speed it is played at, so aim for that many notes a second, eased down at the early levels so a
+   beginner's target is reachable, and nudged per tune so the library doesn't all sit at one tempo. */
+const PACE = { reel: 7, jig: 6.2, hornpipe: 5.2, "slip jig": 5.5, strathspey: 4.6, clog: 5, "highland fling": 5, march: 4.6, waltz: 3.8, slide: 6, air: 2.6, "": 3.2 },
+  EASE = { 1: 0.55, 2: 0.65, 3: 0.8, 4: 0.9, 5: 1, 6: 1.1 },
+  nudge = (id) => 0.88 + ([...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 1009, 7) / 1009) * 0.24;
+for (const d of good) {
+  const b = build(d),
+    beats = b.total / b.beat,
+    n = b.sounding.length;
+  if (d.src === "ryans" || d.src === "oneills") {
+    const dance = d.tags[0] || "",
+      want = (PACE[dance] ?? PACE[""]) * EASE[d.level] * nudge(d.id);
+    d.tempo = Math.max(40, Math.min(d.style === "air" ? 116 : 200, Math.round((want / (n / beats)) * 60)));
+  }
+  npsOf.set(d.id, Math.round((n / (beats * (60 / d.tempo))) * 100) / 100);
+}
+
+/* Teaching moments: phrases that show one skill clearly, found by scanning every piece. */
+const longRun = (xs, ok) => { let best = 0, run = 0, dir = 0; xs.forEach((x) => { const d = Math.sign(x); if (ok(Math.abs(x)) && (d === dir || !run)) (run++, (dir = d)); else { run = ok(Math.abs(x)) ? 1 : 0; dir = d; } best = Math.max(best, run); }); return best; };
+const count = (xs, f) => xs.filter(f).length;
+const SKILLS = [
+  { id: "scales", name: "Scale runs", blurb: "Long lines moving by step: keep every note even.", course: "G9", test: ({ iv }) => { const r = longRun(iv, (x) => x >= 1 && x <= 2); return r >= 6 ? r : 0; } },
+  { id: "arpeggios", name: "Arpeggios", blurb: "Broken chords: the fingers spell the harmony.", course: "G7", test: ({ iv }) => { const r = longRun(iv, (x) => x >= 3 && x <= 5); return r >= 3 ? r * 2 : 0; } },
+  { id: "triplets", name: "Triplets", blurb: "Three even notes in the space of two.", course: "G6", test: ({ ns }) => { const c = count(ns, (n) => n.triplet); return c >= 3 ? c : 0; } },
+  { id: "dotted", name: "Dotted rhythms", blurb: "Long, short: the lilt behind hornpipes and marches.", course: "G4", test: ({ ns }) => { const c = count(ns.slice(1), (n, i) => (ns[i].dur === 3 && n.dur === 1) || (ns[i].dur === 6 && n.dur === 2)); return c >= 3 ? c : 0; } },
+  { id: "syncopation", name: "Syncopation", blurb: "Weight on the off-beat, against the click.", course: "G4", test: ({ ns, s }) => { const c = count(ns, (n) => n.dur >= 4 && (n.start - (s.pickup || 0)) % 4 !== 0); return c >= 2 ? c * 2 : 0; } },
+  { id: "crossing", name: "String crossing", blurb: "Clean jumps from string to string.", course: "G5", test: ({ ns, tab }) => { const c = count(tab.slice(1), (x, i) => x[0] !== tab[i][0]) / ns.length; return ns.length >= 8 && c >= 0.65 ? c * 10 : 0; } },
+  { id: "shifts", name: "Position shifts", blurb: "Move the whole hand up the neck and land in tune.", course: "G8", test: ({ tab }) => { const c = count(tab.slice(1), (x, i) => x[1] > 0 && tab[i][1] > 0 && Math.abs(x[1] - tab[i][1]) >= 5); return c >= 1 ? c * 3 : 0; } },
+  { id: "leaps", name: "Wide leaps", blurb: "Big jumps in pitch, in time.", course: "G8", test: ({ iv }) => { const c = count(iv, (x) => Math.abs(x) >= 7); return c >= 3 ? c : 0; } },
+  { id: "chromatic", name: "Chromatic lines", blurb: "One fret at a time, every finger in turn.", course: "G9", test: ({ iv }) => { const r = longRun(iv, (x) => x === 1); return r >= 3 ? r * 2 : 0; } },
+  { id: "fast", name: "Sixteenth-note runs", blurb: "Bursts of speed: start slow, stay relaxed.", course: "G9", test: ({ ns }) => { const c = count(ns, (n) => n.dur === 1); return c >= 8 ? c : 0; } },
+  { id: "voices", name: "Two voices", blurb: "Bass and melody at once.", course: "G7", test: ({ ns }) => { const c = count(ns, (n) => n.pitches.length > 1) / ns.length; return ns.length >= 6 && c >= 0.4 ? c * 10 : 0; } },
+  { id: "pedal", name: "Pedal notes", blurb: "One note keeps returning under a moving line.", course: "G7", test: ({ m }) => { const c = count(m.slice(2), (x, i) => x === m[i]); return c >= 5 ? c : 0; } },
+];
+{
+  const found = SKILLS.map(() => []);
+  for (const d of good) {
+    const b = build(d),
+      full = b.sounding.length > 700 ? null : tabify(b, 6);
+    if (!full) continue;
+    for (const c of chunksOf(b)) {
+      const count_ = c.last - c.first + 1;
+      if (c.same >= 0 || c.to - c.from > 5 || count_ < 6 || count_ > 34) continue;
+      const ns = b.sounding.slice(c.first, c.last + 1),
+        tab = full.slice(c.first, c.last + 1),
+        m = ns.map((n) => n.midi),
+        iv = m.slice(1).map((x, i) => x - m[i]);
+      SKILLS.forEach((sk, i) => {
+        const score = sk.test({ ns, tab, iv, m, s: b });
+        if (score) found[i].push({ d, from: c.from, to: c.to, score });
+      });
+    }
+  }
+  SKILLS.forEach((sk, i) => {
+    const seen = new Set(),
+      strong = found[i].sort((a, b) => b.score - a.score).slice(0, Math.max(60, found[i].length >> 2)).sort((a, b) => hardOf.get(a.d.id) - hardOf.get(b.d.id)),
+      step = Math.max(1, Math.floor(strong.length / 40)),
+      items = [];
+    for (let k = 0; k < strong.length && items.length < 14; k += step) {
+      const x = strong[k];
+      if (seen.has(x.d.id)) continue;
+      seen.add(x.d.id);
+      items.push({ id: `${x.d.id}@${x.from}-${x.to}`, title: x.d.title, by: x.d.by, level: x.d.level, bars: `${x.from + 1}–${x.to + 1}` });
+    }
+    sk.items = items.sort((a, b) => a.level - b.level);
+  });
 }
 
 const here = fileURLToPath(new URL("../docs/", import.meta.url)),
@@ -564,16 +682,21 @@ const rows = [];
 for (let c = 0; c * CHUNK < good.length; c++) {
   const part = good.slice(c * CHUNK, (c + 1) * CHUNK);
   writeFileSync(join(out, `songs-${c}.json`), JSON.stringify(part));
-  part.forEach((d) => rows.push([d.id, d.title, d.by, d.style, d.level, d.key, d.time, d.tempo, c, hardOf.get(d.id)]));
+  part.forEach((d) => rows.push([d.id, d.title, d.by, d.style, d.level, d.key, d.time, d.tempo, c, hardOf.get(d.id), npsOf.get(d.id)]));
 }
 writeFileSync(join(out, "index.json"), JSON.stringify(rows));
+writeFileSync(join(here, "js/songs/moments-data.js"), `/* Generated by tools/import-music.mjs: phrases from real pieces that teach one skill, easiest first. */\nexport const SKILLS = ${JSON.stringify(SKILLS.map(({ test, ...k }) => k), null, 1)};\n`);
 const tally = (f) => good.reduce((a, d) => ((a[f(d)] = (a[f(d)] || 0) + 1), a), {});
 console.log({ parsed: lib.length, kept: good.length, levels: tally((d) => d.level), styles: tally((d) => d.style), sources: tally((d) => d.src) });
 console.log(Object.entries(why).sort((a, b) => b[1] - a[1]));
 
 /* ---------- the guitar path: stages that sit beside the courses ---------- */
 const easiest = (test, n, skip = new Set()) => {
-  const list = good.filter((d) => test(d) && !skip.has(d.id)).sort((a, b) => hardOf.get(a.id) - hardOf.get(b.id)).slice(0, n);
+  const pool = good.filter((d) => test(d) && !skip.has(d.id)).sort((a, b) => hardOf.get(a.id) - hardOf.get(b.id)),
+    quick = pool.filter((d) => npsOf.get(d.id) >= 3),
+    calm = pool.filter((d) => npsOf.get(d.id) < 3),
+    list = [];
+  for (let i = 0; list.length < n && (quick[i] || calm[i]); i++) for (const d of [quick[i], calm[i]]) if (d && list.length < n) list.push(d);
   list.forEach((d) => skip.add(d.id));
   return list.map((d) => ({ id: d.id, title: d.title, by: d.by }));
 };
@@ -581,7 +704,7 @@ const own = (id, title, by) => ({ id, title, by });
 const ex = (id, title, by) => ({ id, title, by, ex: 1 });
 const used = new Set(),
   named = (re, by) => good.filter((d) => re.test(d.title) && (!by || by.test(d.by))).slice(0, 1).map((d) => (used.add(d.id), { id: d.id, title: d.title, by: d.by })),
-  folk = (lv, n) => easiest((d) => d.level === lv && d.style === "air", n, used),
+  folk = (lv, n) => easiest((d) => d.level === lv && ["air", "song"].includes(d.style), n, used),
   dance = (lv, n) => easiest((d) => d.level === lv && ["reel", "jig", "hornpipe"].includes(d.style), n, used),
   classical = (lo, hi, n) => easiest((d) => d.style === "classical" && d.level >= lo && d.level <= hi, n, used);
 const GUITAR_PATH = [
@@ -627,11 +750,14 @@ function parsePiano(p, dir) {
     g[isLeft(n) ? "l" : "r"].add(n.n);
   }
   if (off > keep.length * 0.02) throw "rhythm finer than the format";
+  return pianoPiece(groups, { time, meter, pick: Math.round(info.pickupQ * 4 * T), name, key: info.key, tempo: Math.max(40, Math.min(132, Math.round(((mid.tempo || 80) * 4) / meter.beat))), title: p.title.replace(/\s+/g, " "), by: p.by.replace(/\s*\(.*$/, ""), note: [p.opus, p.edition].filter((x) => x && x.trim() && !/^mutopia$/i.test(x.trim())).join(", "), ref: `Mutopia piece ${p.id}` });
+}
+/* groups = Map of time (twelfths) -> { r: Set, l: Set } of MIDI notes */
+function pianoPiece(groups, { time, meter, pick, name, key, tempo, title, by, note, ref, src }) {
   const ts = [...groups.keys()].sort((a, b) => a - b);
   if (ts.length < 16) throw "too short";
   if (ts.length > 1100) throw "too long for one sitting";
   const barLen = meter.bar * T,
-    pick = Math.round(info.pickupQ * 4 * T),
     barOf = (t) => (t < pick ? 0 : Math.floor((t - pick) / barLen) + (pick ? 1 : 0)),
     bars = [],
     fmt = (v) => +(v / T).toFixed(3);
@@ -644,7 +770,7 @@ function parsePiano(p, dir) {
     if (!seenBars.has(b)) (seenBars.add(b), (onDown += t === pick + (b - (pick ? 1 : 0)) * barLen || t < pick ? 1 : 0));
     (bars[b] ||= []).push(`${side(g.r)}/${side(g.l)}:${fmt(next - t)}`);
   });
-  if (onDown < seenBars.size * 0.8) throw "bars don't line up with the music";
+  if (onDown < seenBars.size * 0.6) throw "bars don't line up with the music";
   const steps = ts.map((t) => groups.get(t)),
     n = steps.length,
     quarters = (ts[n - 1] - ts[0]) / (4 * T) + 1,
@@ -653,18 +779,145 @@ function parsePiano(p, dir) {
     all = steps.flatMap((g) => [...g.r, ...g.l]),
     blackKeys = all.filter((m) => [1, 3, 6, 8, 10].includes(m % 12)).length / all.length,
     h = (n / quarters) * 1.3 + both * 1 + chords * 6 + blackKeys * 3 + ((Math.max(...all) - Math.min(...all)) / 12) * 0.28 + Math.min(1.5, n / 400);
-  return {
-    title: p.title.replace(/\s+/g, " "),
-    by: p.by.replace(/\s*\(.*$/, ""),
-    key: info.key,
-    time,
-    tempo: Math.max(40, Math.min(132, Math.round(((mid.tempo || 80) * 4) / meter.beat))),
-    bars: bars.filter(Boolean).map((b) => b.join(" ")),
-    note: [p.opus, p.edition].filter((x) => x && x.trim() && !/^mutopia$/i.test(x.trim())).join(", "),
-    ref: `Mutopia piece ${p.id}`,
-    h: Math.round(h * 100) / 100,
-    n,
+  return { title, by, key, time, tempo, bars: bars.filter(Boolean).map((b) => b.join(" ")), note, ref, h: Math.round(h * 100) / 100, n, src };
+}
+
+/* ---------- OpenScore Lieder (MuseScore files) ---------- */
+/* spelled name from MuseScore's tonal pitch class, e.g. tpc 20 = F# */
+function spelled(midi, tpc) {
+  const k = ((tpc - 13) % 7 + 7) % 7,
+    acc = Math.floor((tpc - 13) / 7);
+  if (Math.abs(acc) > 1) return null;
+  return "FCGDAEB"[k] + (acc > 0 ? "#" : acc < 0 ? "b" : "") + (Math.floor((midi - acc) / 12) - 1);
+}
+/* one staff: every note struck, by time in twelfths of a sixteenth, with ties joined */
+function readStaff(xml, firstVoiceOnly) {
+  const sigN = [...xml.matchAll(/<sigN>(\d+)<\/sigN>\s*<sigD>(\d+)<\/sigD>/g)].map((m) => `${m[1]}/${m[2]}`);
+  if (new Set(sigN).size !== 1) throw "meter changes";
+  const time = sigN[0],
+    full = frac(time),
+    notes = [];
+  let at = 0, first = true, pick = 0;
+  for (const m of xml.matchAll(/<Measure([^>]*)>([\s\S]*?)<\/Measure>/g)) {
+    const len = /len="([^"]+)"/.exec(m[1]),
+      size = len ? frac(len[1]) : full;
+    if (first && len && size < full) pick = size;
+    first = false;
+    const voices = [...m[2].matchAll(/<voice>([\s\S]*?)<\/voice>/g)].map((v) => v[1]);
+    (firstVoiceOnly ? voices.slice(0, 1) : voices).forEach((v) => {
+      let t = at, tri = false;
+      for (const e of v.matchAll(/<(Chord|Rest)>([\s\S]*?)<\/\1>|<Tuplet>([\s\S]*?)<\/Tuplet>|<endTuplet\/>/g)) {
+        if (e[0].startsWith("<Tuplet")) {
+          if (tag(e[3], "actualNotes") !== "3" || tag(e[3], "normalNotes") !== "2") throw "tuplet other than a triplet";
+          tri = true;
+          continue;
+        }
+        if (e[0].startsWith("<endTuplet")) { tri = false; continue; }
+        const body = e[2];
+        if (/<(acciaccatura|appoggiatura|grace\d+|grace\d+after)\/>/.test(body)) continue;
+        const type = tag(body, "durationType");
+        let d = type === "measure" ? frac(tag(body, "duration")) : DUR[type];
+        if (!d) throw "unknown length";
+        const dots = +(tag(body, "dots") || 0);
+        if (dots === 1) d *= 1.5;
+        if (dots === 2) d *= 1.75;
+        if (tri) d = (d * 2) / 3;
+        if (e[1] === "Chord")
+          for (const n of body.matchAll(/<Note>([\s\S]*?)<\/Note>/g)) {
+            const pitch = +tag(n[1], "pitch"), tpc = +tag(n[1], "tpc"),
+              tied = /<Spanner type="Tie">\s*<prev>/.test(n[1]);
+            notes.push({ t, d, pitch, tpc, tied });
+          }
+        t += d;
+      }
+    });
+    at += size;
+  }
+  const keyN = +(/<KeySig>\s*<accidental>(-?\d+)/.exec(xml) || [0, 0])[1],
+    tempo = +(/<tempo>([\d.]+)<\/tempo>/.exec(xml) || [0, 0])[1];
+  return { time, pick, notes, keyN, tempo, end: at };
+}
+/* notes into a line the format can write: held notes stop at barlines, rests take up whatever is left */
+function lineOf(ns, end, barLen, pick) {
+  const barEnd = (t) => (t < pick ? pick : pick + (Math.floor((t - pick) / barLen) + 1) * barLen),
+    stream = [];
+  const put = (ps, t, len) => {
+    let at = t, left = len, head = !!ps;
+    while (left > 0) {
+      const room = Math.min(left, barEnd(at) - at),
+        fit = [...LEGAL.keys()].filter((k) => k <= room).sort((a, b) => b - a)[0];
+      if (!fit) throw "note length has no written form";
+      stream.push({ ps: head ? ps : null, t: fit });
+      at += fit;
+      left -= fit;
+      head = false;
+    }
   };
+  ns.forEach((n, i) => {
+    const next = i + 1 < ns.length ? ns[i + 1].t : Math.max(n.t + n.d, n.t);
+    if (next <= n.t) throw "two notes at once in the melody";
+    put([n.name], n.t, next - n.t);
+  });
+  return stream;
+}
+function parseLied(file, by, title, set) {
+  const xml = readFileSync(file, "utf8"),
+    parts = [...xml.matchAll(/<Part>([\s\S]*?)<\/Part>/g)].map((m) => ({ voice: /voice\./.test(tag(m[1], "instrumentId") || ""), staves: [...m[1].matchAll(/<Staff id="(\d+)">/g)].map((x) => x[1]) })),
+    vPart = parts.find((p) => p.voice),
+    pPart = parts.find((p) => !p.voice && p.staves.length === 2);
+  if (!vPart || vPart.staves.length !== 1 || !pPart) throw "not one voice and piano";
+  const score = xml.slice(xml.lastIndexOf("</Part>")),
+    staff = (id) => {
+      const from = score.indexOf(`<Staff id="${id}">`),
+        to = score.indexOf("</Staff>", from);
+      if (from < 0 || to < 0) throw "missing staff";
+      return score.slice(from, to);
+    };
+  const V = readStaff(staff(vPart.staves[0]), true),
+    L = readStaff(staff(pPart.staves[1]), false),
+    meter = METERS[V.time];
+  if (!meter) throw "unsupported meter";
+  const seen = new Map();
+  V.notes.forEach((n) => { const o = seen.get(n.t); if (!o || n.pitch > o.pitch) seen.set(n.t, n); }); // the top note of any divided part
+  const melody = [];
+  for (const n of [...seen.values()].sort((a, b) => a.t - b.t)) {
+    if (n.tied && melody.length) melody[melody.length - 1].d += n.d;
+    else if (!n.tied) melody.push({ ...n });
+  }
+  if (melody.length < 16) throw "too short";
+  const lo = Math.min(...melody.map((n) => n.pitch)),
+    up = lo < 52 ? Math.ceil((52 - lo) / 12) * 12 : 0;
+  if (Math.max(...melody.map((n) => n.pitch)) + up > 95) throw "too wide for the guitar";
+  melody.forEach((n) => { n.name = spelled(n.pitch + up, n.tpc); if (!n.name) throw "double accidental"; });
+  const barLen = meter.bar * T,
+    start = melody[0].t,
+    offset = ((start - (V.pick % barLen)) % barLen + barLen) % barLen,
+    pick = offset ? barLen - offset : 0,
+    shifted = melody.map((n) => ({ ...n, t: n.t - start })),
+    lastNote = L.notes.filter((n) => !n.tied).sort((a, b) => a.t - b.t || a.pitch - b.pitch).find((n, i, arr) => n.t === arr[arr.length - 1].t),
+    minor = lastNote && ((lastNote.pitch % 12) + 12) % 12 === ((({ 0: 9, 1: 4, 2: 11, 3: 6, 4: 1, 5: 8, "-1": 2, "-2": 7, "-3": 0, "-4": 5, "-5": 10, "-6": 3 })[V.keyN]) ?? -1),
+    key = (minor ? MIN : MAJ)[V.keyN] || MAJ[V.keyN];
+  if (!key) throw "unsupported key";
+  const r = toBars(lineOf(shifted, 0, barLen, pick), barLen, pick);
+  if (r.why) throw r.why;
+  const q = V.tempo ? V.tempo * 60 : 80,
+    tempo = Math.max(40, Math.min(120, Math.round((q * 4) / meter.beat))),
+    whole = set ? `${title} (${set})` : title;
+  // for piano: the tune in the right hand over the song's left hand, from where the voice comes in
+  const flats = /^(F|Bb|Eb|Ab|Db|Gb|Dm|Gm|Cm|Fm|Bbm|Ebm)/.test(key),
+    name = (m) => (flats ? SPELL_FLAT : SPELL_SHARP)[m % 12] + (Math.floor(m / 12) - 1),
+    groups = new Map(),
+    at = (t) => groups.get(t) || groups.set(t, { r: new Set(), l: new Set() }).get(t),
+    grid = (t) => Math.round(t);
+  melody.forEach((n) => at(grid(n.t - start)).r.add(n.pitch));
+  L.notes.filter((n) => !n.tied && n.t >= start).forEach((n) => at(grid(n.t - start)).l.add(n.pitch));
+  let piano = null;
+  try {
+    piano = pianoPiece(groups, { time: V.time, meter, pick, name, key, tempo, title: whole, by, note: "", ref: "Melody over the left hand, from OpenScore Lieder", src: "lieder" });
+  } catch (e) {
+    if (typeof e !== "string") throw e;
+  }
+  return { guitar: { title: whole, by, style: "song", dance: "", key, time: V.time, tempo, pickup: pick / T, bars: r.bars }, piano };
 }
 const pdir = join(raw, "piano"),
   piano = [],
@@ -676,11 +929,20 @@ for (const p of JSON.parse(readFileSync(join(pdir, "pieces.json"), "utf8")))
     if (typeof e !== "string") throw e;
     pianoWhy[e] = (pianoWhy[e] || 0) + 1;
   }
+const PER_LEVEL = 30; // song arrangements kept for each piano level
+piano.push(...liedPiano);
 piano.sort((a, b) => a.h - b.h);
+{
+  const size = piano.length,
+    count = {};
+  piano.forEach((d, i) => (d.level = 1 + Math.min(5, Math.floor((i / size) * 6))));
+  const keep = piano.filter((d) => d.src !== "lieder" || (count[d.level] = (count[d.level] || 0) + 1) <= PER_LEVEL);
+  piano.length = 0;
+  piano.push(...keep);
+}
 const ranks = piano.length,
   pslug = new Set();
 piano.forEach((d, i) => {
-  d.level = 1 + Math.min(5, Math.floor((i / ranks) * 6)); // pieces spread evenly: a level is a stretch of the ladder
   let id = `p-${slug(`${d.by.split(" ").pop()}-${d.title}`)}`;
   for (let k = 2; pslug.has(id); k++) id = `p-${slug(`${d.by.split(" ").pop()}-${d.title}`)}-${k}`;
   pslug.add(id);
@@ -701,3 +963,8 @@ console.log("path", GUITAR_PATH.map((s) => `${s.course} ${s.songs.length}: ${s.s
 
 hards.sort((a, b) => a - b);
 console.log("hardness percentiles", [5, 15, 30, 50, 70, 85, 95, 99].map((p) => `${p}%=${hards[Math.floor((hards.length * p) / 100)].toFixed(2)}`).join(" "));
+
+const tally2 = (f) => good.reduce((a, d) => ((a[f(d)] = (a[f(d)] || 0) + 1), a), {});
+console.log("speed", tally2((d) => (npsOf.get(d.id) < 2.5 ? "slow" : npsOf.get(d.id) < 4.5 ? "moderate" : "fast")), "levels", tally2((d) => d.level));
+console.log("skills", SKILLS.map((k) => `${k.name} ${k.items.length}`).join(", "));
+for (const lv of [1, 3, 6]) console.log("L" + lv, good.filter((d) => d.level === lv).sort((a, b) => hardOf.get(a.id) - hardOf.get(b.id)).filter((_, i, a) => i % Math.ceil(a.length / 5) === 0).map((d) => `${d.title.slice(0, 26)} [${d.style} ${d.tempo}]`).join(" | "));
