@@ -613,7 +613,7 @@ for (const d of good) d.level = gradeBy.get(d.id).level;
    beginner's target is reachable, and nudged per tune so the library doesn't all sit at one tempo. */
 const PACE = { reel: 7, jig: 6.2, hornpipe: 5.2, "slip jig": 5.5, strathspey: 4.6, clog: 5, "highland fling": 5, march: 4.6, waltz: 3.8, slide: 6, air: 2.6, "": 3.2 },
   EASE = { 1: 0.55, 2: 0.65, 3: 0.8, 4: 0.9, 5: 1, 6: 1.1 },
-  CAP = { 1: 2.4, 2: 3.2, 3: 4.4, 4: 5.6, 5: 7, 6: 8 }, // the most notes a second a target can ask for at each level
+  CAP = { 1: 2, 2: 2.6, 3: 3.6, 4: 5, 5: 6.5, 6: 8 }, // the most notes a second a target can ask for at each level
   nudge = (id) => 0.88 + ([...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 1009, 7) / 1009) * 0.24;
 for (const d of good) {
   const b = build(d),

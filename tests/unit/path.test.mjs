@@ -17,7 +17,7 @@ import { tabify } from "../../docs/js/songs/tabify.js";
 import { exerciseById } from "../../docs/js/songs/exercises.js";
 import { PIANO_PATH, partsOfPiece, pieceLessons, stepsOf } from "../../docs/js/piano/songs.js";
 import { TRACKS, courseStats, nodesOf } from "../../docs/js/courses/curriculum.js";
-import { fresh, recordSong, sanitize } from "../../docs/js/courses/progress.js";
+import { dueSongs, fresh, recordReplay, recordSong, sanitize } from "../../docs/js/courses/progress.js";
 import { makePlan } from "../../docs/js/courses/today.js";
 import { mapSvg } from "../../docs/js/courses/map.js";
 
@@ -315,6 +315,46 @@ test("barre lessons use barres, picked lessons pick", () => {
   const s = every.find((x) => x.id === "hotcross");
   assert.ok(build(chordSong(s, { style: "arp" })).sounding.every((n) => n.pitches.length === 1));
   assert.ok(chartFor(s, "barre").shapes === "barre" && shapeOf(7, "major", "barre").barre);
+});
+
+test("a finished piece comes back, sooner if it slips", () => {
+  const p = fresh();
+  recordSong(p, "tune", 85, "2026-11-01", "A Tune");
+  assert.deepEqual(dueSongs(p, "2026-11-02"), []);
+  assert.deepEqual(dueSongs(p, "2026-11-03").map((x) => x.title), ["A Tune"]);
+  assert.equal(recordReplay(p, "tune", 90, "2026-11-03"), 7, "solid: waits longer");
+  assert.equal(p.rep.tune.n, "2026-11-10");
+  assert.equal(recordReplay(p, "tune", 70, "2026-11-10"), 7, "shaky: same wait");
+  assert.equal(recordReplay(p, "tune", 90, "2026-11-17"), 21);
+  assert.equal(recordReplay(p, "tune", 40, "2026-12-08"), 1, "slipped: back tomorrow");
+  assert.equal(p.rep.tune.s, 0);
+  assert.equal(p.rep.tune.r, 4);
+  assert.equal(p.rep.tune.b, 90, "the best score stands");
+  assert.deepEqual(sanitize(JSON.parse(JSON.stringify(p))).rep.tune, p.rep.tune, "reviews survive saving");
+  recordSong(p, "tune", 95, "2026-12-09");
+  assert.equal(p.rep.tune.n, "2026-12-09", "learning it again doesn't reset the schedule");
+  recordSong(p, "ex:c:G", 80, "2026-11-01");
+  assert.equal(p.rep["ex:c:G"], undefined, "exercises aren't repertoire");
+});
+
+test("the daily plan brings back due pieces and names the lesson you're on", () => {
+  const p = fresh();
+  recordSong(p, "tune", 85, "2026-11-01", "A Tune");
+  const today = makePlan(p, 20, "2026-11-04", { [PATH_SONGS[0].id]: { lesson: 2, lessons: 5 } });
+  assert.ok(today.some((i) => i.kind === "replay" && i.id === "tune" && i.title === "A Tune"), JSON.stringify(today));
+  assert.equal(today.find((i) => i.kind === "song").title, `${PATH_SONGS[0].title}, lesson 2 of 5`);
+  assert.ok(!makePlan(p, 10, "2026-11-02").some((i) => i.kind === "replay"));
+  recordSong(p, "b", 85, "2026-11-01", "B");
+  recordSong(p, "c", 85, "2026-11-01", "C");
+  assert.equal(makePlan(p, 5, "2026-11-04").filter((i) => i.kind === "replay").length, 1, "a short day stays short");
+});
+
+test("the path climbs: speed never jumps, and chord songs end in two short lessons", () => {
+  const s = build(chordSong(every.find((x) => x.id === "greensleeves"))),
+    plan = chordPlan(s),
+    last = lessonsIn(plan).slice(-2).map((L) => L.name);
+  assert.deepEqual(last, ["Walk through the song", "Play the song"]);
+  assert.ok(lessonsIn(plan).every((L) => L.last - L.first < 4));
 });
 
 test("a lesson part always has some music in it", () => {

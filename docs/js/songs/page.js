@@ -13,7 +13,7 @@ import { SIZES, changeKey, chartFor, chordId, chordPlan, chordSong, generateRun,
 import { CHANGE_USE } from "./changes-data.js";
 import { boxView } from "../library/draw.js";
 import { SKILLS } from "./moments-data.js";
-import { recordSong } from "../courses/progress.js";
+import { SONG_DAYS, dayKey, dueSongs, recordReplay, recordSong } from "../courses/progress.js";
 import { tabify } from "./tabify.js";
 import { followPlan, followTop, ribbon, ribbonX, songSvg } from "./draw.js";
 import { songBusy, songClock, songRunning, songStart, songStop } from "./player.js";
@@ -47,6 +47,7 @@ const STYLE_TABS = [
     ["folk", "Folk"],
     ["skills", "Skills"],
     ["changes", "Chord changes"],
+    ["repertoire", "My repertoire"],
     ["song", "Art songs"],
     ["air", "Airs"],
     ["reel", "Reels"],
@@ -165,6 +166,20 @@ function changesHtml() {
   return `${chipRow("csize", SIZES.map((x) => [x.id, x.name]), size.id)}<div class="sp-next"><small>${esc(size.blurb)}</small><h3>Recommended: ${esc(top.a)} to ${esc(top.b)}</h3><p>${esc(top.tip)}</p><div class="sc-acts"><button class="go" data-song-open="${esc(pairId(top))}">Practise this change</button> <button class="rs" data-sl="genrun">Generate a run of ${size.word} changes</button></div></div><section class="sp-stage"><header><div><h3>More ${size.word} changes</h3><p>The ones real songs use most come first, and changes you've mastered drop down.</p></div></header><div class="sp-list">${list.slice(1, 11).map(row).join("")}</div></section>`;
 }
 
+/* What you can already play, and when each piece is next due back. */
+function repertoireHtml() {
+  const today = dayKey(),
+    rep = Object.entries(S.courses.rep || {}).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.n < b.n ? -1 : 1)),
+    due = dueSongs(S.courses, today).length,
+    when = (n) => {
+      if (n <= today) return "Due now";
+      const days = Math.round((new Date(n) - new Date(today)) / 864e5);
+      return days === 1 ? "Tomorrow" : `In ${days} days`;
+    };
+  if (!rep.length) return `<p class="pr-sub">Every piece you finish lands here, and comes back in your daily plan before it fades.</p>`;
+  return `<p class="pr-sub" role="status">${rep.length} piece${rep.length === 1 ? "" : "s"} you can play${due ? `, ${due} due today` : ", nothing due today"}. A quick play-through keeps them in your hands.</p><div class="sp-list sp-rep">${rep.map((x) => `<button class="sp-song" data-sl="replay" data-v="${esc(x.id)}"><span class="sp-t">${esc(x.t)}</span><small>Best ${x.b}%${x.r ? ` · played again ${x.r} time${x.r === 1 ? "" : "s"}` : ""}</small><span class="sp-s${x.n <= today ? " due" : ""}">${when(x.n)}</span></button>`).join("")}</div>`;
+}
+
 function skillsHtml() {
   const on = SKILLS.find((k) => k.id === S.songs.skill),
     row = (x) => `<button class="sp-song" data-song-open="${esc(x.id)}"><span class="sp-t">${esc(x.title)}</span><small>${esc(x.by)} · bars ${x.bars}</small><span class="sp-s">Level ${x.level}</span></button>`;
@@ -233,6 +248,7 @@ function renderList() {
   else if (P.style === "path") h += pathHtml();
   else if (P.style === "skills") h += skillsHtml();
   else if (P.style === "changes") h += changesHtml();
+  else if (P.style === "repertoire") h += repertoireHtml();
   else
     h += `<input id="sg-q" class="sg-q" type="search" placeholder="Search by title or composer" aria-label="Search the library" value="${esc(query)}" />${chipRow("level", [[0, "Any level"], ...[1, 2, 3, 4, 5, 6].map((l) => [l, l])], P.level)}${P.level ? `<p class="pr-sub">${LEVEL_NAMES[P.level]}</p>` : ""}${chipRow("speed", [["", "Any speed"], ["Slow", "Slow"], ["Moderate", "Moderate"], ["Fast", "Fast"]], P.speed)}<div id="sg-results">${results()}</div>`;
   app.innerHTML = h + `<small>Everything here is public domain: the composers died long ago, or the tune is traditional. Sources are credited on each piece. Tabs are chosen by the program, so if a fingering feels awkward, trust your hand.</small></div>`;
@@ -277,6 +293,13 @@ function coachStart(full, lesson) {
   res = null;
   render();
 }
+/* One play-through of a finished piece: all it takes to keep it. */
+let replaying = null;
+function replayCoach(full) {
+  const end = full.barLens.length - 1,
+    step = { lesson: 1, lessons: 1, lessonName: "Keep it alive", parts: 0, part: 0, from: 0, to: end, kind: "full", mode: "along", pct: 100, title: "Play it through", say: "Once, start to finish, at full speed. No warm-up needed." };
+  return { id: full.id, plan: [step], i: 0, passed: false, done: false, rest: 0, replay: true };
+}
 function coachPass(score = 1) {
   if (!coach || coach.done) return;
   const st = coach.plan[coach.i],
@@ -285,6 +308,16 @@ function coachPass(score = 1) {
   coach.passed = score >= want;
 }
 function coachNext(skipped) {
+  if (coach.replay) {
+    const score = Math.round((skipped ? 0.8 : coach.score ?? 0.8) * 100);
+    coach.score = score / 100;
+    coach.back = recordReplay(S.courses, coach.id, score);
+    coach.done = true;
+    S.xp += skipped ? 2 : 12;
+    res = null;
+    save();
+    return render();
+  }
   const full = byId[coach.id],
     L = (S.songs.learn[coach.id] ||= { n: 0, stars: 0 }),
     last = coach.i === coach.plan.length - 1;
@@ -306,7 +339,7 @@ function coachNext(skipped) {
     }
     S.songs.done[coach.id] = 1;
     S.xp += 30 + stars * 10;
-    recordSong(S.courses, coach.id, Math.round((coach.score ?? 0.7) * 100));
+    recordSong(S.courses, coach.id, Math.round((coach.score ?? 0.7) * 100), dayKey(), full.title);
     coach.done = true;
     coach.stars = stars;
   } else {
@@ -359,10 +392,14 @@ function coachBar(full) {
     const next = coach.plan[coach.i];
     return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Lesson ${coach.rest} of ${next.lessons} finished</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${formStrip(full, { from: 0, to: Math.max(...coach.plan.slice(0, coach.i).map((st) => st.to)) })}<h3>Good place to stop</h3><p>Practice sticks better spread over a few days, and the next lesson opens by warming this one up. Or carry on now.</p><div class="sc-acts"><button class="go" data-sp="cgo">Next: ${next.lessonName} →</button></div></div>`;
   }
+  if (coach && coach.done && coach.replay) {
+    const held = coach.score >= 0.6;
+    return `<div class="sc-card" id="sg-coach"><h3>${coach.score >= 0.8 ? "Still yours" : held ? "Nearly there" : "It's slipped a little"}</h3><p>${coach.score >= 0.8 ? `Solid. It can wait ${coach.back} days now.` : held ? `Good enough to keep. Back in ${coach.back} days.` : "That happens. It'll come back tomorrow, or go through a lesson again now."}</p><div class="sc-acts"><button class="go" data-sp="cquit">Done</button>${held ? "" : ` <button class="rs" data-sp="clesson" data-v="1">Go through the lessons</button>`}</div></div>`;
+  }
   if (coach && coach.done && full.names)
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}<button class="go" data-sp="cquit">Back</button></div>`;
   if (coach && coach.done)
-    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>Come back to it next week and it will still be yours.</p><button class="go" data-sp="cquit">Back to the path</button></div>`;
+    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p><button class="go" data-sp="cquit">Back to the path</button></div>`;
   if (full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
   if (!coach) {
     const L = S.songs.learn[full.id],
@@ -457,6 +494,10 @@ function renderPlayer() {
     return;
   }
   if (coach && coach.id !== full.id) coach = null;
+  if (replaying === full.id) {
+    replaying = null;
+    coach = replayCoach(full);
+  }
   const s = onStand(full),
     run = songRunning(),
     mode = P.mode,
@@ -733,9 +774,11 @@ function change(k, v) {
   if (k === "cnext") return coachNext(false);
   if (k === "cskip") return coachNext(true);
   if (k === "cquit") {
+    const wasReplay = coach?.replay;
     coach = null;
     res = null;
-    if (String(P.cur).startsWith("chg:")) P.cur = null; // a drill goes back to the list it came from
+    if (String(P.cur).startsWith("chg:") || wasReplay) P.cur = null; // a drill goes back to the list it came from
+    if (wasReplay) P.style = "repertoire";
     save();
     return render();
   }
@@ -763,6 +806,15 @@ function pick(k, v) {
   }
   shown = PAGE;
   if (k === "csize") P.size = v;
+  if (k === "replay") {
+    P.cur = v;
+    replaying = v;
+    coach = null;
+    res = null;
+    save();
+    render();
+    return window.scrollTo(0, 0);
+  }
   if (k === "genrun") {
     P.cur = `chg:${generateRun(P.size, CHANGE_USE, ++P.runSeed).join(",")}:4:66`;
     coach = null;
@@ -786,8 +838,9 @@ function pick(k, v) {
 
 export function mountSongs() {
   screen("songs", () => (S.songs.cur ? renderPlayer() : renderList()));
-  on("open-song", (id) => {
+  on("open-song", (id, replay) => {
     S.songs.cur = id;
+    replaying = replay ? id : null;
     S.songs.style = "path";
     coach = null;
     res = null;

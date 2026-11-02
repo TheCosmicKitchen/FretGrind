@@ -287,7 +287,7 @@ export function changeDrill(chart, a, b, beats, tempo = 60) {
 export function chordPlan(song) {
   const { chart, playStyle } = song,
     moves = changesOf(chart).slice(0, 4).reverse(), // easiest first, so the hardest arrives when the hands are warm
-    total = moves.length + 1,
+    total = moves.length + 2,
     end = song.barLens.length - 1,
     steps = [];
   moves.forEach((m, i) => {
@@ -296,12 +296,13 @@ export function chordPlan(song) {
     steps.push({ ...tag, kind: "along", mode: "along", pct: 100, title: "A bar each", say: "Land on beat one. Strum clean or late, but don't stop the click.", def: changeDrill(chart, m.a, m.b, 4, 72) });
     steps.push({ ...tag, kind: "along", mode: "along", pct: 100, title: "Two beats each", say: m.count > 1 ? `The song makes this change ${m.count} times, so it pays to make it easy.` : "Half the time to move. Start the change on the beat before.", def: changeDrill(chart, m.a, m.b, 2, 72) });
   });
-  const tag = { lesson: total, lessons: total, lessonName: "Play the song", parts: 0, part: 0, from: 0, to: end, chords: chart.names, chartStep: true },
+  const tag = { lesson: total - 1, lessons: total, lessonName: "Walk through the song", parts: 0, part: 0, from: 0, to: end, chords: chart.names, chartStep: true },
+    last = { ...tag, lesson: total, lessonName: "Play the song" },
     hold = chordSong(song.melody, { style: "hold", chart, id: `${song.id}:hold` });
   steps.push({ ...tag, kind: "hear", mode: "hear", pct: 100, title: "Listen", say: "Hear the chords move under the tune.", def: hold });
   steps.push({ ...tag, kind: "wait", mode: "wait", pct: 100, title: "Chord by chord", say: "No clock. Walk through the changes in order.", def: hold });
   steps.push({ ...tag, kind: "along", mode: "along", pct: 70, title: "Slowly, with the tune", say: "One strum on each change. The melody plays over you.", def: hold });
-  steps.push({ ...tag, kind: "full", mode: "along", pct: 85, title: playStyle === "arp" ? "Pick it through" : "Strum on the beat", say: playStyle === "arp" ? "Bass note first, then walk up the strings." : "A strum on every beat now." });
-  steps.push({ ...tag, kind: "full", mode: "along", pct: 100, title: "The whole song", say: "Full speed, with the tune. This is the performance." });
+  steps.push({ ...last, kind: "full", mode: "along", pct: 85, title: playStyle === "arp" ? "Pick it through" : "Strum on the beat", say: playStyle === "arp" ? "Bass note first, then walk up the strings." : "A strum on every beat now." });
+  steps.push({ ...last, kind: "full", mode: "along", pct: 100, title: "The whole song", say: "Full speed, with the tune. This is the performance." });
   return steps;
 }

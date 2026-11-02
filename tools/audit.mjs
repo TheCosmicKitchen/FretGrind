@@ -122,6 +122,22 @@ for (const k of SKILLS)
     if (q.same > 0.45) flag(false, `${k.name} ${it.title}`, "drill mostly repeats one note");
   }
 
+/* ---------- does the path climb? ---------- */
+{
+  let was = 0,
+    wasName = "";
+  for (const st of GUITAR_PATH) {
+    const ids = st.songs.filter((x) => !x.ex && !x.ch).map((x) => defs.get(x.id));
+    if (!ids.length) continue;
+    const nps = ids.map((d) => { const s = build(d); return s.sounding.length / ((s.total / s.beat) * (60 / s.tempo)); }).sort((a, b) => a - b),
+      mid = nps[nps.length >> 1];
+    if (was && mid > was * 1.6) flag(true, st.course, `target speed jumps from ${was.toFixed(1)} to ${mid.toFixed(1)} notes a second after ${wasName}`);
+    if (was && st.course !== "G10" && mid < was * 0.7) flag(false, st.course, `target speed falls from ${was.toFixed(1)} to ${mid.toFixed(1)}`);
+    was = mid;
+    wasName = st.course;
+  }
+}
+
 const hard = flaws.filter((f) => f.hard),
   soft = flaws.filter((f) => !f.hard),
   kinds = {};

@@ -5,22 +5,22 @@ import { skillWord } from "../docs/js/songs/demands.js";
 
 /* most: how much of each demand the stage allows. wants: at least one of these skills. */
 export const STAGES = [
-  { course: "G1", title: "First notes", goal: "Play a short tune on the top strings, in time, without looking.", most: { hand: 1, rhythm: 2, voices: 1, reading: 1, length: 1 }, strings: [5, 4, 3], frets: 5, units: 6, chords: 0 },
-  { course: "G2", title: "Finding the notes", goal: "Find any note in first position and read a whole tune from the tab.", most: { hand: 2, rhythm: 2, voices: 1, reading: 1, length: 2 }, frets: 5, prefer: /^string/, units: 8, chords: 0 },
+  { course: "G1", title: "First notes", goal: "Play a short tune on the top strings, in time, without looking.", most: { hand: 1, rhythm: 2, voices: 1, reading: 1, length: 1 }, strings: [5, 4, 3], frets: 5, nps: 2.2, units: 6, chords: 0 },
+  { course: "G2", title: "Finding the notes", goal: "Find any note in first position and read a whole tune from the tab.", most: { hand: 2, rhythm: 2, voices: 1, reading: 1, length: 2 }, frets: 5, nps: 2.6, prefer: /^string/, units: 8, chords: 0 },
   { course: "G3", title: "First chord changes", goal: "Change between open chords on the beat and strum through a song you know.", most: { hand: 2, rhythm: 2, voices: 1, reading: 1, length: 2 }, units: 0, chords: 7, chordMax: 3, chordRate: 0.8, tuneMost: 3, chordCore: ["Em", "Am", "C", "G", "D"], chordOnly: /^(Em|Am|C|G|D|A|E|D7|A7)$/ },
-  { course: "G4", title: "Songs in time", goal: "Hold the beat through pick-ups, rests, dotted notes and 3/4.", most: { hand: 2, rhythm: 3, voices: 1, reading: 1, length: 2 }, frets: 5, wants: ["pickup", "rests", "dotted", "time:3/4", "time:6/8", "time:2/4"], prefer: /^(pickup|rests|dotted|time:|string)/, units: 6, chords: 2, chordMax: 4, chordRate: 1, tuneMost: 3 },
-  { course: "G5", title: "Folk melodies", goal: "Learn a full folk tune with two sections, up to the fifth fret and beyond.", most: { hand: 3, rhythm: 3, voices: 1, reading: 2, length: 3 }, frets: 7, units: 6, chords: 1, chordMax: 4, tuneMost: 4 },
-  { course: "G6", title: "Songs with changes", goal: "Play tunes with more movement, and chord songs in minor keys and with more chords.", most: { hand: 3, rhythm: 4, voices: 1, reading: 3, length: 3 }, frets: 9, units: 5, chords: 3, chordMax: 6, chordMin: 4, tuneMost: 4 },
-  { course: "G7", title: "Fingerstyle pieces", goal: "Keep a bass line and melody going together, and pick a song's chords.", most: { hand: 4, rhythm: 4, voices: 5, reading: 3, length: 4 }, frets: 12, needs: "two", units: 5, chords: 2, chordMax: 5, chordKind: "arp" },
-  { course: "G8", title: "Up the neck", goal: "Shift cleanly up the neck, and play a song's chords with barres.", most: { hand: 5, rhythm: 4, voices: 2, reading: 3, length: 4 }, needs: "shifts", handMin: 3, units: 5, chords: 2, chordMax: 6, chordKind: "bar", chordCore: ["F", "Bm"], extras: [{ id: "ex:c:A:shift:barre:block:4:60", title: "One barre shape up the neck", by: "Barre chords", ex: 1 }, { id: "ex:c:E:blues:barre:block:4:72", title: "12-bar blues in E", by: "Barre chords", ex: 1 }] },
-  { course: "G9", title: "Speed and scales", goal: "Bring a fast fiddle tune up to speed with even, relaxed picking.", most: { hand: 5, rhythm: 5, voices: 1, reading: 4, length: 5 }, fast: true, units: 5, chords: 0, extras: [{ id: "ex:s:A:minpent:thirds:5:e:72", title: "A minor pentatonic in thirds", by: "Position 5", ex: 1 }, { id: "ex:s:G:major:fours:2:e:72", title: "G major in groups of four", by: "Position 2", ex: 1 }] },
+  { course: "G4", title: "Songs in time", goal: "Hold the beat through pick-ups, rests, dotted notes and 3/4.", most: { hand: 2, rhythm: 3, voices: 1, reading: 1, length: 2 }, frets: 5, nps: 3.2, wants: ["pickup", "rests", "dotted", "time:3/4", "time:6/8", "time:2/4"], prefer: /^(pickup|rests|dotted|time:|string)/, units: 6, chords: 2, chordMax: 4, chordRate: 1, tuneMost: 3 },
+  { course: "G5", title: "Folk melodies", goal: "Learn a full folk tune with two sections, up to the fifth fret and beyond.", most: { hand: 3, rhythm: 3, voices: 1, reading: 2, length: 3 }, frets: 7, nps: 3.8, pace: 2.8, units: 6, chords: 1, chordMax: 4, tuneMost: 4 },
+  { course: "G6", title: "Songs with changes", goal: "Play tunes with more movement, and chord songs in minor keys and with more chords.", most: { hand: 3, rhythm: 4, voices: 1, reading: 3, length: 3 }, frets: 9, nps: 4.2, pace: 3.2, units: 5, chords: 3, chordMax: 6, chordMin: 4, tuneMost: 4 },
+  { course: "G7", title: "Fingerstyle pieces", goal: "Keep a bass line and melody going together, and pick a song's chords.", most: { hand: 4, rhythm: 4, voices: 5, reading: 3, length: 4 }, frets: 12, needs: "two", pace: 3.2, units: 5, chords: 2, chordMax: 5, chordKind: "arp" },
+  { course: "G8", title: "Up the neck", goal: "Shift cleanly up the neck, and play a song's chords with barres.", most: { hand: 5, rhythm: 4, voices: 2, reading: 3, length: 4 }, needs: "shifts", handMin: 3, nps: 4.4, pace: 3.8, units: 5, chords: 2, chordMax: 6, chordKind: "bar", chordCore: ["F", "Bm"], extras: [{ id: "ex:c:A:shift:barre:block:4:60", title: "One barre shape up the neck", by: "Barre chords", ex: 1 }, { id: "ex:c:E:blues:barre:block:4:72", title: "12-bar blues in E", by: "Barre chords", ex: 1 }] },
+  { course: "G9", title: "Speed and scales", goal: "Bring a fast fiddle tune up to speed with even, relaxed picking.", most: { hand: 5, rhythm: 5, voices: 1, reading: 4, length: 5 }, fast: true, pace: 4.8, units: 5, chords: 0, extras: [{ id: "ex:s:A:minpent:thirds:5:e:72", title: "A minor pentatonic in thirds", by: "Position 5", ex: 1 }, { id: "ex:s:G:major:fours:2:e:72", title: "G major in groups of four", by: "Position 2", ex: 1 }] },
   { course: "G10", title: "Concert pieces", goal: "Finish a full piece and perform it start to finish.", most: { hand: 6, rhythm: 6, voices: 6, reading: 6, length: 6 }, classical: true, least: 4, long: 3, units: 6, chords: 0 },
 ];
 
 const CONCERT = /Sicilienne|Etude 1$|Prelude in D Minor|Lute Suite|Vals no\. 3|Etude in A minor/; // kept for the last stage
 /* Two settings of one tune count as one tune. */
 const tuneOf = (t) => t.toLowerCase().replace(/\(.*?\)|[^a-z ]/g, "").replace(/^(the|sweet) /, "").trim();
-const fitsStage = (x, st) => Object.entries(st.most).every(([k, v]) => x.d[k] <= v) && (!st.strings || x.strings.every((s) => st.strings.includes(s))) && (!st.wants || x.skills.some((k) => st.wants.includes(k))) && (!st.needs || x.skills.includes(st.needs)) && (!st.fast || x.nps >= 4.5) && (!st.least || x.level >= st.least) && (!st.long || x.d.length >= st.long) && (!st.classical || x.classical) && (!st.frets || x.top <= st.frets) && (!st.handMin || x.d.hand >= st.handMin) && (st.course === "G10" || !CONCERT.test(x.title)) && !JUNK.test(x.title) && x.q.pitches >= (st.course === "G1" ? 3 : 5) && x.q.gaps <= 0.15;
+const fitsStage = (x, st) => Object.entries(st.most).every(([k, v]) => x.d[k] <= v) && (!st.strings || x.strings.every((s) => st.strings.includes(s))) && (!st.wants || x.skills.some((k) => st.wants.includes(k))) && (!st.needs || x.skills.includes(st.needs)) && (!st.fast || x.nps >= 4) && (!st.least || x.level >= st.least) && (!st.long || x.d.length >= st.long) && (!st.classical || x.classical) && (!st.frets || x.top <= st.frets) && (!st.nps || x.nps <= st.nps) && (!st.handMin || x.d.hand >= st.handMin) && (st.course === "G10" || !CONCERT.test(x.title)) && !JUNK.test(x.title) && x.q.pitches >= (st.course === "G1" ? 3 : 5) && x.q.gaps <= 0.15 && (x.classical || x.own || x.q.open <= 0.58);
 const JUNK = /^\w+: \w+$/; // a stray colon from a badly split title
 /* A tune an earlier stage is allowed to teach, so its chords can follow it. */
 const teachable = (x, k) => STAGES.slice(0, k).some((s) => s.units && fitsStage(x, s));
@@ -42,10 +42,18 @@ export function fitness(stages) {
     placed = new Set();
   let score = 0,
     last = 1,
-    peak = 0;
+    peak = 0,
+    climb = 0;
   const seen = new Set();
   stages.forEach(({ st, units }, stage) => {
     let level = 0;
+    const tunes = units.filter((u) => !u.chord).map((u) => u.x),
+      mean = tunes.length ? tunes.reduce((a, x) => a + x.level + x.nps * 0.25, 0) / tunes.length : 0;
+    if (mean) {
+      score -= Math.max(0, climb - mean) * 14; // the path only goes up
+      if (st.pace) score -= Math.abs(tunes.reduce((a, x) => a + x.nps, 0) / tunes.length - st.pace) * 12; // and speeds up in steps, not a leap
+      climb = Math.max(climb, mean);
+    }
     const times = new Set(),
       keys = new Set();
     for (const u of units) {

@@ -2142,6 +2142,8 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sc-boxes svg { display: block; width: 100%; height: auto; }
 .sc-ch { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 10px; }
 .sc-ch .rs { margin: 0; }
+.sp-rep { border: 1px solid var(--ln); border-radius: var(--r-m); overflow: hidden; }
+.sp-s.due { font-weight: 600; }
 .sp-next { margin-bottom: 14px; padding: 16px; border-radius: var(--r-m); background: var(--raise); }
 .sp-next small { color: var(--mu); }
 .sp-next h3 { margin: 4px 0; }

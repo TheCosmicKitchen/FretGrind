@@ -17,6 +17,8 @@ Two practice modes (toggle chip): **Shuffle bag** deals every card in your enabl
 
 `tools/audit.mjs` is an adversarial pass over everything a learner meets, and runs as a test, so a piece with no music in it, a lesson step on one note, or a stage that breaks its promise fails the build. `tools/tune-harmony.mjs` scores the worked-out chords against composers' real left hands and tunes the weights, on songs held back from the tuning.
 
+**Repertoire**: a finished piece isn't over. It lands in My repertoire and comes back in the daily plan after 2 days, then 7, 21, 60 and 150 while it stays solid, and sooner if it slips. One play-through is all it takes.
+
 **Chord changes**: every change between the common open chords is sized by how far the hand moves (Small, Medium, Big, Leaps). The app recommends the ones real pieces use most, drops the ones you've mastered, and can generate a fresh run of changes at any size.
 
 **Chords**: most of the library is bare melody, so `songs/harmony.js` works out suggested chords from each tune, using the fewest that fit. `songs/changes.js` turns them into lessons: drill the changes that song really uses, then play its chords with its tune behind you, moved to easier open shapes with a capo where that helps.

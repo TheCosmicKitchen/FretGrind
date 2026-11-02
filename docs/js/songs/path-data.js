@@ -16,20 +16,12 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "hotcross",
-    "title": "Hot Cross Buns",
-    "by": "English street cry",
-    "level": 1,
-    "adds": [
-     "eighth notes"
-    ]
-   },
-   {
     "id": "joy",
     "title": "Ode to Joy",
     "by": "Beethoven",
     "level": 2,
     "adds": [
+     "eighth notes",
      "dotted rhythms"
     ]
    },
@@ -45,14 +37,11 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "london",
-    "title": "London Bridge Is Falling Down",
-    "by": "English nursery rhyme",
-    "level": 2,
-    "adds": [
-     "sixteenth notes",
-     "2/4 time"
-    ]
+    "id": "hotcross",
+    "title": "Hot Cross Buns",
+    "by": "English street cry",
+    "level": 1,
+    "adds": []
    },
    {
     "id": "saints",
@@ -62,6 +51,13 @@ export const GUITAR_PATH = [
     "adds": [
      "rests"
     ]
+   },
+   {
+    "id": "r-my-pretty-fair-maid",
+    "title": "My Pretty, Fair Maid",
+    "by": "Traditional, American and British Isles",
+    "level": 1,
+    "adds": []
    }
   ]
  },
@@ -71,33 +67,54 @@ export const GUITAR_PATH = [
   "blurb": "Find any note in first position and read a whole tune from the tab.",
   "songs": [
    {
+    "id": "r-jackson-s-rolling",
+    "title": "Jackson's Rolling",
+    "by": "Traditional, American and British Isles",
+    "level": 2,
+    "adds": [
+     "the D string",
+     "frets up to 5"
+    ]
+   },
+   {
+    "id": "r-hills-of-glenurchie",
+    "title": "Hills of Glenurchie",
+    "by": "Traditional, American and British Isles",
+    "level": 2,
+    "adds": [
+     "pick-up notes"
+    ]
+   },
+   {
+    "id": "o-up-and-down-again",
+    "title": "Up and Down Again",
+    "by": "F. O'Neill.",
+    "level": 2,
+    "adds": [
+     "9/8 time"
+    ]
+   },
+   {
     "id": "o-handy-with-the-stick",
     "title": "Handy With the Stick",
     "by": "Traditional Irish",
     "level": 2,
     "adds": [
-     "the D string",
-     "frets up to 5",
-     "pick-up notes"
+     "sixteenth notes"
     ]
    },
    {
-    "id": "o-the-foggy-dew",
-    "title": "The Foggy Dew",
+    "id": "o-the-boys-of-portaferry",
+    "title": "The Boys of Portaferry",
     "by": "Traditional Irish",
     "level": 2,
-    "adds": []
+    "adds": [
+     "2/2 time"
+    ]
    },
    {
-    "id": "o-red-stockings",
-    "title": "Red Stockings",
-    "by": "Traditional Irish",
-    "level": 2,
-    "adds": []
-   },
-   {
-    "id": "o-the-house-in-the-glen",
-    "title": "The House in the Glen",
+    "id": "o-biddy-from-limerick",
+    "title": "Biddy from Limerick",
     "by": "Traditional Irish",
     "level": 2,
     "adds": [
@@ -105,35 +122,19 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "o-money-in-both-pockets-2",
-    "title": "Money in Both Pockets",
-    "by": "Traditional Irish",
+    "id": "r-hunting-the-hare",
+    "title": "Hunting The Hare",
+    "by": "Traditional, American and British Isles",
     "level": 2,
     "adds": []
    },
    {
-    "id": "r-bennet-s-favorite",
-    "title": "Bennet's Favorite",
-    "by": "Traditional, American and British Isles",
+    "id": "o-magowan-s-jig",
+    "title": "Magowan's Jig",
+    "by": "Traditional Irish",
     "level": 2,
     "adds": [
      "the A string"
-    ]
-   },
-   {
-    "id": "r-the-piper-s-lass",
-    "title": "The Piper's Lass",
-    "by": "Traditional, American and British Isles",
-    "level": 2,
-    "adds": []
-   },
-   {
-    "id": "o-my-own-young-dear",
-    "title": "My Own Young Dear",
-    "by": "Traditional Irish",
-    "level": 2,
-    "adds": [
-     "3/4 time"
     ]
    }
   ]
@@ -155,52 +156,14 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "ch:london",
-    "title": "London Bridge Is Falling Down: chords",
-    "by": "G D7",
-    "level": 2,
-    "ch": 1,
-    "adds": [
-     "the G chord",
-     "the D7 chord"
-    ]
-   },
-   {
-    "id": "ch:saints",
-    "title": "When the Saints Go Marching In: chords",
-    "by": "C G",
-    "level": 1,
-    "ch": 1,
-    "adds": [
-     "the C chord"
-    ]
-   },
-   {
-    "id": "ch:o-red-stockings",
-    "title": "Red Stockings: chords",
+    "id": "ch:o-up-and-down-again",
+    "title": "Up and Down Again: chords",
     "by": "G D",
     "level": 2,
     "ch": 1,
     "adds": [
+     "the G chord",
      "the D chord"
-    ]
-   },
-   {
-    "id": "ch:mary",
-    "title": "Mary Had a Little Lamb: chords",
-    "by": "C G",
-    "level": 1,
-    "ch": 1,
-    "adds": []
-   },
-   {
-    "id": "ch:o-my-own-young-dear",
-    "title": "My Own Young Dear: chords",
-    "by": "D A",
-    "level": 2,
-    "ch": 1,
-    "adds": [
-     "the A chord"
     ]
    },
    {
@@ -209,36 +172,26 @@ export const GUITAR_PATH = [
     "by": "C G",
     "level": 2,
     "ch": 1,
-    "adds": []
-   }
-  ]
- },
- {
-  "course": "G4",
-  "title": "Songs in time",
-  "blurb": "Hold the beat through pick-ups, rests, dotted notes and 3/4.",
-  "songs": [
-   {
-    "id": "susanna",
-    "title": "Oh! Susanna",
-    "by": "Stephen Foster, 1848",
-    "level": 3,
-    "adds": []
-   },
-   {
-    "id": "r-madame-del-caro-s",
-    "title": "Madame Del Caro's",
-    "by": "Traditional, American and British Isles",
-    "level": 3,
     "adds": [
-     "2/2 time"
+     "the C chord"
     ]
    },
    {
-    "id": "l-when-the-lad-for-longing-sighs-bredon-hi",
-    "title": "When the Lad for Longing Sighs (Bredon Hill and Other Songs)",
-    "by": "George Butterworth",
-    "level": 3,
+    "id": "ch:r-hunting-the-hare",
+    "title": "Hunting The Hare: chords",
+    "by": "D A",
+    "level": 2,
+    "ch": 1,
+    "adds": [
+     "the A chord"
+    ]
+   },
+   {
+    "id": "ch:saints",
+    "title": "When the Saints Go Marching In: chords",
+    "by": "C G",
+    "level": 1,
+    "ch": 1,
     "adds": []
    },
    {
@@ -250,20 +203,71 @@ export const GUITAR_PATH = [
     "adds": []
    },
    {
-    "id": "o-miss-hamilton",
-    "title": "Miss Hamilton",
+    "id": "ch:mary",
+    "title": "Mary Had a Little Lamb: chords",
+    "by": "C G",
+    "level": 1,
+    "ch": 1,
+    "adds": []
+   }
+  ]
+ },
+ {
+  "course": "G4",
+  "title": "Songs in time",
+  "blurb": "Hold the beat through pick-ups, rests, dotted notes and 3/4.",
+  "songs": [
+   {
+    "id": "o-the-foggy-dew",
+    "title": "The Foggy Dew",
     "by": "Traditional Irish",
-    "level": 3,
+    "level": 2,
+    "adds": []
+   },
+   {
+    "id": "london",
+    "title": "London Bridge Is Falling Down",
+    "by": "English nursery rhyme",
+    "level": 2,
     "adds": [
-     "the low E string"
+     "2/4 time"
     ]
    },
    {
-    "id": "o-sailor-jack",
-    "title": "Sailor Jack",
-    "by": "Traditional Irish",
+    "id": "ch:london",
+    "title": "London Bridge Is Falling Down: chords",
+    "by": "G D7",
+    "level": 2,
+    "ch": 1,
+    "adds": [
+     "the D7 chord"
+    ]
+   },
+   {
+    "id": "susanna",
+    "title": "Oh! Susanna",
+    "by": "Stephen Foster, 1848",
     "level": 3,
     "adds": []
+   },
+   {
+    "id": "o-peggy-bawn",
+    "title": "Peggy Bawn",
+    "by": "Traditional Irish",
+    "level": 3,
+    "adds": [
+     "3/4 time"
+    ]
+   },
+   {
+    "id": "ch:o-magowan-s-jig",
+    "title": "Magowan's Jig: chords",
+    "by": "C G7",
+    "level": 2,
+    "ch": 1,
+    "adds": [
+     "the G7 chord"
+    ]
    },
    {
     "id": "morning",
@@ -273,13 +277,12 @@ export const GUITAR_PATH = [
     "adds": []
    },
    {
-    "id": "ch:r-the-piper-s-lass",
-    "title": "The Piper's Lass: chords",
-    "by": "D G A7",
+    "id": "r-grape-vine-twise",
+    "title": "Grape-Vine Twise",
+    "by": "Traditional, American and British Isles",
     "level": 2,
-    "ch": 1,
     "adds": [
-     "the A7 chord"
+     "the low E string"
     ]
    }
   ]
@@ -290,44 +293,29 @@ export const GUITAR_PATH = [
   "blurb": "Learn a full folk tune with two sections, up to the fifth fret and beyond.",
   "songs": [
    {
-    "id": "r-cape-cod",
-    "title": "Cape Cod",
-    "by": "Traditional, American and British Isles",
-    "level": 2,
-    "adds": [
-     "frets up to 7"
-    ]
-   },
-   {
-    "id": "ch:susanna",
-    "title": "Oh! Susanna: chords",
-    "by": "C G",
-    "level": 3,
-    "ch": 1,
-    "adds": []
-   },
-   {
-    "id": "twinkle",
-    "title": "Twinkle, Twinkle, Little Star",
-    "by": "French melody, 1761",
-    "level": 2,
-    "adds": []
-   },
-   {
-    "id": "o-jimmy-s-return",
-    "title": "Jimmy's Return",
-    "by": "Traditional Irish",
-    "level": 3,
-    "adds": [
-     "position shifts"
-    ]
-   },
-   {
     "id": "jacques",
     "title": "Frère Jacques",
     "by": "French round",
     "level": 3,
     "adds": []
+   },
+   {
+    "id": "r-myopia",
+    "title": "Myopia",
+    "by": "Traditional, American and British Isles",
+    "level": 3,
+    "adds": [
+     "frets up to 7"
+    ]
+   },
+   {
+    "id": "r-the-rambler-from-clare",
+    "title": "The Rambler from Clare",
+    "by": "Traditional, American and British Isles",
+    "level": 3,
+    "adds": [
+     "position shifts"
+    ]
    },
    {
     "id": "o-the-sailor-s-hornpipe",
@@ -339,11 +327,28 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "o-st-patrick-s-day",
-    "title": "St. Patrick's Day",
+    "id": "ch:susanna",
+    "title": "Oh! Susanna: chords",
+    "by": "C G",
+    "level": 3,
+    "ch": 1,
+    "adds": []
+   },
+   {
+    "id": "o-jimmy-s-return",
+    "title": "Jimmy's Return",
     "by": "Traditional Irish",
     "level": 3,
     "adds": []
+   },
+   {
+    "id": "l-au-cimetie-re-songs-op-51",
+    "title": "Au cimetière (Songs, Op.51)",
+    "by": "Gabriel Fauré",
+    "level": 3,
+    "adds": [
+     "1 flat"
+    ]
    }
   ]
  },
@@ -353,47 +358,51 @@ export const GUITAR_PATH = [
   "blurb": "Play tunes with more movement, and chord songs in minor keys and with more chords.",
   "songs": [
    {
-    "id": "ch:l-when-the-lad-for-longing-sighs-bredon-hi",
-    "title": "When the Lad for Longing Sighs (Bredon Hill and Other Songs): chords",
-    "by": "Em D G Am",
+    "id": "twinkle",
+    "title": "Twinkle, Twinkle, Little Star",
+    "by": "French melody, 1761",
+    "level": 2,
+    "adds": []
+   },
+   {
+    "id": "o-fisher-s-hornpipe-2nd-setting",
+    "title": "Fisher's Hornpipe (2nd Setting)",
+    "by": "Traditional Irish",
+    "level": 4,
+    "adds": [
+     "triplets"
+    ]
+   },
+   {
+    "id": "r-margery-s-favorite",
+    "title": "Margery's Favorite",
+    "by": "Traditional, American and British Isles",
     "level": 3,
+    "adds": []
+   },
+   {
+    "id": "birthday",
+    "title": "Happy Birthday to You",
+    "by": "Mildred J. Hill, 1893",
+    "level": 4,
+    "adds": []
+   },
+   {
+    "id": "ch:r-hills-of-glenurchie",
+    "title": "Hills of Glenurchie: chords",
+    "by": "Em G D Am",
+    "level": 2,
     "ch": 1,
     "adds": []
    },
    {
-    "id": "ch:o-the-house-in-the-glen",
-    "title": "The House in the Glen: chords",
-    "by": "C Dm G Am",
-    "level": 2,
+    "id": "ch:r-the-rambler-from-clare",
+    "title": "The Rambler from Clare: chords",
+    "by": "Am G C Dm",
+    "level": 3,
     "ch": 1,
     "adds": [
      "the Dm chord"
-    ]
-   },
-   {
-    "id": "o-the-soldier-s-joy",
-    "title": "The Soldier's Joy",
-    "by": "Traditional Irish",
-    "level": 3,
-    "adds": []
-   },
-   {
-    "id": "o-hinchy-s-delight",
-    "title": "Hinchy's Delight",
-    "by": "Traditional Irish",
-    "level": 3,
-    "adds": [
-     "frets up to 9"
-    ]
-   },
-   {
-    "id": "ch:o-money-in-both-pockets-2",
-    "title": "Money in Both Pockets: chords",
-    "by": "Am C Dm G E",
-    "level": 2,
-    "ch": 1,
-    "adds": [
-     "the E chord"
     ]
    },
    {
@@ -404,20 +413,14 @@ export const GUITAR_PATH = [
     "adds": []
    },
    {
-    "id": "l-na-chtliche-fahrt-lieder-op-16",
-    "title": "Nächtliche Fahrt (Lieder, Op.16)",
-    "by": "Johanna Kinkel",
+    "id": "ch:l-au-cimetie-re-songs-op-51",
+    "title": "Au cimetière (Songs, Op.51): chords",
+    "by": "Am C G Dm E",
     "level": 3,
+    "ch": 1,
     "adds": [
-     "1 flat"
+     "the E chord"
     ]
-   },
-   {
-    "id": "birthday",
-    "title": "Happy Birthday to You",
-    "by": "Mildred J. Hill, 1893",
-    "level": 4,
-    "adds": []
    }
   ]
  },
@@ -436,26 +439,25 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "ch:arp:birthday",
-    "title": "Happy Birthday to You: picked chords",
-    "by": "G D7",
+    "id": "r-new-bedford",
+    "title": "New Bedford",
+    "by": "Traditional, American and British Isles",
     "level": 4,
-    "ch": 1,
-    "adds": [
-     "picked chords"
-    ]
+    "adds": []
    },
    {
     "id": "m-menuet-in-g-2",
     "title": "Menuet in G",
     "by": "J. S. Bach",
     "level": 4,
-    "adds": []
+    "adds": [
+     "frets up to 9"
+    ]
    },
    {
-    "id": "ch:arp:o-sailor-jack",
-    "title": "Sailor Jack: picked chords",
-    "by": "G C D",
+    "id": "ch:arp:o-the-sailor-s-hornpipe",
+    "title": "The Sailor's Hornpipe: picked chords",
+    "by": "D A",
     "level": 3,
     "ch": 1,
     "adds": [
@@ -472,19 +474,22 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "canon",
-    "title": "Canon in D (theme over the bass)",
-    "by": "Pachelbel",
-    "level": 5,
-    "adds": []
-   },
-   {
     "id": "m-pavan-2",
     "title": "Pavan 2",
     "by": "L. Milan",
     "level": 5,
     "adds": [
      "3/2 time"
+    ]
+   },
+   {
+    "id": "ch:arp:o-peggy-bawn",
+    "title": "Peggy Bawn: picked chords",
+    "by": "D A7",
+    "level": 3,
+    "ch": 1,
+    "adds": [
+     "the A7 chord"
     ]
    }
   ]
@@ -495,13 +500,11 @@ export const GUITAR_PATH = [
   "blurb": "Shift cleanly up the neck, and play a song's chords with barres.",
   "songs": [
    {
-    "id": "r-ivy-leaf",
-    "title": "Ivy Leaf",
-    "by": "Zeke Backus",
-    "level": 4,
-    "adds": [
-     "triplets"
-    ]
+    "id": "o-molly-malone",
+    "title": "Molly Malone",
+    "by": "Traditional Irish",
+    "level": 3,
+    "adds": []
    },
    {
     "id": "ch:bar:o-jimmy-s-return",
@@ -515,31 +518,33 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "o-colonel-hopkins",
-    "title": "Colonel Hopkins",
-    "by": "Traditional Irish",
-    "level": 4,
-    "adds": []
-   },
-   {
-    "id": "r-kantschukoff",
-    "title": "Kantschukoff",
+    "id": "r-manhattan",
+    "title": "Manhattan",
     "by": "Traditional, American and British Isles",
     "level": 4,
     "adds": [
-     "3 sharps"
+     "2 flats"
     ]
    },
    {
-    "id": "o-molly-malone",
-    "title": "Molly Malone",
-    "by": "Traditional Irish",
-    "level": 3,
+    "id": "r-belles-of-campbelltown",
+    "title": "Belles Of Campbelltown",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "adds": [
+     "off-beat accents"
+    ]
+   },
+   {
+    "id": "r-obelisk",
+    "title": "Obelisk",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
     "adds": []
    },
    {
-    "id": "ch:bar:l-na-chtliche-fahrt-lieder-op-16",
-    "title": "Nächtliche Fahrt (Lieder, Op.16): barre chords",
+    "id": "ch:bar:r-margery-s-favorite",
+    "title": "Margery's Favorite: barre chords",
     "by": "F C",
     "level": 3,
     "ch": 1,
@@ -548,12 +553,12 @@ export const GUITAR_PATH = [
     ]
    },
    {
-    "id": "r-limerick",
-    "title": "Limerick",
+    "id": "r-off-she-goes",
+    "title": "Off She Goes",
     "by": "Traditional, American and British Isles",
-    "level": 4,
+    "level": 5,
     "adds": [
-     "9/8 time"
+     "12/8 time"
     ]
    },
    {
@@ -578,12 +583,28 @@ export const GUITAR_PATH = [
   "blurb": "Bring a fast fiddle tune up to speed with even, relaxed picking.",
   "songs": [
    {
-    "id": "r-the-lass-with-the-yellow-coatee",
-    "title": "The Lass With The Yellow Coatee",
+    "id": "r-blanchard-s",
+    "title": "Blanchard's",
     "by": "Traditional, American and British Isles",
-    "level": 5,
+    "level": 4,
     "adds": [
-     "off-beat accents"
+     "3 sharps"
+    ]
+   },
+   {
+    "id": "r-steamboat",
+    "title": "Steamboat",
+    "by": "Traditional, American and British Isles",
+    "level": 4,
+    "adds": []
+   },
+   {
+    "id": "o-miss-thornton-s-reel",
+    "title": "Miss Thornton's Reel",
+    "by": "Traditional Irish",
+    "level": 4,
+    "adds": [
+     "frets up to 12"
     ]
    },
    {
@@ -594,28 +615,12 @@ export const GUITAR_PATH = [
     "adds": []
    },
    {
-    "id": "r-idyl",
-    "title": "Idyl",
+    "id": "r-village-bells-2",
+    "title": "Village Bells",
     "by": "Traditional, American and British Isles",
     "level": 5,
     "adds": [
-     "4 sharps"
-    ]
-   },
-   {
-    "id": "o-fisher-s-hornpipe",
-    "title": "Fisher's Hornpipe",
-    "by": "Traditional Irish",
-    "level": 4,
-    "adds": []
-   },
-   {
-    "id": "r-ostinelli-s",
-    "title": "Ostinelli's",
-    "by": "Traditional, American and British Isles",
-    "level": 5,
-    "adds": [
-     "frets up to 12"
+     "3 flats"
     ]
    },
    {
@@ -670,19 +675,19 @@ export const GUITAR_PATH = [
     "adds": []
    },
    {
+    "id": "m-twelve-monferrine-no-12",
+    "title": "Twelve Monferrine: No. 12",
+    "by": "F. Knjze",
+    "level": 5,
+    "adds": [
+     "4 sharps"
+    ]
+   },
+   {
     "id": "m-sicilienne",
     "title": "Sicilienne",
     "by": "G. Fauré",
     "level": 5,
-    "adds": [
-     "2 flats"
-    ]
-   },
-   {
-    "id": "m-six-progressive-studies-no-iii",
-    "title": "Six Progressive Studies: No. III",
-    "by": "F. Knjze",
-    "level": 6,
     "adds": []
    }
   ]

@@ -5,6 +5,7 @@
        les[id]   { d: 1, b: best %, f: first day done, n: next review day ("" = finished), r: review stage 0-3, p: 1 = practice waiting, w: 1 = passed weakly }
        tst[id]   { b: best %, ok: 1 once passed, a: attempts, f: day first passed }
      songs       { id: best % } pieces learned on the song path
+     rep         { id: { t: title, n: next review day, s: review stage, b: best %, r: reviews done } } finished pieces, kept alive by playing them again
      streak      { last: day, n: days in a row, best }
      days        { "2026-10-24": { les, tst, rev, q } }   what was done on each day (last 60 days kept)
      min         minutes picked for the daily plan (5, 10 or 20)
@@ -13,6 +14,7 @@
 
 export const TRACK_IDS = ["guitar", "theory"];
 export const REVIEW_DAYS = [3, 14, 45]; // a lesson comes back after 3 days, then 14, then 45
+export const SONG_DAYS = [2, 7, 21, 60, 150]; // a finished piece comes back after 2 days, then 7, and so on while it stays solid
 export const PASS_LESSON = 60; // % of a lesson's questions needed to count as done without a flag
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -30,6 +32,7 @@ export const fresh = () => ({
   guitar: { les: {}, tst: {} },
   theory: { les: {}, tst: {} },
   songs: {},
+  rep: {},
   streak: { last: "", n: 0, best: 0 },
   days: {},
   min: 10,
@@ -64,6 +67,10 @@ export function sanitize(raw, valid) {
     }
   }
   for (const [id, b] of Object.entries(obj(r.songs))) if (typeof id === "string" && id.length < 90) c.songs[id] = pct(b);
+  for (const [id, v] of Object.entries(obj(r.rep))) {
+    const o = obj(v);
+    if (id.length < 90 && isDay(o.n)) c.rep[id] = { t: String(o.t || id).slice(0, 120), n: o.n, s: Math.max(0, Math.min(SONG_DAYS.length - 1, o.s | 0)), b: pct(o.b), r: Math.max(0, Math.min(9999, o.r | 0)) };
+  }
   const st = obj(r.streak);
   c.streak = { last: isDay(st.last) ? st.last : "", n: Math.max(0, Math.min(9999, st.n | 0)), best: Math.max(0, Math.min(9999, st.best | 0)) };
   c.streak.best = Math.max(c.streak.best, c.streak.n);
@@ -111,10 +118,29 @@ export function recordLesson(c, track, id, score, today, o = {}) {
   return rec;
 }
 /* A piece on the song path was learned. */
-export function recordSong(c, id, score, today = dayKey()) {
+export function recordSong(c, id, score, today = dayKey(), title = id) {
   c.songs[id] = Math.max(c.songs[id] || 0, pct(score));
+  if (!id.startsWith("ex:")) {
+    c.rep[id] ||= { t: title, n: addDays(today, SONG_DAYS[0]), s: 0, b: pct(score), r: 0 };
+    c.rep[id].b = Math.max(c.rep[id].b, pct(score));
+  }
   touch(c, today, { les: 1 });
 }
+/* A finished piece was played again. Solid: it can wait longer. Shaky: same wait. Slipped: back soon, from the start of the ladder. Returns the days until it's due. */
+export function recordReplay(c, id, score, today = dayKey()) {
+  const e = c.rep[id];
+  if (!e) return 0;
+  const was = e.s;
+  e.s = score >= 80 ? Math.min(SONG_DAYS.length - 1, was + 1) : score >= 60 ? was : 0;
+  const days = score >= 60 ? SONG_DAYS[e.s] : 1;
+  e.n = addDays(today, days);
+  e.b = Math.max(e.b, pct(score));
+  e.r++;
+  touch(c, today, { rev: 1 });
+  return days;
+}
+/* Finished pieces due again, longest overdue first. */
+export const dueSongs = (c, today) => Object.entries(c.rep || {}).filter(([, v]) => v.n <= today).sort((a, b) => (a[1].n < b[1].n ? -1 : a[1].n > b[1].n ? 1 : 0)).map(([id, v]) => ({ id, title: v.t, n: v.n }));
 /* A lesson was passed by a course test instead of being studied: it counts, and comes back in two weeks. */
 export function recordTestedOut(c, track, id, today) {
   const t = c[track];

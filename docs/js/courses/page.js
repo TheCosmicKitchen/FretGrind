@@ -54,9 +54,9 @@ function home() {
     t = dayKey(),
     streak = streakNow(c, t),
     d = c.days[t] || { les: 0, tst: 0, rev: 0, q: 0 },
-    items = makePlan(c, c.min, t),
+    items = makePlan(c, c.min, t, S.songs?.learn),
     did = d.les + d.tst + d.rev;
-  const kinds = { review: "Review", lesson: "Lesson", drill: "Weak-spot drill", mini: "Mixed quiz", song: "Song" };
+  const kinds = { review: "Review", lesson: "Lesson", drill: "Weak-spot drill", mini: "Mixed quiz", song: "Song", replay: "Keep it alive" };
   const planList = items.length
     ? `<ol class="ln-plan">${items.map((i) => `<li><b>${kinds[i.kind]}</b> ${i.title ? "· " + i.title : ""}<small>${i.cost} min</small></li>`).join("")}</ol>`
     : "<p class='ln-sub'>Nothing to plan yet.</p>";
@@ -366,6 +366,7 @@ function runItem(i) {
   else if (it.kind === "review") startReview(it.track, it.id, i, "review");
   else if (it.kind === "drill") startReview(it.track, it.id, i, "drill");
   else if (it.kind === "song") emit("open-song", it.id);
+  else if (it.kind === "replay") emit("open-song", it.id, true);
   else startMini(i);
 }
 function planNext() {
