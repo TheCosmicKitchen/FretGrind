@@ -5,6 +5,8 @@ import { OPEN, SH, CQ, RT, SQ, rng, posAll } from "./theory.js";
 export const DN = {
   interval: "Intervals",
   staff: "Staff → Note",
+  keySig: "Key signatures",
+  staffInt: "Intervals on the staff",
   staffFret: "Tap One · Staff → Fret",
   fretNote: "Fret → Note",
   findFret: "Tap One · Note → Fret",
@@ -19,6 +21,11 @@ export const DK = {};
 const stv = rng(OPEN[0], 88).sort((a, b) => Math.abs(a - 64) - Math.abs(b - 64));
 DK.staff = stv.map((m) => "staff:" + m);
 DK.staffFret = stv.map((m) => "staffFret:" + m);
+// every key signature from six flats to six sharps, asked as its major key and as its relative minor
+DK.keySig = rng(-6, 6).flatMap((n) => [`keySig:${n}.M`, `keySig:${n}.m`]);
+// two notes on the treble staff, named by how far apart they look (a 2nd up to an octave), going up and coming down;
+// p counts letter steps from C0, so E4 is 30 and C6 is 42
+DK.staffInt = rng(30, 38).flatMap((p) => rng(2, 8).filter((g) => p + g - 1 <= 42).flatMap((g) => [`staffInt:${p}.${g}.u`, `staffInt:${p}.${g}.d`]));
 // No open-string cards: the string names are printed on the neck, so open notes would give themselves away.
 DK.fretNote = rng(1, 24).flatMap((f) => rng(0, 5).map((s) => `fretNote:${s}.${f}`));
 DK.findFret = [0, 2, 4, 5, 7, 9, 11, 1, 3, 6, 8, 10].flatMap((p) =>
@@ -111,7 +118,7 @@ export const deckKeys = (d) => (DK[d] || []).filter(cardInRegion);
 
 // The deck groups shown as chips on the Flash Cards page.
 export const GR = {
-  Reading: ["staff"],
+  Reading: ["staff", "keySig", "staffInt"],
   Fretboard: ["staffFret", "fretNote", "findFret"],
   "Tap all": ["tapAll"],
   Chords: ["chord", "spellChord"],

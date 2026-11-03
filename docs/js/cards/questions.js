@@ -5,6 +5,19 @@ import { CLASSICS, DN, TAP_SEGMENTS, activeRegions, fretOk, regionSpan } from ".
 import { AC, BAD, OK, board, dots, staff } from "../view/notation.js";
 import { specOfKey } from "../courses/curriculum.js";
 import { figure } from "../courses/figures.js";
+import { build } from "../songs/format.js";
+import { songSvg } from "../songs/draw.js";
+
+// A bar of music drawn on the staff, for the reading cards.
+const bar = (key, bars) => `<div class="cd-staff">${songSvg(build({ id: "card", title: "A card", key, time: "4/4", tempo: 60, bars }), null, { width: 260, view: "staff" })}</div>`;
+const MAJOR_OF = ["Gb", "Db", "Ab", "Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#"],
+  MINOR_OF = ["Eb", "Bb", "F", "C", "G", "D", "A", "E", "B", "F#", "C#", "G#", "D#"],
+  keyName = (t) => t.replace("#", "♯").replace("b", "♭"),
+  GENERIC = ["", "", "2nd", "3rd", "4th", "5th", "6th", "7th", "Octave"],
+  LETTERS = ["C", "D", "E", "F", "G", "A", "B"],
+  natural = (p) => `${LETTERS[p % 7]}${Math.floor(p / 7)}`;
+// four answers: the right one and three near it
+const near = (all, i) => shuf([all[i], ...shuf(all.filter((_, j) => j !== i && Math.abs(j - i) <= 3)).slice(0, 3)]);
 
 // The chunk of the neck that holds fret f (see TAP_SEGMENTS): zoomed views show only this part.
 const segOf = (f) => {
@@ -75,6 +88,35 @@ export function Q(k) {
       seq: c.notes,
       onsets: c.beats,
       tempo: 104,
+    };
+  } else if (d == "keySig") {
+    const [n, mode] = id.split("."),
+      i = +n + 6,
+      names = (mode == "M" ? MAJOR_OF : MINOR_OF).map((t) => `${keyName(t)} ${mode == "M" ? "major" : "minor"}`),
+      count = Math.abs(+n);
+    q = {
+      p: `Which ${mode == "M" ? "major" : "minor"} key has this key signature?`,
+      kind: "mc",
+      ch: near(names, i),
+      vis: () => bar(MAJOR_OF[i], "r:16"),
+      ok: (a) => a === names[i],
+      rev: `${names[i]}: ${count ? `${count} ${+n > 0 ? "sharp" : "flat"}${count > 1 ? "s" : ""}` : "no sharps or flats"}`,
+    };
+  } else if (d == "staffInt") {
+    const [p, g, dir] = id.split("."),
+      lo = natural(+p),
+      hi = natural(+p + +g - 1),
+      [a, b] = dir == "u" ? [lo, hi] : [hi, lo],
+      ans = GENERIC.slice(2);
+    q = {
+      p: "How far apart are these two notes?",
+      kind: "mc",
+      ch: near(ans, +g - 2),
+      vis: () => bar("C", `${a}:8 ${b}:8`),
+      ok: (x) => x === GENERIC[+g],
+      rev: `${GENERIC[+g] === "Octave" ? "An octave" : `A ${GENERIC[+g]}`}, ${dir == "u" ? "up" : "down"}: ${a.slice(0, -1)} to ${b.slice(0, -1)}. Count the lines and spaces, both notes included.`,
+      snd: build({ id: "i", key: "C", time: "4/4", tempo: 60, bars: `${a}:8 ${b}:8` }).sounding.map((x) => x.midi),
+      gap: 0.5,
     };
   } else if (d == "staff" || d == "staffFret") {
     const m = +id,

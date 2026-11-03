@@ -2095,6 +2095,8 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .cd-opts[open] summary small::after { content: " ▴"; }
 .cd-opts[open] { padding-bottom: 6px; }
 .cd-opts > :not(summary) { margin-inline: 14px; }
+.cd-staff { display: flex; justify-content: center; }
+.cd-staff .sg-svg { max-width: 100%; height: auto; }
 .chips.cd-live { justify-content: center; margin-top: 14px; }
 
 /* ---------- Song path, part-by-part lessons ---------- */
@@ -2187,6 +2189,10 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sp-drills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; border-top: 1px solid var(--ln); }
 .sp-drills small { width: 100%; }
 .sp-drills button { min-height: 32px; padding: 4px 12px; border-radius: 99px; background: none; font-size: 14px; font-weight: 500; }
+.sp-read { grid-template-rows: auto auto auto; cursor: default; }
+.sp-read:hover { background: none; }
+.sp-read .sp-two { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.sp-read .sp-two .rs { margin: 2px 0 0; padding-left: 0; }
 .sp-lvl button.ok { border-color: color-mix(in srgb, var(--ok) 55%, var(--ln)); color: var(--ok); }
 /* echo by ear: the notes of the phrase, hidden until you find them */
 .eo-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 6px; }

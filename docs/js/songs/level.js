@@ -6,7 +6,7 @@
    ids: "eo:2:41" = an echo round for stage 3, round 41. */
 import { positionNotes } from "./exercises.js";
 import { rng, takeless } from "./groove.js";
-import { isLadder, ladderLevel } from "./ladder.js";
+import { isReadLine, ladderLevel } from "./ladder.js";
 
 export const EAR_ROUND = 8; // phrases in an echo round
 export const LEVEL_PASS = 0.7; // the same mark a piece needs
@@ -80,7 +80,7 @@ export function strandOf(id) {
     const k = +String(id).split(":")[1];
     return LEVEL_WORK[k] ? { k, kind: "ear" } : null;
   }
-  if (isLadder(id)) {
+  if (isReadLine(id)) {
     const k = ladderLevel(id) - 1; // a stage's sight-read is the reading ladder's level for it
     return LEVEL_WORK[k] ? { k, kind: "read" } : null;
   }

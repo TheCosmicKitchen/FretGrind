@@ -2,7 +2,9 @@
    order guitar methods teach them (the top strings first, then down to the low E, then keys with sharps and flats, then
    positions up the neck) and the rhythms follow Read the rhythm, a step or two behind, so the eyes only learn one new
    thing at a time. Every line is new, so it is read, not remembered. Pure and seeded, so Node can test it.
-   ids: "rd:3:41" = level 3, line 41. */
+   Real music too: tools/reading-index.mjs files four-bar phrases from the library under the level they fit, moved to one
+   of its keys if need be, and realLine turns one into a line to read.
+   ids: "rd:3:41" = level 3, generated line 41; "rx:3:12" = level 3, real phrase 12 in docs/lib/reading.json. */
 import { rng } from "./groove.js";
 import { SCALES, fix, positionNotes, safeKey } from "./exercises.js";
 import { READ_LEVELS, rhythmBars } from "../games/reading.js";
@@ -26,7 +28,9 @@ export const LADDER_BARS = 4;
 export const ladderPool = (lv, [tonic, scale, pos]) => positionNotes(tonic, scale, pos).filter((n) => n.s >= 6 - LADDER[lv - 1].top);
 
 export const isLadder = (id) => /^rd:\d+:\d+$/.test(String(id));
-export const ladderLevel = (id) => (isLadder(id) ? +String(id).split(":")[1] : 0);
+export const isRealRead = (id) => /^rx:\d+:\d+$/.test(String(id));
+export const isReadLine = (id) => isLadder(id) || isRealRead(id);
+export const ladderLevel = (id) => (isReadLine(id) ? +String(id).split(":")[1] : 0);
 /* the next line at the same level */
 export const nextLine = (id) => String(id).replace(/:(\d+)$/, (_, n) => `:${+n + 1}`);
 
@@ -75,6 +79,48 @@ export function ladderLine(id) {
     tags: [],
     bars: bars.map((b) => b.map(tok).join(" ")).join(" | "),
     source: "A generated reading line: every one is new. The tab is there to check yourself afterwards, not to read from.",
+    reviewed: true,
+  };
+}
+
+/* A real phrase as a line to read. entry: [tune id, from bar, to bar, title, semitones moved, which of the level's keys];
+   tune: the whole tune, built. Each note is spelled and fingered as the level's key and position have it. */
+export function realLine(id, entry, tune) {
+  const lv = ladderLevel(id),
+    L = LADDER[lv - 1],
+    [, from, to, title, t, k] = entry,
+    key = L.keys[k],
+    [tonic, scale] = key,
+    pool = ladderPool(lv, key),
+    len = (n) => (n.triplet ? `${Math.round(n.dur * 3)}/3` : `${n.dur}`),
+    bars = [];
+  for (let b = from; b <= to; b++)
+    bars.push(
+      tune.notes
+        .filter((n) => n.bar === b)
+        .map((n) => {
+          if (n.rest) return `r:${len(n)}`;
+          const p = pool.find((x) => x.m === n.midi + t);
+          if (!p) throw new Error(`${id}: ${n.name} doesn't fit level ${lv}`);
+          return `${p.tok}:${len(n)}${fix(p)}`;
+        })
+        .join(" "),
+    );
+  const where = `${tonic.replace("#", "♯").replace("b", "♭")} ${SCALES[scale].name.toLowerCase().replace("natural ", "")}`;
+  return {
+    id,
+    title,
+    by: `Bars ${from + 1}–${to + 1}${t ? `, moved to ${where}` : ""} · ${tune.by}`,
+    tune: tune.id,
+    moved: t,
+    level: lv,
+    style: "exercise",
+    key: safeKey(tonic + SCALES[scale].mode),
+    time: tune.time,
+    tempo: L.tempo,
+    tags: [],
+    bars: bars.join(" | "),
+    source: `${t ? "Moved to another key so it sits in this level's notes. " : ""}${tune.source || ""}`.trim(),
     reviewed: true,
   };
 }

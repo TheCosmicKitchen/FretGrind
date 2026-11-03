@@ -20,10 +20,10 @@ import { tabify } from "./tabify.js";
 import { followPlan, followTop, ribbon, ribbonX, songSvg } from "./draw.js";
 import { songBusy, songClock, songRunning, songStart, songStop } from "./player.js";
 import { gradeRun, summary, waitStep } from "./grade.js";
-import { libraryRows, loadIndex, loadTune } from "./library.js";
+import { libraryRows, loadIndex, loadReading, loadTune, readingIndex } from "./library.js";
 import { PATTERNS, POSITIONS, PROGRESSIONS, RHYTHMS, SCALES, SHAPES, STYLES, exerciseById } from "./exercises.js";
 import { CADENCES, FEELS, HANDS, HARM, HARMONY, LENGTHS, MOTIONS, SFEELS, VARY, grooveById, isGroove, nextTake, withTake } from "./groove.js";
-import { LADDER, isLadder, ladderLevel, ladderLine, nextLine } from "./ladder.js";
+import { LADDER, isLadder, isReadLine, isRealRead, ladderLevel, ladderLine, nextLine, realLine } from "./ladder.js";
 import { EAR_ROUND, LEVEL_PASS, LEVEL_WORK, echoById, isEcho, levelState, placeOf, stageDone, strandOf, tempoOf } from "./level.js";
 import { KEYS, pretty } from "../library/catalog.js";
 import { NAMES } from "../core/theory.js";
@@ -553,7 +553,7 @@ function coachBar(full) {
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}${onward(full, `<button class="go" data-sp="cquit">Back</button>`)}</div>`;
   if (coach && coach.done)
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p>${onward(full, `<button class="go" data-sp="cquit">Back to the path</button>`)}</div>`;
-  if (!coach && isLadder(full.id)) return readingCard(full);
+  if (!coach && isReadLine(full.id)) return readingCard(full);
   if (!coach && strandOf(full.id)) return strandCard(full);
   if (!coach && isGroove(full.id))
     return `<div class="sc-card" id="sg-coach"><p>${full.story ? `${esc(full.story)} ` : ""}Every take is new, so you read it rather than remember it. ${S.songs.loop ? (S.songs.vary ? "With Loop on, the next take follows on the beat" : "Loop plays this take again; switch on New take each loop for a fresh one every time") : "Turn on Loop and keep going: the next take follows on the beat"}${S.songs.loop && !S.songs.vary ? "" : S.songs.countIn ? ", with a bar of count-in to look ahead" : ", straight on with no gap"}.</p></div>`;
@@ -587,7 +587,7 @@ function strandCard(full) {
   return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Stage ${st.k + 1} level work · Technique</span></div><p>${text}${best}</p>${full.story ? `<p>${esc(full.story)}</p>` : ""}<div class="sc-acts"><button class="rs" data-sp="back">Back to the path</button></div></div>`;
 }
 
-/* A line from the reading ladder: read it from the staff, first go counts. */
+/* A line from the reading ladder, made up or from a real tune: read it from the staff, first go counts. */
 let peek = null; // the reading line whose tab is showing
 function readingCard(full) {
   const lv = ladderLevel(full.id),
@@ -595,24 +595,63 @@ function readingCard(full) {
     got = S.songs.lv[GUITAR_PATH[lv - 1].course] || {},
     best = got.r ? ` Your best first read: ${Math.round(got.r * 100)}%${got.r >= LEVEL_PASS ? ", passed ✓" : ""}.` : "",
     rhythm = Math.max(...L.rhythm),
+    real = isRealRead(full.id),
     text =
       got.rt === full.id
-        ? "You've had your first read of this line. Play it again as practice, or read a new one: only a first read counts."
-        : `Read it from the staff, without listening first. Play along at full speed: your first go counts, and ${Math.round(LEVEL_PASS * 100)}% passes stage ${lv}'s sight-reading. Stuck on the notes? Wait for me lets you find each one with no clock.`;
-  return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Reading level ${lv} of ${LADDER.length} · ${esc(L.name)}</span></div><p>${text}${best}</p><div class="sc-acts"><button class="go" data-sp="take">Read a new line</button> <button class="rs" data-sp="peek">${peek === full.id ? "Hide the tab" : "Show the tab"}</button> <button class="rs" data-sp="rhythmfirst" data-v="${rhythm}">Rhythm first: Read the rhythm, level ${rhythm}</button></div></div>`;
+        ? `You've had your first read of this ${real ? "phrase" : "line"}. Play it again as practice, or read a new one: only a first read counts.`
+        : `${real ? `Four bars of ${esc(full.title)}${full.moved ? ", moved into this level's key" : ""}. ` : ""}Read it from the staff, without listening first. Play along at full speed: your first go counts, and ${Math.round(LEVEL_PASS * 100)}% passes stage ${lv}'s sight-reading. Stuck on the notes? Wait for me lets you find each one with no clock.`;
+  return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Reading level ${lv} of ${LADDER.length} · ${esc(L.name)}${real ? " · real music" : ""}</span></div><p>${text}${best}</p><div class="sc-acts"><button class="go" data-sp="take">${real ? "Read another tune" : "Read a new line"}</button> <button class="rs" data-sp="peek">${peek === full.id ? "Hide the tab" : "Show the tab"}</button> <button class="rs" data-sp="rhythmfirst" data-v="${rhythm}">Rhythm first: Read the rhythm, level ${rhythm}</button>${real ? ` <button class="rs" data-song-open="${esc(full.tune)}">Open the whole tune</button>` : ""}</div></div>`;
 }
-/* The reading ladder: one level per stage, each with your best first read. */
+/* The reading ladder: one level per stage, each with your best first read, made-up lines and real tunes to read. */
 const readBest = (lv) => S.songs.lv[GUITAR_PATH[lv - 1].course]?.r || 0;
+const realCount = (lv) => readingIndex()?.levels[lv - 1]?.length || 0;
 const keyWords = ([t, sc]) => `${t.replace("#", "♯").replace("b", "♭")} ${SCALES[sc].name.toLowerCase().replace("natural ", "")}`;
 function readingHtml() {
+  if (!readingIndex()) loadReading().then(() => S.songs.style === "reading" && !S.songs.cur && render(), () => {});
   const at = LADDER.findIndex((_, i) => readBest(i + 1) < LEVEL_PASS),
     next = at < 0 ? LADDER.length : at + 1,
     L = LADDER[next - 1],
     row = (x, i) => {
-      const b = readBest(i + 1);
-      return `<button class="sp-song${b >= LEVEL_PASS ? " done" : ""}" data-sl="rdopen" data-v="${i + 1}"><span class="sp-t">${i + 1}. ${esc(x.name)}</span><small>New: ${esc(x.notes)} · ${x.keys.map(keyWords).join(", ")}</small><span class="sp-s">${b ? `${Math.round(b * 100)}%${b >= LEVEL_PASS ? " ✓" : ""}` : `Stage ${i + 1}`}</span></button>`;
+      const lv = i + 1,
+        b = readBest(lv);
+      return `<div class="sp-song sp-read${b >= LEVEL_PASS ? " done" : ""}"><span class="sp-t">${lv}. ${esc(x.name)}</span><small>New: ${esc(x.notes)} · ${x.keys.map(keyWords).join(", ")}</small><span class="sp-s">${b ? `${Math.round(b * 100)}%${b >= LEVEL_PASS ? " ✓" : ""}` : `Stage ${lv}`}</span><span class="sp-two"><button class="rs" data-sl="rdopen" data-v="${lv}">Made-up line</button>${realCount(lv) ? `<button class="rs" data-sl="rxopen" data-v="${lv}">Real tunes · ${realCount(lv)}</button>` : ""}</span></div>`;
     };
-  return `<div class="sp-next"><small>Reading level ${next} of ${LADDER.length}${at < 0 ? " · every level passed" : ""}</small><h3>${esc(L.name)}</h3><p>New: ${esc(L.notes)}. Read it from the staff: the tab stays hidden until you ask for it. Your first go at each line is the one that counts.</p><button class="go" data-sl="rdopen" data-v="${next}">Read a line</button></div><section class="sp-stage"><header><div><h3>The reading ladder</h3><p>Notes in the order guitar methods teach them, with the rhythms from Read the rhythm a step behind. Each level is the sight-reading test for its stage of the path.</p></div></header><div class="sp-list">${LADDER.map(row).join("")}</div></section>`;
+  return `<div class="sp-next"><small>Reading level ${next} of ${LADDER.length}${at < 0 ? " · every level passed" : ""}</small><h3>${esc(L.name)}</h3><p>New: ${esc(L.notes)}. Read it from the staff: the tab stays hidden until you ask for it. Your first go at each line is the one that counts.</p><div class="sc-acts"><button class="go" data-sl="rdopen" data-v="${next}">Read a made-up line</button>${realCount(next) ? ` <button class="go alt" data-sl="rxopen" data-v="${next}">Read a real tune</button>` : ""}</div></div><section class="sp-stage"><header><div><h3>The reading ladder</h3><p>Notes in the order guitar methods teach them, with the rhythms from Read the rhythm a step behind. Every level has made-up lines, and from level 2 phrases from real tunes in the library, moved into the level's key when they need to be. Each level is the sight-reading test for its stage of the path.</p></div></header><div class="sp-list">${LADDER.map(row).join("")}</div></section><section class="sp-stage"><header><div><h3>More reading practice</h3><p>Rhythm on its own, and flash cards for notes, key signatures and intervals on the staff.</p></div></header><div class="sp-drills"><button data-sp="rhythmfirst" data-v="${Math.max(...L.rhythm)}">Read the rhythm</button><button data-sl="readcards">Reading flash cards</button></div></section>`;
+}
+/* A phrase from a real tune: the reading index and the tune's own chunk come down first. */
+function realCurrent(id) {
+  const idx = readingIndex(),
+    gone = () => {
+      if (S.songs.cur === id) S.songs.cur = null;
+      setTimeout(render);
+    };
+  if (!idx) {
+    loadReading().then(() => render(), gone);
+    return null;
+  }
+  const e = idx.levels[ladderLevel(id) - 1]?.[+String(id).split(":")[2]];
+  if (!e) return gone(), null;
+  const tune = byId[e[0]];
+  if (tune) return (byId[id] = build(realLine(id, e, tune)));
+  if (opening !== e[0]) {
+    opening = e[0];
+    loadTune(e[0])
+      .then((d) => {
+        opening = null;
+        if (d) byId[e[0]] = build(d);
+        else gone();
+      })
+      .catch(() => ((opening = null), gone()))
+      .finally(() => render());
+  }
+  return null;
+}
+/* Another real phrase at the same level. */
+function otherReal(id) {
+  const lv = ladderLevel(id),
+    n = realCount(lv),
+    i = +String(id).split(":")[2];
+  return `rx:${lv}:${n > 1 ? (i + 1 + Math.floor(Math.random() * (n - 1))) % n : 0}`;
 }
 
 /* ----- the player ----- */
@@ -638,6 +677,7 @@ function current() {
     tabs[id] = tabFor(full).slice(first, first + byId[id].sounding.length);
     return byId[id];
   }
+  if (isRealRead(id)) return realCurrent(id);
   const ex = exerciseById(id) || grooveById(id) || ladderLine(id);
   if (ex) return (byId[id] = build(ex));
   if (opening !== id) {
@@ -675,7 +715,7 @@ function nameChords(s) {
 function scoreHtml(s) {
   const P = S.songs,
     lyrics = words(s),
-    view = isLadder(s.id) && peek !== s.id ? "staff" : P.view;
+    view = isReadLine(s.id) && peek !== s.id ? "staff" : P.view;
   nameChords(s);
   if (P.scroll !== "lane") {
     lane = null;
@@ -705,7 +745,7 @@ function renderPlayer() {
   app.innerHTML = `${header()}<div class="card prac">
     <div class="pr-now"><div><h2>${esc(s.title)}</h2><p class="pr-sub">${esc(s.by)} · ${meta(s)}</p></div><button class="tg" data-sp="back">← All songs</button></div>
     ${coachBar(full)}
-    ${isLadder(s.id) && peek !== s.id ? "" : seg("view", VIEWS, P.view)}${seg("scroll", SCROLLS, P.scroll)}${coach ? "" : seg("mode", MODES, mode)}
+    ${isReadLine(s.id) && peek !== s.id ? "" : seg("view", VIEWS, P.view)}${seg("scroll", SCROLLS, P.scroll)}${coach ? "" : seg("mode", MODES, mode)}
     ${scoreHtml(s)}
     <div class="beats" aria-label="Beat">${beats}</div>
     ${mode === "hear" ? "" : modeBlock(s)}
@@ -1189,7 +1229,7 @@ function change(k, v) {
     return emit("open-page", "games");
   }
   if (k === "take") {
-    P.cur = isLadder(P.cur) ? nextLine(P.cur) : nextTake(P.cur);
+    P.cur = isLadder(P.cur) ? nextLine(P.cur) : isRealRead(P.cur) ? otherReal(P.cur) : nextTake(P.cur);
     res = null;
     save();
     return render();
@@ -1291,6 +1331,27 @@ function pick(k, v) {
     save();
     render();
     return window.scrollTo(0, 0);
+  }
+  if (k === "rxopen") {
+    const open = () => {
+      const n = realCount(+v);
+      if (!n) return;
+      P.cur = `rx:${+v}:${Math.floor(Math.random() * n)}`;
+      P.mode = "along";
+      P.pct = 100;
+      coach = null;
+      res = null;
+      save();
+      render();
+      window.scrollTo(0, 0);
+    };
+    return readingIndex() ? open() : loadReading().then(open, () => {});
+  }
+  if (k === "readcards") {
+    S.act = ["staff", "keySig", "staffInt"];
+    S.onlyMine = false;
+    save();
+    return emit("open-page", "cards");
   }
   if (k === "gxopen") {
     P.cur = exId(P.ex, 1 + Math.floor(Math.random() * 999));

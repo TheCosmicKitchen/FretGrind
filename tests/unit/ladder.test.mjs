@@ -57,3 +57,60 @@ test("ids", () => {
   assert.equal(nextLine("rd:4:9"), "rd:4:10");
   assert.equal(ladderLine("rd:6:3").bars, ladderLine("rd:6:3").bars);
 });
+
+/* ---- real music: phrases from the library, filed by tools/reading-index.mjs ---- */
+import { readFileSync, readdirSync } from "node:fs";
+import { realLine } from "../../docs/js/songs/ladder.js";
+import { SONGS } from "../../docs/js/songs/data.js";
+import { DK } from "../../docs/js/core/decks.js";
+import { Q } from "../../docs/js/cards/questions.js";
+
+const LIB = new URL("../../docs/lib/", import.meta.url),
+  INDEX = JSON.parse(readFileSync(new URL("reading.json", LIB))),
+  TUNES = new Map(SONGS.map((d) => [d.id, d]));
+for (const f of readdirSync(LIB).filter((f) => /^songs-\d+\.json$/.test(f))) for (const d of JSON.parse(readFileSync(new URL(f, LIB)))) TUNES.set(d.id, d);
+
+test("every real phrase reads at its level: four whole bars, only the level's notes, fingered in its position", () => {
+  assert.equal(INDEX.levels.length, LADDER.length);
+  INDEX.levels.forEach((list, k) => {
+    const lv = k + 1;
+    list.forEach((e, i) => {
+      const tune = build(TUNES.get(e[0])),
+        s = build(realLine(`rx:${lv}:${i}`, e, tune)),
+        pool = ladderPool(lv, LADDER[k].keys[e[5]]).map((n) => n.m);
+      assert.deepEqual(check(s), [], s.id);
+      assert.equal(s.barLens.length, 4);
+      assert.ok(s.sounding.every((n) => pool.includes(n.midi)), `${s.id}: a note outside the level`);
+      assert.ok(s.sounding.every((n) => OPEN[n.pitches[0].fix[0]] + n.pitches[0].fix[1] === n.midi));
+      // the same tune: every note moved by the same amount, the rhythm untouched
+      const orig = tune.notes.filter((n) => n.bar >= e[1] && n.bar <= e[2]);
+      assert.deepEqual(s.notes.map((n) => `${n.rest ? "r" : n.midi - e[4]}:${n.dur}`), orig.map((n) => `${n.rest ? "r" : n.midi}:${n.dur}`), s.id);
+    });
+  });
+});
+
+test("there is real music to read from level 2 up, and no one tune fills a level", () => {
+  INDEX.levels.slice(1).forEach((list, k) => {
+    assert.ok(list.length >= 40, `level ${k + 2} has only ${list.length} real phrases`);
+    const per = {};
+    list.forEach((e) => (per[e[0]] = (per[e[0]] || 0) + 1));
+    assert.ok(Math.max(...Object.values(per)) <= 3, `level ${k + 2}: one tune gives ${Math.max(...Object.values(per))} phrases`);
+  });
+  assert.ok(INDEX.levels.slice(6).every((list) => list.every((e) => LADDER[INDEX.levels.indexOf(list)].keys[e[5]][2] > 0)), "the position levels read up the neck");
+  assert.ok(INDEX.levels[1].some((e) => e[0] === "mary" && e[4] === 0), "Mary Had a Little Lamb, in its own key, is a level 2 read");
+});
+
+test("reading flash cards: every key signature both ways, intervals a 2nd to an octave, each with one right answer of four", () => {
+  assert.equal(DK.keySig.length, 26);
+  assert.ok(DK.staffInt.length > 100);
+  for (const k of [...DK.keySig, ...DK.staffInt]) {
+    const q = Q(k);
+    assert.equal(new Set(q.ch).size, 4, k);
+    assert.equal(q.ch.filter((c) => q.ok(c)).length, 1, k);
+    assert.match(q.vis(), /sg-svg/);
+  }
+  assert.equal(Q("keySig:3.M").rev, "A major: 3 sharps");
+  assert.equal(Q("keySig:-4.m").rev, "F minor: 4 flats");
+  assert.ok(Q("staffInt:30.3.u").ok("3rd") && Q("staffInt:30.8.d").ok("Octave"));
+  assert.deepEqual(Q("staffInt:30.3.u").snd, [64, 67]);
+});

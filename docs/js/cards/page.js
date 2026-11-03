@@ -100,7 +100,7 @@ function groupStats(g, now) {
   }
   return { all: keys.length, seen, known, due };
 }
-const BLURB = { Reading: "Notes on the staff, and where they live on the neck", Fretboard: "Every note, on every string", "Tap all": "Find one note everywhere it appears", Chords: "Spell chords and name their shapes", Scales: "Spell scales and modes", Listening: "Intervals and chords by ear" };
+const BLURB = { Reading: "Notes, key signatures and intervals on the staff", Fretboard: "Every note, on every string", "Tap all": "Find one note everywhere it appears", Chords: "Spell chords and name their shapes", Scales: "Spell scales and modes", Listening: "Intervals and chords by ear" };
 
 function cardHome() {
   const now = Date.now(),

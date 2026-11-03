@@ -34,6 +34,22 @@ const sourceText = (d) => {
   return `${SOURCES[d.src] || ""}${ref}${by}`;
 };
 
+/* Real phrases to read, by reading level (made by tools/reading-index.mjs): fetched when reading first needs them. */
+let reading = null,
+  readingPending = null;
+export const readingIndex = () => reading;
+export function loadReading() {
+  if (reading) return Promise.resolve(reading);
+  readingPending ||= fetch(url("reading.json"))
+    .then((r) => {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    })
+    .then((d) => (reading = d))
+    .finally(() => (readingPending = null));
+  return readingPending;
+}
+
 /* The song definition for an id in the library, or null. */
 export async function loadTune(id) {
   await loadIndex();
