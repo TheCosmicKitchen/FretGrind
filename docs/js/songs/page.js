@@ -22,6 +22,7 @@ import { songBusy, songClock, songRunning, songStart, songStop } from "./player.
 import { gradeRun, summary, waitStep } from "./grade.js";
 import { libraryRows, loadIndex, loadTune } from "./library.js";
 import { PATTERNS, POSITIONS, PROGRESSIONS, RHYTHMS, SCALES, SHAPES, STYLES, exerciseById } from "./exercises.js";
+import { CADENCES, FEELS, HANDS, HARM, HARMONY, LENGTHS, MOTIONS, SFEELS, VARY, grooveById, isGroove, nextTake } from "./groove.js";
 import { KEYS, pretty } from "../library/catalog.js";
 import { NAMES } from "../core/theory.js";
 import { stringOffsets } from "../core/pitch.js";
@@ -70,7 +71,9 @@ const VIEWS = [["staff", "Sheet music"], ["tab", "Tab"], ["both", "Both"]],
   AGAIN_MS = 1400, // the breath between one run of a loop and the next
   WEAK_KEPT = 12; // trouble spots remembered for your next practice
 
-const EX_DEFAULT = { kind: "scale", tonic: "G", scale: "major", pattern: "straight", pos: 2, rhythm: "e", prog: "I-IV-V-I", shape: "open", style: "block", beats: 4, tempo: 72 };
+const EX_DEFAULT = { kind: "scale", tonic: "G", scale: "major", pattern: "straight", pos: 2, rhythm: "e", prog: "I-IV-V-I", shape: "open", style: "block", beats: 4, tempo: 72,
+  sfeel: "mixed", motion: "skips", len: 8, harmony: "maj", cads: "APHD", hand: "strum", feel: "sync", vary: "phrase", harm: "mix" };
+const CAD_ORDER = "APHD";
 
 /* How far each piece has been learned: { n: steps finished, stars, lesson: the one you're on, lessons: how many there are } */
 function tidyLearn(raw, isId) {
@@ -120,6 +123,7 @@ export function sanitizeSongs() {
     notes: p.notes !== false,
     countIn: p.countIn !== false,
     loop: p.loop === true,
+    vary: p.vary !== false,
     lyrics: p.lyrics !== false,
     names: p.names === true,
     size: ok(p.size, SIZES.map((x) => x.id), "small"),
@@ -134,7 +138,7 @@ export function sanitizeSongs() {
     speed: ok(p.speed, ["", "Slow", "Moderate", "Fast"], ""),
     skill: ok(p.skill, SKILLS.map((k) => k.id), SKILLS[0].id),
     ex: {
-      kind: ok(x.kind, ["scale", "chord"], EX_DEFAULT.kind),
+      kind: ok(x.kind, ["scale", "chord", "sgroove", "cgroove"], EX_DEFAULT.kind),
       tonic: ok(x.tonic, KEYS, EX_DEFAULT.tonic),
       scale: ok(x.scale, Object.keys(SCALES), EX_DEFAULT.scale),
       pattern: ok(x.pattern, Object.keys(PATTERNS), EX_DEFAULT.pattern),
@@ -145,6 +149,15 @@ export function sanitizeSongs() {
       style: ok(x.style, Object.keys(STYLES), EX_DEFAULT.style),
       beats: ok(x.beats, [1, 2, 4], EX_DEFAULT.beats),
       tempo: ok(x.tempo, [50, 60, 72, 88, 104, 120], EX_DEFAULT.tempo),
+      sfeel: ok(x.sfeel, Object.keys(SFEELS), EX_DEFAULT.sfeel),
+      motion: ok(x.motion, Object.keys(MOTIONS), EX_DEFAULT.motion),
+      len: ok(x.len, LENGTHS, EX_DEFAULT.len),
+      harmony: ok(x.harmony, Object.keys(HARMONY), EX_DEFAULT.harmony),
+      cads: typeof x.cads === "string" && /^A?P?H?D?$/.test(x.cads) && x.cads ? x.cads : EX_DEFAULT.cads,
+      hand: ok(x.hand, Object.keys(HANDS), EX_DEFAULT.hand),
+      feel: ok(x.feel, Object.keys(FEELS), EX_DEFAULT.feel),
+      vary: ok(x.vary, Object.keys(VARY), EX_DEFAULT.vary),
+      harm: ok(x.harm, Object.keys(HARM), EX_DEFAULT.harm),
     },
   };
 }
@@ -219,20 +232,30 @@ function results() {
 const chipRow = (key, opts, val, cls = "") =>
   `<div class="chips pr-opts ${cls}">${opts.map(([v, l]) => `<button data-sl="${key}" data-v="${v}" class="${String(val) === String(v) ? "a" : ""}" aria-pressed="${String(val) === String(v)}">${l}</button>`).join("")}</div>`;
 const pairs = (o, f = (x) => x.name) => Object.entries(o).map(([k, v]) => [k, f(v)]);
-const exId = (x) =>
+const exId = (x, take = 1) =>
   x.kind === "scale"
     ? `ex:s:${x.tonic}:${x.scale}:${x.pattern}:${x.pos}:${x.rhythm}:${x.tempo}`
-    : `ex:c:${x.tonic}:${x.prog}:${x.shape}:${x.style}:${x.beats}:${x.tempo}`;
+    : x.kind === "chord"
+      ? `ex:c:${x.tonic}:${x.prog}:${x.shape}:${x.style}:${x.beats}:${x.tempo}`
+      : x.kind === "sgroove"
+        ? `gx:s:${x.tonic}:${x.scale}:${x.pos}:${x.sfeel}:${x.motion}:${x.len}:${x.tempo}:${take}`
+        : `gx:c:${x.tonic}:${x.harmony}:${x.cads}:${x.shape}:${x.hand}:${x.feel}:${x.vary}:${x.harm}:${x.len}:${x.tempo}:${take}`;
 
 function exercisePanel() {
   const x = S.songs.ex,
     keys = KEYS.map((k) => [k, pretty(k)]);
-  let h = `<div class="sg-ex">${chipRow("kind", [["scale", "Scales"], ["chord", "Chord changes"]], x.kind)}<h3 class="sg-lv">Key</h3>${chipRow("tonic", keys, x.tonic)}`;
-  if (x.kind === "scale")
+  let h = `<div class="sg-ex">${chipRow("kind", [["scale", "Scales"], ["chord", "Chord changes"], ["sgroove", "Scale grooves"], ["cgroove", "Chord grooves"]], x.kind)}${x.kind.endsWith("groove") ? `<p class="pr-sub">Made up fresh every take: new rhythms, new turns of phrase, and with Loop on the next take follows straight on.</p>` : ""}<h3 class="sg-lv">Key</h3>${chipRow("tonic", keys, x.tonic)}`;
+  const bars = `<h3 class="sg-lv">Bars in a take</h3>${chipRow("len", LENGTHS.map((n) => [n, n]), x.len)}`;
+  if (x.kind === "sgroove")
+    h += `<h3 class="sg-lv">Scale</h3>${chipRow("scale", pairs(SCALES), x.scale)}<h3 class="sg-lv">Hand position</h3>${chipRow("pos", POSITIONS.map((p) => [p, p ? `Fret ${p}` : "Open"]), x.pos)}<h3 class="sg-lv">Rhythm</h3>${chipRow("sfeel", pairs(SFEELS), x.sfeel)}<h3 class="sg-lv">How the tune moves</h3>${chipRow("motion", Object.entries(MOTIONS), x.motion)}${bars}`;
+  else if (x.kind === "cgroove")
+    h += `<h3 class="sg-lv">Harmony</h3>${chipRow("harmony", pairs(HARMONY), x.harmony)}<h3 class="sg-lv">Cadences: how phrases end</h3><div class="chips pr-opts">${[...CAD_ORDER].map((k) => `<button data-sl="cad" data-v="${k}" class="${x.cads.includes(k) ? "a" : ""}" aria-pressed="${x.cads.includes(k)}" title="${CADENCES[k].blurb}">${CADENCES[k].name}</button>`).join("")}</div><p class="pr-sub">${[...x.cads].map((k) => `${CADENCES[k].name}: ${CADENCES[k].blurb}.`).join(" ")}</p><h3 class="sg-lv">How often the chords change</h3>${chipRow("harm", pairs(HARM), x.harm)}<h3 class="sg-lv">Right hand</h3>${chipRow("hand", Object.entries(HANDS), x.hand)}<h3 class="sg-lv">Rhythm</h3>${chipRow("feel", pairs(FEELS), x.feel)}<h3 class="sg-lv">New rhythm</h3>${chipRow("vary", Object.entries(VARY), x.vary)}<h3 class="sg-lv">Shapes</h3>${chipRow("shape", Object.entries(SHAPES), x.shape)}${bars}`;
+  else if (x.kind === "scale")
     h += `<h3 class="sg-lv">Scale</h3>${chipRow("scale", pairs(SCALES), x.scale)}<h3 class="sg-lv">Pattern</h3>${chipRow("pattern", pairs(PATTERNS), x.pattern)}<h3 class="sg-lv">Hand position</h3>${chipRow("pos", POSITIONS.map((p) => [p, p ? `Fret ${p}` : "Open"]), x.pos)}<h3 class="sg-lv">Rhythm</h3>${chipRow("rhythm", pairs(RHYTHMS), x.rhythm)}`;
   else
     h += `<h3 class="sg-lv">Changes</h3>${chipRow("prog", pairs(PROGRESSIONS), x.prog)}<h3 class="sg-lv">Shapes</h3>${chipRow("shape", Object.entries(SHAPES), x.shape)}<h3 class="sg-lv">Right hand</h3>${chipRow("style", Object.entries(STYLES), x.style)}<h3 class="sg-lv">How often it changes</h3>${chipRow("beats", [[4, "Every bar"], [2, "Twice a bar"], [1, "Every beat"]], x.beats)}`;
-  return `${h}<h3 class="sg-lv">Tempo</h3>${chipRow("tempo", [50, 60, 72, 88, 104, 120].map((t) => [t, t]), x.tempo)}<button class="go" data-song-open="${exId(x)}">▶ Open this exercise</button></div>`;
+  const open = x.kind.endsWith("groove") ? `<button class="go" data-sl="gxopen">▶ Make a groove</button>` : `<button class="go" data-song-open="${exId(x)}">▶ Open this exercise</button>`;
+  return `${h}<h3 class="sg-lv">Tempo</h3>${chipRow("tempo", [50, 60, 72, 88, 104, 120].map((t) => [t, t]), x.tempo)}${open}</div>`;
 }
 
 const learned = (id) => isLearned(S.songs, id);
@@ -510,6 +533,8 @@ function coachBar(full) {
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}${onward(full, `<button class="go" data-sp="cquit">Back</button>`)}</div>`;
   if (coach && coach.done)
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p>${onward(full, `<button class="go" data-sp="cquit">Back to the path</button>`)}</div>`;
+  if (!coach && isGroove(full.id))
+    return `<div class="sc-card" id="sg-coach"><p>${full.story ? `${esc(full.story)} ` : ""}Every take is new, so you read it rather than remember it. ${S.songs.loop ? (S.songs.vary ? "With Loop on, the next take follows on the beat" : "Loop plays this take again; switch on New take each loop for a fresh one every time") : "Turn on Loop and keep going: the next take follows on the beat"}${S.songs.loop && !S.songs.vary ? "" : S.songs.countIn ? ", with a bar of count-in to look ahead" : ", straight on with no gap"}.</p></div>`;
   if (!coach && full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
   if (!coach) {
     const L = S.songs.learn[full.id],
@@ -551,7 +576,7 @@ function current() {
     tabs[id] = tabFor(full).slice(first, first + byId[id].sounding.length);
     return byId[id];
   }
-  const ex = exerciseById(id);
+  const ex = exerciseById(id) || grooveById(id);
   if (ex) return (byId[id] = build(ex));
   if (opening !== id) {
     opening = id;
@@ -626,7 +651,7 @@ function renderPlayer() {
       ${coach ? "" : `<div class="chips pr-opts">${SPEEDS.map((v) => `<button data-sp="pct" data-v="${v}" class="${P.pct === v ? "a" : ""}">${v}%</button>`).join("")}<button data-sp="climb">Speed trainer</button></div>`}
     </div>
     <small class="sg-bpm">${Math.round((s.tempo * P.pct) / 100)} beats per minute</small>
-    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${tog("loop", "Loop", P.loop)}${hasWords ? tog("lyrics", "Words", P.lyrics) : ""}${s.style === "exercise" || s.style === "chords" ? "" : tog("names", "Chords", P.names)}${s.style === "exercise" ? "" : tog("done", P.done[s.id] ? "✓ Learned" : "Mark as learned", !!P.done[s.id])}</div>
+    <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${tog("loop", "Loop", P.loop)}${isGroove(s.id) && !coach ? `${tog("vary", "New take each loop", P.vary)}<button data-sp="take">New take</button>` : ""}${hasWords ? tog("lyrics", "Words", P.lyrics) : ""}${s.style === "exercise" || s.style === "chords" ? "" : tog("names", "Chords", P.names)}${s.style === "exercise" ? "" : tog("done", P.done[s.id] ? "✓ Learned" : "Mark as learned", !!P.done[s.id])}</div>
     <small>${esc(s.source)}${s.reviewed ? "" : " The tab was chosen by the program and has not been checked by hand yet: if a fingering feels awkward, trust your hand."} Space starts and stops.</small>
   </div>`;
   paint(s);
@@ -894,6 +919,20 @@ const hooks = (s) => ({
     render();
     followStart(s);
   },
+  /* a groove on loop: the next take, built now and shown as it starts */
+  next: () => {
+    const id = S.songs.cur;
+    if (coach || !S.songs.vary || !isGroove(id) || id.includes("@")) return null;
+    const nx = nextTake(id);
+    return byId[nx] || (byId[nx] = build(grooveById(nx)));
+  },
+  swap: (nx) => {
+    S.songs.cur = nx.id;
+    res = null;
+    save();
+    render();
+    followStart(nx);
+  },
   end: () => {
     songStop();
     clearHot();
@@ -961,6 +1000,12 @@ function change(k, v) {
     return emit("plan-next");
   }
   if (k === "fix") return fixStart();
+  if (k === "take") {
+    P.cur = nextTake(P.cur);
+    res = null;
+    save();
+    return render();
+  }
   if (k === "climb") {
     coach = speedCoach(byId[P.cur], 0, byId[P.cur].barLens.length - 1);
     res = null;
@@ -1005,7 +1050,7 @@ function change(k, v) {
   else if (k === "mode") P.mode = ["hear", "along", "wait"].includes(v) ? v : "hear";
   else if (k === "pct") P.pct = +v;
   else if (k === "done") P.done[P.cur] ? delete P.done[P.cur] : (P.done[P.cur] = 1);
-  else if (["click", "notes", "countIn", "loop", "lyrics", "names"].includes(k)) P[k] = !P[k];
+  else if (["click", "notes", "countIn", "loop", "vary", "lyrics", "names"].includes(k)) P[k] = !P[k];
   save();
   render();
 }
@@ -1036,14 +1081,26 @@ function pick(k, v) {
     render();
     return window.scrollTo(0, 0);
   }
-  if (k === "openskill") {
+  if (k === "gxopen") {
+    P.cur = exId(P.ex, 1 + Math.floor(Math.random() * 999));
+    coach = null;
+    res = null;
+    save();
+    render();
+    return window.scrollTo(0, 0);
+  }
+  if (k === "cad") {
+    const on = new Set(P.ex.cads);
+    on.has(v) ? on.size > 1 && on.delete(v) : on.add(v); // at least one kind of ending stays
+    P.ex.cads = [...CAD_ORDER].filter((c) => on.has(c)).join("");
+  } else if (k === "openskill") {
     P.style = "skills";
     P.skill = v;
   } else if (k === "style") P.style = v;
   else if (k === "level") P.level = +v;
   else if (k === "speed") P.speed = v;
   else if (k === "skill") P.skill = v;
-  else if (["pos", "beats", "tempo"].includes(k)) P.ex[k] = +v;
+  else if (["pos", "beats", "tempo", "len"].includes(k)) P.ex[k] = +v;
   else P.ex[k] = v;
   save();
   render();

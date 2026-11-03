@@ -61,9 +61,9 @@ function pitchToken(m, spelled) {
 }
 const SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
   FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-const plain = (m, flats) => (flats ? FLAT : SHARP)[m % 12] + (Math.floor(m / 12) - 1);
+export const plain = (m, flats) => (flats ? FLAT : SHARP)[m % 12] + (Math.floor(m / 12) - 1);
 
-function safeKey(key) {
+export function safeKey(key) {
   try {
     keySig(key);
     return key;
@@ -71,7 +71,7 @@ function safeKey(key) {
     return "C"; // a key signature with more than seven: accidentals on the notes read better
   }
 }
-const usesFlats = (key) => Object.values(keySig(key)).some((v) => v < 0);
+export const usesFlats = (key) => Object.values(keySig(key)).some((v) => v < 0);
 
 /* The scale's notes in one hand position, lowest first, each once: { m, tok, s, f }. */
 export function positionNotes(tonic, scale, pos) {
@@ -87,15 +87,15 @@ export function positionNotes(tonic, scale, pos) {
         i = toks.findIndex((t) => (r.pc + token(t).semis) % 12 === m % 12);
       if (i < 0) continue;
       // a pitch that fits on two strings goes on the higher one once this string runs out of comfortable frets
-      if (!seen.has(m) || f === lo + 0) seen.set(m, { m, tok: pitchToken(m, noteName(r, toks[i])) || plain(m, usesFlats(key)), s, f, root: i === 0 });
+      if (!seen.has(m) || f === lo + 0) seen.set(m, { m, tok: pitchToken(m, noteName(r, toks[i])) || plain(m, usesFlats(key)), s, f, root: i === 0, semi: token(toks[i]).semis });
     }
   });
   return [...seen.values()].sort((a, b) => a.m - b.m);
 }
 
-const fix = (n) => `=${6 - n.s}.${n.f}`;
+export const fix = (n) => `=${6 - n.s}.${n.f}`;
 /* cut a list of tokens with their lengths (in sixteenths) into 4/4 bars, closing the last bar with rests */
-function toBars(toks) {
+export function toBars(toks) {
   const bars = [];
   let cur = [],
     room = 16;
@@ -148,7 +148,7 @@ export function scaleExercise({ tonic, scale, pattern, pos, rhythm, tempo }) {
 }
 
 /* The cheapest run of voicings through the changes (the motion drills' idea of hard). */
-function voiceChords(chords, shape) {
+export function voiceChords(chords, shape) {
   const fits = (sh, c) => sh.root === c.root && sh.suf === c.suf,
     all = allShapes(),
     pools = chords.map((c) => {

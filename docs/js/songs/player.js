@@ -33,7 +33,8 @@ export function countIn(song) {
   return out;
 }
 
-/* opts: {pct, click, clickIn (count-in clicks even when click is off), notes, countIn, loop}; hooks: {note(i), beat(b), end()} */
+/* opts: {pct, click, clickIn (count-in clicks even when click is off), notes, countIn, loop}; hooks: {note(i), beat(b), end()},
+   and for a loop that changes every time round: next() (the song to play after this one, or null to repeat it) and swap(song) */
 export function songStart(song, opts, hooks) {
   if (run) return;
   run = { starting: true };
@@ -45,7 +46,7 @@ export function songStart(song, opts, hooks) {
         cyc = timeline(song),
         first = ctx.currentTime + 0.12 - (pre.length ? pre[0].u * usec : 0);
       run = { c0: first, pass: 0, i: -pre.length, q: [], usec, pre, cyc, endAt: 0, hooks };
-      const total = song.total;
+      let total = song.total;
       const sched = () => {
         while (run && !run.endAt) {
           const ev = run.i < 0 ? run.pre[run.pre.length + run.i] : run.cyc[run.i],
@@ -65,7 +66,20 @@ export function songStart(song, opts, hooks) {
           }
           run.i++;
           if (run.i >= run.cyc.length) {
-            if (opts.loop) (run.pass++, (run.i = 0));
+            const nx = opts.loop && hooks.next && hooks.next();
+            if (nx) {
+              // the next take follows on the beat: its count-in starts where this one ends
+              const at = run.c0 + (run.pass + 1) * total * run.usec;
+              song = nx;
+              total = nx.total;
+              run.usec = 60 / (nx.tempo * (opts.pct / 100) * nx.beat);
+              run.pre = opts.countIn ? countIn(nx) : [];
+              run.cyc = timeline(nx);
+              run.c0 = at - (run.pre.length ? run.pre[0].u * run.usec : 0);
+              run.pass = 0;
+              run.i = -run.pre.length;
+              run.q.push({ t: at, swap: nx });
+            } else if (opts.loop) (run.pass++, (run.i = 0));
             else run.endAt = run.c0 + total * run.usec + 0.45;
           }
         }
@@ -75,7 +89,7 @@ export function songStart(song, opts, hooks) {
         if (!run) return;
         while (run.q.length && run.q[0].t <= ctx.currentTime) {
           const e = run.q.shift();
-          e.note !== undefined ? hooks.note(e.note) : hooks.beat(e.beat);
+          e.swap ? hooks.swap(e.swap) : e.note !== undefined ? hooks.note(e.note) : hooks.beat(e.beat);
         }
         if (run.endAt && ctx.currentTime >= run.endAt) return hooks.end();
         run.raf = requestAnimationFrame(frame);
