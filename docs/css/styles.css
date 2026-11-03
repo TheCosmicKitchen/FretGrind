@@ -2187,3 +2187,12 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sp-drills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; border-top: 1px solid var(--ln); }
 .sp-drills small { width: 100%; }
 .sp-drills button { min-height: 32px; padding: 4px 12px; border-radius: 99px; background: none; font-size: 14px; font-weight: 500; }
+.sp-lvl button.ok { border-color: color-mix(in srgb, var(--ok) 55%, var(--ln)); color: var(--ok); }
+/* echo by ear: the notes of the phrase, hidden until you find them */
+.eo-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 6px; }
+.eo-n { display: grid; place-items: center; align-content: center; min-width: 76px; min-height: 76px; padding: 8px; border: 1px solid var(--ln); border-radius: var(--r-m); background: var(--card); text-align: center; }
+.eo-n b { font-size: 24px; font-weight: 650; }
+.eo-n small { max-width: 9em; color: var(--mu); font-size: 12px; line-height: 1.25; }
+.eo-n.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
+.eo-n.got { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--card)); }
+.eo-n.got b { color: var(--ok); }

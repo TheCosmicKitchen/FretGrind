@@ -5,7 +5,8 @@
    Pure and seeded: the same id always gives the same notes, and the next take is the same id with the seed moved on.
    ids: "gx:c:G:maj:APHD:open:strum:sync:phrase:mix:8:72:7"  key, harmony, cadences, shapes, right hand, feel,
         how often the feel changes, how often the chords change, bars, tempo, take
-        "gx:s:G:major:2:mixed:skips:8:72:7"  key, scale, position, rhythm, motion, bars, tempo, take */
+        "gx:s:G:major:2:mixed:skips:8:72:7"  key, scale, position, rhythm, motion, bars, tempo, take, and then the top strings
+        only, if it keeps to a few ("…:72:7:2") */
 import { KEYS, rootOf } from "../library/catalog.js";
 import { OPEN } from "../core/theory.js";
 import { POSITIONS, SCALES, SHAPES, fix, plain, positionNotes, safeKey, toBars, usesFlats, voiceChords } from "./exercises.js";
@@ -39,6 +40,14 @@ export const HARMONY = {
     chords: { i: [0, "minor"], iv: [5, "minor"], v: [7, "minor"], V7: [7, "7"], VI: [8, "major"], III: [3, "major"], VII: [10, "major"] },
     next: { i: ["iv", "VI", "VII", "III", "v"], iv: ["V7", "i", "VII"], v: ["VI", "iv"], V7: ["i"], VI: ["iv", "VII", "III", "V7"], III: ["VI", "iv", "VII"], VII: ["III", "i", "VI"] },
     cad: { A: [["V7", "i"], ["iv", "V7", "i"]], P: [["iv", "i"]], H: [["iv", "V7"], ["VI", "V7"], ["i", "VII", "VI", "V7"]], D: [["V7", "VI"]] },
+  },
+  folk: {
+    name: "Three chords and vi",
+    short: "folk",
+    home: "I",
+    chords: { I: [0, "major"], IV: [5, "major"], V: [7, "major"], V7: [7, "7"], vi: [9, "minor"] },
+    next: { I: ["IV", "V", "vi"], IV: ["I", "V"], V: ["I", "vi", "IV"], V7: ["I"], vi: ["IV", "V"] },
+    cad: { A: [["V", "I"], ["V7", "I"]], P: [["IV", "I"]], H: [["IV", "V"], ["I", "V"]], D: [["V", "vi"]] },
   },
   jazz: {
     name: "Sevenths",
@@ -213,10 +222,11 @@ const SEQS = [[0, 2], [0, 1, 2], [0, 1, 2, 3], [0, 2, 4], [0, 1, -1]]; // thirds
 const cellLen = (c) => c.reduce((a, x) => a + (String(x).startsWith("r") ? +String(x).slice(1) : eval1(x)), 0);
 const eval1 = (x) => String(x).split("/").map(Number).reduce((a, b) => a / b);
 
-export function scaleGroove({ tonic, scale, pos, feel, motion, len, tempo, seed }) {
+/* top: only the top few strings, for a beginner who has met just those */
+export function scaleGroove({ tonic, scale, pos, feel, motion, len, tempo, seed, top: strings = 6 }) {
   const r = rng(seed),
     pick = (a) => a[Math.floor(r() * a.length)],
-    all = positionNotes(tonic, scale, pos),
+    all = positionNotes(tonic, scale, pos).filter((n) => n.s >= 6 - strings),
     top = all.length - 1,
     roots = all.map((n, i) => (n.root ? i : -1)).filter((i) => i >= 0),
     has = (semi) => all.some((n) => n.semi === semi),
@@ -283,9 +293,9 @@ export function scaleGroove({ tonic, scale, pos, feel, motion, len, tempo, seed 
   }
   const S0 = SCALES[scale];
   return {
-    id: `gx:s:${tonic}:${scale}:${pos}:${feel}:${motion}:${len}:${tempo}:${seed}`,
+    id: `gx:s:${tonic}:${scale}:${pos}:${feel}:${motion}:${len}:${tempo}:${seed}${strings < 6 ? `:${strings}` : ""}`,
     title: `${tonic.replace("#", "♯").replace("b", "♭")} ${S0.name.toLowerCase()} groove, take ${seed}`,
-    by: `${pos ? `Position ${pos}` : "Open position"} · ${SFEELS[feel].name.toLowerCase()} · ${MOTIONS[motion].toLowerCase()}`,
+    by: `${pos ? `Position ${pos}` : "Open position"}${strings < 6 ? `, top ${strings} strings` : ""} · ${SFEELS[feel].name.toLowerCase()} · ${MOTIONS[motion].toLowerCase()}`,
     level: SFEELS[feel].level,
     style: "exercise",
     key: safeKey(tonic + S0.mode),
@@ -307,10 +317,23 @@ export function grooveById(id) {
   try {
     if (p[1] === "c" && p.length === 13 && KEYS.includes(p[2]) && HARMONY[p[3]] && /^(?!.*(.).*\1)[APHD]{1,4}$/.test(p[4]) && SHAPES[p[5]] && HANDS[p[6]] && FEELS[p[7]] && VARY[p[8]] && HARM[p[9]] && LENGTHS.includes(+p[10]) && int(p[11], 30, 240) && int(p[12], 1, 1e9))
       return chordGroove({ tonic: p[2], harmony: p[3], cads: p[4], shape: p[5], hand: p[6], feel: p[7], vary: p[8], harm: p[9], len: +p[10], tempo: +p[11], seed: +p[12] });
-    if (p[1] === "s" && p.length === 10 && KEYS.includes(p[2]) && SCALES[p[3]] && POSITIONS.includes(+p[4]) && SFEELS[p[5]] && MOTIONS[p[6]] && LENGTHS.includes(+p[7]) && int(p[8], 30, 240) && int(p[9], 1, 1e9))
-      return scaleGroove({ tonic: p[2], scale: p[3], pos: +p[4], feel: p[5], motion: p[6], len: +p[7], tempo: +p[8], seed: +p[9] });
+    if (p[1] === "s" && (p.length === 10 || (p.length === 11 && int(p[10], 2, 5))) && KEYS.includes(p[2]) && SCALES[p[3]] && POSITIONS.includes(+p[4]) && SFEELS[p[5]] && MOTIONS[p[6]] && LENGTHS.includes(+p[7]) && int(p[8], 30, 240) && int(p[9], 1, 1e9))
+      return scaleGroove({ tonic: p[2], scale: p[3], pos: +p[4], feel: p[5], motion: p[6], len: +p[7], tempo: +p[8], seed: +p[9], top: p.length === 11 ? +p[10] : 6 });
   } catch (e) {}
   return null;
 }
+/* where the take sits in an id, and the id with it swapped for "*": every take of a groove shares it */
+const takeAt = (p) => (p[1] === "c" ? 12 : 9);
+export const takeless = (id) => {
+  const p = String(id).split(":");
+  if (p[0] !== "gx") return String(id);
+  p[takeAt(p)] = "*";
+  return p.join(":");
+};
+export const withTake = (id, take) => String(id).replace(":*", `:${take}`);
 /* the same groove, the next take */
-export const nextTake = (id) => String(id).replace(/:(\d+)$/, (_, n) => `:${+n + 1}`);
+export function nextTake(id) {
+  const p = String(id).split(":");
+  p[takeAt(p)] = +p[takeAt(p)] + 1;
+  return p.join(":");
+}

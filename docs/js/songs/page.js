@@ -22,11 +22,12 @@ import { songBusy, songClock, songRunning, songStart, songStop } from "./player.
 import { gradeRun, summary, waitStep } from "./grade.js";
 import { libraryRows, loadIndex, loadTune } from "./library.js";
 import { PATTERNS, POSITIONS, PROGRESSIONS, RHYTHMS, SCALES, SHAPES, STYLES, exerciseById } from "./exercises.js";
-import { CADENCES, FEELS, HANDS, HARM, HARMONY, LENGTHS, MOTIONS, SFEELS, VARY, grooveById, isGroove, nextTake } from "./groove.js";
+import { CADENCES, FEELS, HANDS, HARM, HARMONY, LENGTHS, MOTIONS, SFEELS, VARY, grooveById, isGroove, nextTake, withTake } from "./groove.js";
+import { EAR_ROUND, LEVEL_PASS, LEVEL_WORK, echoById, isEcho, levelState, placeOf, stageDone, strandOf, tempoOf } from "./level.js";
 import { KEYS, pretty } from "../library/catalog.js";
 import { NAMES } from "../core/theory.js";
 import { stringOffsets } from "../core/pitch.js";
-import { ctx, tone } from "../core/audio.js";
+import { audioReady, ctx, tone } from "../core/audio.js";
 import { listen, listenStart, onNote } from "../core/listen-io.js";
 import { listenPanel } from "../core/listen-ui.js";
 
@@ -105,6 +106,18 @@ function tidyWeak(raw, isId) {
   return out;
 }
 
+/* Level work on each stage of the path: { G3: { t: [best per technique drill], r: best first read, e: best echo round, rt: the take last read } } */
+function tidyLv(raw) {
+  const out = {},
+    num = (v) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0);
+  if (raw && typeof raw === "object")
+    for (const { course } of GUITAR_PATH) {
+      const v = raw[course];
+      if (v && typeof v === "object") out[course] = { t: Array.isArray(v.t) ? v.t.slice(0, 4).map(num) : [], r: num(v.r), e: num(v.e), rt: String(v.rt || "").slice(0, 90) };
+    }
+  return out;
+}
+
 export function sanitizeSongs() {
   const p = S.songs && typeof S.songs === "object" ? S.songs : {},
     ok = (v, a, d) => (a.includes(v) ? v : d),
@@ -131,6 +144,7 @@ export function sanitizeSongs() {
     moved: tidyMoved(p.moved),
     top: tidyTop(p.top),
     weak: tidyWeak(p.weak, isId),
+    lv: tidyLv(p.lv),
     done,
     style: ok(p.style, STYLE_TABS.map((t) => t[0]), "path"),
     learn: tidyLearn(p.learn, isId),
@@ -263,6 +277,9 @@ const drillRow = (course) => {
   const here = SKILLS.filter((k) => k.course === course);
   return here.length ? `<div class="sp-drills"><small>Skills for this stage</small>${here.map((k) => `<button data-sl="openskill" data-v="${k.id}">${k.name}</button>`).join("")}</div>` : "";
 };
+/* What a stage asks for besides its pieces: technique at a set tempo, a sight-read and an ear test. */
+const levelRow = (k, course) =>
+  `<div class="sp-drills sp-lvl"><small>Level work</small>${levelState(k, S.songs.lv[course]).map((x) => `<button data-sl="lvopen" data-v="${k}:${x.kind}:${x.i}" class="${x.pass ? "ok" : ""}">${x.pass ? "✓ " : ""}${esc(x.name)}</button>`).join("")}</div>`;
 function pathHtml() {
   const stages = GUITAR_PATH.map((st, k) => {
     const got = st.songs.filter((x) => learned(x.id)).length,
@@ -273,7 +290,7 @@ function pathHtml() {
           return `<button class="sp-song${learned(x.id) ? " done" : ""}${x.ch ? " ch" : ""}" data-song-open="${esc(x.id)}"><span class="sp-t">${esc(x.title)}</span><small>${esc(adds)}</small><span class="sp-s">${L && L.stars ? "★".repeat(L.stars) + "☆".repeat(3 - L.stars) : L && L.lessons ? `Lesson ${L.lesson} of ${L.lessons}` : L && L.n ? "In progress" : x.ex ? "Exercise" : ""}</span></button>`;
         })
         .join("");
-    return `<section class="sp-stage${got === st.songs.length ? " fin" : ""}"><header><span class="sp-n">${k + 1}</span><div><h3>${st.title}</h3><p>${st.blurb}</p></div><small>${got} / ${st.songs.length}</small></header><div class="sp-list">${rows}</div>${drillRow(st.course)}</section>`;
+    return `<section class="sp-stage${stageDone(k, got === st.songs.length, S.songs.lv[st.course]) ? " fin" : ""}"><header><span class="sp-n">${k + 1}</span><div><h3>${st.title}</h3><p>${st.blurb}</p></div><small>${got} / ${st.songs.length}</small></header><div class="sp-list">${rows}</div>${drillRow(st.course)}${levelRow(k, st.course)}</section>`;
   }).join("");
   const next = PATH_SONGS.find((x) => !learned(x.id)),
     at = next && GUITAR_PATH.findIndex((st) => st.songs.some((x) => x.id === next.id)),
@@ -533,6 +550,7 @@ function coachBar(full) {
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}${onward(full, `<button class="go" data-sp="cquit">Back</button>`)}</div>`;
   if (coach && coach.done)
     return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p>${onward(full, `<button class="go" data-sp="cquit">Back to the path</button>`)}</div>`;
+  if (!coach && strandOf(full.id)) return strandCard(full);
   if (!coach && isGroove(full.id))
     return `<div class="sc-card" id="sg-coach"><p>${full.story ? `${esc(full.story)} ` : ""}Every take is new, so you read it rather than remember it. ${S.songs.loop ? (S.songs.vary ? "With Loop on, the next take follows on the beat" : "Loop plays this take again; switch on New take each loop for a fresh one every time") : "Turn on Loop and keep going: the next take follows on the beat"}${S.songs.loop && !S.songs.vary ? "" : S.songs.countIn ? ", with a bar of count-in to look ahead" : ", straight on with no gap"}.</p></div>`;
   if (!coach && full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
@@ -551,6 +569,24 @@ function coachBar(full) {
     pct = st.mode === "along" && coach.score !== undefined ? ` ${Math.round(coach.score * 100)}%` : "",
     note = coach.passed ? `<b class="good">${st.mode === "along" ? `Nice.${pct}` : "Got it."}</b>` : coach.score !== undefined ? `<b class="badm">${pct.trim()}. Aim for ${PASS_MARK * 100}%, then move on.</b>` : st.say;
   return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>${where}</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${st.chords ? chordBoxes(full, st.chords) : st.def ? "" : formStrip(full, st)}<div class="sc-steps">${coach.plan.slice(span.first, span.last + 1).map((_, k) => `<i class="${k + span.first < coach.i ? "d" : k + span.first === coach.i ? "n" : ""}"></i>`).join("")}</div><h3>${st.title}<small>${st.def && !st.chartStep ? "" : st.from === st.to ? `bar ${st.from + 1}` : `bars ${st.from + 1}–${st.to + 1}`}${st.mode === "along" ? ` · ${st.pct}%` : ""}</small></h3><p role="status">${note}</p><div class="sc-acts">${coach.passed ? `<button class="go" data-sp="cnext">Next step →</button>` : `<button class="rs" data-sp="cskip">${st.mode === "along" ? "No microphone? I played it, move on" : "Skip this step"}</button>`}</div></div>`;
+}
+
+/* A technique drill or a sight-read from a stage's level work: what passes, and your best so far. */
+function strandCard(full) {
+  const st = strandOf(full.id),
+    w = LEVEL_WORK[st.k],
+    L = S.songs.lv[GUITAR_PATH[st.k].course] || {},
+    row = levelState(st.k, L).find((x) => x.kind === st.kind && x.i === (st.i || 0)),
+    pass = Math.round(LEVEL_PASS * 100),
+    best = row.best ? ` Your best: ${Math.round(row.best * 100)}%${row.pass ? ", passed ✓" : ""}.` : "",
+    head = `Stage ${st.k + 1} level work · ${st.kind === "tech" ? "Technique" : "Sight-reading"}`,
+    text =
+      st.kind === "tech"
+        ? `Play along at full speed (${tempoOf(w.tech[st.i].id)} beats per minute) and land ${pass}% of the notes to pass. Loop it in Hear it, or at a slower speed, until it's comfortable.`
+        : L.rt === full.id
+          ? "You've had your go at this one: reading counts only the first time you see it. Read a new one to try again."
+          : `Read it cold: don't listen first. Play along once at full speed. Only your first go at each piece counts, and ${pass}% passes.`;
+  return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>${head}</span></div><p>${text}${best}</p>${full.story ? `<p>${esc(full.story)}</p>` : ""}<div class="sc-acts">${st.kind === "read" ? `<button class="go" data-sp="take">Read a new one</button> ` : ""}<button class="rs" data-sp="back">Back to the path</button></div></div>`;
 }
 
 /* ----- the player ----- */
@@ -848,6 +884,7 @@ function finishAlong(s) {
 function graded(s, g) {
   res = { song: s.id, g };
   noteWeak(byId[S.songs.cur], s, g);
+  noteLevel(s, g.accuracy);
   if (coach?.climb) climbAfter(s, g.accuracy);
   else coachPass(g.accuracy);
 }
@@ -864,6 +901,16 @@ function noteWeak(full, s, g) {
   if (!w) return;
   P.weak[id] = { from: w.from + at, to: w.to + at, at: barsWord(full, w.from + at, w.to + at), pitch: w.pitch, s: w.score, d: dayKey(), t: full.title };
   Object.entries(P.weak).sort((a, b) => (a[1].d < b[1].d ? 1 : -1)).slice(WEAK_KEPT).forEach(([k]) => delete P.weak[k]);
+  save();
+}
+
+/* Level work: a technique drill counts at full speed; a sight-read counts only the first time you play that piece. */
+function noteLevel(s, acc) {
+  const st = !coach && opts().pct === 100 && strandOf(s.id);
+  if (!st) return;
+  const L = (S.songs.lv[GUITAR_PATH[st.k].course] ||= { t: [], r: 0, e: 0, rt: "" });
+  if (st.kind === "tech") L.t[st.i] = Math.max(L.t[st.i] || 0, acc);
+  else if (st.kind === "read" && L.rt !== s.id) ((L.rt = s.id), (L.r = Math.max(L.r, acc)));
   save();
 }
 
@@ -899,6 +946,109 @@ function fixStart() {
   res = null;
   render();
   togglePlay();
+}
+
+/* ----- echo: the app plays a few notes, you play them back by ear ----- */
+const ECHO_GAP = 0.62; // seconds between the notes of a phrase
+let echo = null; // { id, round, i: phrase, got: its notes found, miss: wrong notes, shown, played, ok, msg, right: [first time], from: when to listen, off, done }
+function echoState() {
+  if (echo?.id === S.songs.cur) return echo;
+  echoQuiet();
+  const round = echoById(S.songs.cur);
+  return (echo = round && { id: round.id, round, i: 0, got: 0, miss: 0, shown: false, played: false, ok: false, msg: "", right: [], from: Infinity, off: null, done: false });
+}
+function echoQuiet() {
+  if (echo?.off) (echo.off(), (echo.off = null));
+}
+const noteName = (x) => x.tok.replace(/-?\d+$/, "").replace("#", "♯").replace(/(.)b/, "$1♭");
+async function echoPlay() {
+  const e = echo;
+  if (!e || e.done) return;
+  await audioReady();
+  const ph = e.round.phrases[e.i],
+    t0 = ctx.currentTime + 0.08;
+  ph.forEach((x, j) => tone(x.m - 12, t0 + j * ECHO_GAP, 0.75, 0.3, "triangle", true));
+  e.from = t0 + (ph.length - 1) * ECHO_GAP + 0.45; // the microphone must not take the app's own notes for yours
+  e.played = true;
+  e.msg = "";
+  render();
+}
+function onEcho(ev) {
+  const e = echo;
+  if (!e || e.done || e.ok || !e.played || ev.t < e.from || e.got >= e.round.n) return;
+  const r = waitStep(ev, e.round.phrases[e.i][e.got].m, ctx.sampleRate);
+  if (r === "hit") e.got++;
+  else if (r === "wrong") ((e.miss++), (e.msg = `Heard ${NAMES[ev.m % 12]}: not that one. Listen again if you need to.`));
+  else return;
+  if (e.got === e.round.n) return echoMark(!e.miss && !e.shown);
+  render();
+}
+/* A phrase finished: right first time or not, then on to the next one. */
+function echoMark(first) {
+  const e = echo;
+  e.right[e.i] = first;
+  e.ok = true;
+  e.msg = first ? "Right first time." : "Got it.";
+  render();
+  setTimeout(() => echo === e && e.ok && echoNext(), 1300);
+}
+function echoNext() {
+  const e = echo;
+  Object.assign(e, { i: e.i + 1, got: 0, miss: 0, shown: false, played: false, ok: false, msg: "", from: Infinity });
+  if (e.i < EAR_ROUND) {
+    render();
+    return setTimeout(() => echo === e && !e.played && echoPlay(), 500); // hands stay on the guitar
+  }
+  const score = e.right.filter(Boolean).length / EAR_ROUND,
+    L = (S.songs.lv[GUITAR_PATH[e.round.k].course] ||= { t: [], r: 0, e: 0, rt: "" });
+  L.e = Math.max(L.e, score);
+  S.xp += 10;
+  e.done = true;
+  echoQuiet();
+  save();
+  render();
+}
+function echoAct(k) {
+  const e = echo;
+  if (!e) return;
+  if (k === "play") return echoPlay();
+  if (k === "show") ((e.shown = true), (e.msg = ""));
+  if (k === "had") return echoMark(true);
+  if (k === "next") return e.ok || e.shown ? (e.ok || (e.right[e.i] = false), echoNext()) : undefined;
+  if (k === "again") {
+    S.songs.cur = `eo:${e.round.k}:${1 + Math.floor(Math.random() * 999)}`;
+    save();
+  }
+  render();
+}
+function renderEcho() {
+  const e = echoState();
+  if (!e) {
+    S.songs.cur = null;
+    return renderList();
+  }
+  if (listen.on && !e.off && !e.done) e.off = onNote(onEcho);
+  const k = e.round.k,
+    best = S.songs.lv[GUITAR_PATH[k].course]?.e || 0,
+    top = `${header()}<div class="card prac"><div class="pr-now"><div><h2>Echo by ear</h2><p class="pr-sub">Stage ${k + 1}, ${esc(GUITAR_PATH[k].title)} · ${e.round.n} notes at a time</p></div><button class="tg" data-sp="back">← All songs</button></div>`;
+  if (e.done) {
+    const n = e.right.filter(Boolean).length,
+      pass = n / EAR_ROUND >= LEVEL_PASS;
+    app.innerHTML = `${top}<div class="sc-card" id="sg-coach"><h3>${n} of ${EAR_ROUND} right first time</h3><p>${pass ? `That passes the ear test for stage ${k + 1}.` : `${Math.ceil(LEVEL_PASS * EAR_ROUND)} of ${EAR_ROUND} passes. Every round has new phrases, so another go is a fresh test.`}${best > n / EAR_ROUND ? ` Your best is ${Math.round(best * EAR_ROUND)}.` : ""}</p><div class="sc-acts"><button class="go" data-eo="again">Another round</button> <button class="rs" data-sp="back">Back to the path</button></div></div></div>`;
+    return;
+  }
+  const ph = e.round.phrases[e.i],
+    slot = (x, j) => {
+      const seen = j === 0 || j < e.got || e.shown || e.ok;
+      return `<span class="eo-n${j < e.got ? " got" : ""}${j === e.got && e.played && !e.shown && !e.ok ? " on" : ""}">${seen ? `<b>${noteName(x)}</b><small>${placeOf(x)}</small>` : "<b>?</b>"}</span>`;
+    },
+    say = e.msg || (!e.played ? `Press Play and listen. Then play the notes back on your guitar, in your own time. The first one is shown to start you off.` : e.shown ? (listen.on ? "There it is. Play it through, then move on." : "Was that what you played?") : listen.on ? `Your turn: play the ${e.round.n} notes back.` : "Your turn: play them back, then press Show me to check."),
+    acts = e.ok
+      ? `<button class="go" data-eo="next">Next →</button>`
+      : e.shown && !listen.on
+        ? `<button class="go" data-eo="had">I had it</button> <button class="rs" data-eo="next">Not yet</button>`
+        : `<button class="go" data-eo="play">${e.played ? "▶ Hear it again" : "▶ Play"}</button> ${e.shown ? `<button class="rs" data-eo="next">Next →</button>` : e.played ? `<button class="rs" data-eo="show">Show me</button>` : ""}`;
+  app.innerHTML = `${top}<p class="pr-sub">The app plays a short phrase and you play it back by ear: the most direct way to connect what you hear to where it is on the neck. ${Math.ceil(LEVEL_PASS * EAR_ROUND)} of ${EAR_ROUND} right first time passes.${best ? ` Your best: ${Math.round(best * EAR_ROUND)} of ${EAR_ROUND}.` : ""}</p>${listenPanel()}<div class="sc-steps" aria-label="Phrase ${e.i + 1} of ${EAR_ROUND}">${Array.from({ length: EAR_ROUND }, (_, j) => `<i class="${j < e.i ? "d" : j === e.i ? "n" : ""}"></i>`).join("")}</div><div class="eo-row">${ph.map(slot).join("")}</div><p class="sg-say" role="status">${say}</p><div class="sc-acts">${acts}</div><small>Space plays the phrase again. ${listen.on ? "Any octave counts." : "Turn on the microphone and it checks each note for you."}</small></div>`;
 }
 
 /* ----- playing ----- */
@@ -946,6 +1096,7 @@ const hooks = (s) => ({
   },
 });
 export function stopSongs() {
+  echoQuiet();
   clearTimeout(again);
   again = 0;
   if (along) (along.off(), (along = null));
@@ -956,6 +1107,7 @@ export function stopSongs() {
   clearHot();
 }
 function togglePlay() {
+  if (isEcho(S.songs.cur)) return echoAct("play");
   const s = byId[S.songs.cur] && onStand(byId[S.songs.cur]);
   if (!s) return;
   if (songBusy() || wait || again) {
@@ -1081,6 +1233,19 @@ function pick(k, v) {
     render();
     return window.scrollTo(0, 0);
   }
+  if (k === "lvopen") {
+    const [st, kind, i] = v.split(":"),
+      w = LEVEL_WORK[+st],
+      take = 1 + Math.floor(Math.random() * 999);
+    if (!w) return;
+    P.cur = kind === "ear" ? `eo:${st}:${take}` : withTake(kind === "read" ? w.read : w.tech[+i].id, take);
+    if (kind !== "ear") ((P.mode = "along"), (P.pct = 100));
+    coach = null;
+    res = null;
+    save();
+    render();
+    return window.scrollTo(0, 0);
+  }
   if (k === "gxopen") {
     P.cur = exId(P.ex, 1 + Math.floor(Math.random() * 999));
     coach = null;
@@ -1107,7 +1272,8 @@ function pick(k, v) {
 }
 
 export function mountSongs() {
-  screen("songs", () => (S.songs.cur ? renderPlayer() : renderList()));
+  screen("songs", () => (!S.songs.cur ? renderList() : isEcho(S.songs.cur) ? renderEcho() : renderPlayer()));
+  action("eo", (D) => echoAct(D.eo));
   on("open-song", (id, step) => {
     stopSongs();
     S.songs.cur = id;
