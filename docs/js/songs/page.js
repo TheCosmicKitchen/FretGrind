@@ -1,12 +1,14 @@
 /* The Songs tab: a searchable library of public-domain music graded by level, generated exercises, and a player that
    shows each piece as sheet music and tab and plays it along with a click. */
 import { S, save, ui } from "../core/store.js";
-import { action, on, render, screen } from "../core/bus.js";
+import { action, emit, on, render, screen } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
 import { SONGS } from "./data.js";
 import { build, keyLabel } from "./format.js";
 import { GUITAR_PATH, PASS_MARK, PATH_SONGS, coachPlan, formOf, freshNotes, lessonsIn, notesPerSecond, sliceDef, speedWord, starsFor } from "./path.js";
+import { barsWord, climbPass, climbStart, fixPlan, hardPart, speedPlan, worstBars } from "./fix.js";
+import { isLearned, knownChords } from "./session.js";
 import { LIMITS, demandsOf } from "./demands.js";
 import { chordChart } from "./harmony.js";
 import { SIZES, changeKey, chartFor, chordId, chordPlan, chordSong, generateRun, recommendChanges, runById, runPlan, shapeOf } from "./changes.js";
@@ -17,7 +19,7 @@ import { SONG_DAYS, dayKey, dueSongs, recordReplay, recordSong } from "../course
 import { tabify } from "./tabify.js";
 import { followPlan, followTop, ribbon, ribbonX, songSvg } from "./draw.js";
 import { songBusy, songClock, songRunning, songStart, songStop } from "./player.js";
-import { gradeRun, waitStep } from "./grade.js";
+import { gradeRun, summary, waitStep } from "./grade.js";
 import { libraryRows, loadIndex, loadTune } from "./library.js";
 import { PATTERNS, POSITIONS, PROGRESSIONS, RHYTHMS, SCALES, SHAPES, STYLES, exerciseById } from "./exercises.js";
 import { KEYS, pretty } from "../library/catalog.js";
@@ -64,7 +66,9 @@ const VIEWS = [["staff", "Sheet music"], ["tab", "Tab"], ["both", "Both"]],
   SPEEDS = [50, 75, 90, 100],
   MODES = [["hear", "Hear it"], ["along", "Play along"], ["wait", "Wait for me"]],
   LANE_AT = 0.22, // how far across the view the lane stands: most of the width is what's coming
-  HOLD_OFF_MS = 3500; // after the player scrolls by hand, leave the view alone this long
+  HOLD_OFF_MS = 3500, // after the player scrolls by hand, leave the view alone this long
+  AGAIN_MS = 1400, // the breath between one run of a loop and the next
+  WEAK_KEPT = 12; // trouble spots remembered for your next practice
 
 const EX_DEFAULT = { kind: "scale", tonic: "G", scale: "major", pattern: "straight", pos: 2, rhythm: "e", prog: "I-IV-V-I", shape: "open", style: "block", beats: 4, tempo: 72 };
 
@@ -80,6 +84,21 @@ function tidyLearn(raw, isId) {
 function tidyMoved(raw) {
   const out = {};
   if (raw && typeof raw === "object") for (const [k, v] of Object.entries(raw)) if (k.length < 12 && Number.isFinite(v)) out[k] = Math.max(0, Math.min(1, v));
+  return out;
+}
+
+/* The fastest clean run of each piece, as a % of its full speed: { tune: 85 } */
+function tidyTop(raw) {
+  const out = {};
+  if (raw && typeof raw === "object") for (const [k, v] of Object.entries(raw)) if (k.length < 110 && Number.isFinite(v)) out[k] = Math.max(0, Math.min(100, v | 0));
+  return out;
+}
+
+/* The bars that went worst in each piece's latest run, for next time: { tune: { from, to, at: "bars 5–6", pitch, s: score, d: day, t: title } } */
+function tidyWeak(raw, isId) {
+  const out = {};
+  if (raw && typeof raw === "object")
+    for (const [id, v] of Object.entries(raw)) if (isId(id) && v && Number.isFinite(v.from) && Number.isFinite(v.to)) out[id] = { from: Math.max(0, v.from | 0), to: Math.max(0, v.to | 0), at: String(v.at || "").slice(0, 24), pitch: !!v.pitch, s: Number.isFinite(v.s) ? v.s : 0, d: String(v.d || "").slice(0, 10), t: String(v.t || id).slice(0, 120) };
   return out;
 }
 
@@ -106,6 +125,8 @@ export function sanitizeSongs() {
     size: ok(p.size, SIZES.map((x) => x.id), "small"),
     runSeed: Number.isFinite(p.runSeed) ? p.runSeed | 0 : 1,
     moved: tidyMoved(p.moved),
+    top: tidyTop(p.top),
+    weak: tidyWeak(p.weak, isId),
     done,
     style: ok(p.style, STYLE_TABS.map((t) => t[0]), "path"),
     learn: tidyLearn(p.learn, isId),
@@ -158,8 +179,7 @@ function matching() {
 function changesHtml() {
   const P = S.songs,
     size = SIZES.find((x) => x.id === P.size),
-    known = [...new Set(GUITAR_PATH.flatMap((st) => st.songs).filter((x) => x.ch && learned(x.id)).flatMap((x) => x.by.split(" ")))],
-    list = recommendChanges(size.id, CHANGE_USE, P.moved, known),
+    list = recommendChanges(size.id, CHANGE_USE, P.moved, knownChords(P)),
     top = list[0],
     pairId = (c) => `chg:${c.a},${c.b}:4:66`,
     row = (c) => `<button class="sp-song" data-song-open="${esc(pairId(c))}"><span class="sp-t">${esc(c.a)} to ${esc(c.b)}</span><small>${c.n ? `In ${c.n} piece${c.n === 1 ? "" : "s"}` : "Not common in this library"}${c.songs[0] ? `, like ${esc(c.songs[0].title)}` : ""}</small><span class="sp-s">${c.best >= 0.7 ? `✓ ${Math.round(c.best * 100)}%` : ""}</span></button>`;
@@ -215,7 +235,7 @@ function exercisePanel() {
   return `${h}<h3 class="sg-lv">Tempo</h3>${chipRow("tempo", [50, 60, 72, 88, 104, 120].map((t) => [t, t]), x.tempo)}<button class="go" data-song-open="${exId(x)}">▶ Open this exercise</button></div>`;
 }
 
-const learned = (id) => (S.songs.learn[id] || {}).stars > 0 || !!S.songs.done[id];
+const learned = (id) => isLearned(S.songs, id);
 const drillRow = (course) => {
   const here = SKILLS.filter((k) => k.course === course);
   return here.length ? `<div class="sp-drills"><small>Skills for this stage</small>${here.map((k) => `<button data-sl="openskill" data-v="${k.id}">${k.name}</button>`).join("")}</div>` : "";
@@ -267,7 +287,12 @@ function refresh() {
 
 /* ----- learning a piece part by part ----- */
 let coach = null; // { id, plan, i, passed, stars, done }
-const opts = () => (coach && !coach.done ? { ...S.songs, mode: coach.plan[coach.i].mode, pct: coach.plan[coach.i].pct, loop: false } : S.songs);
+function opts() {
+  if (!coach || coach.done) return S.songs;
+  const st = coach.plan[coach.i],
+    c = coach.climb;
+  return c ? { ...S.songs, mode: c.free ? "hear" : "along", pct: c.pct, loop: false, countIn: true, click: c.free || S.songs.click } : { ...S.songs, mode: st.mode, pct: st.pct, loop: false };
+}
 
 /* What is on the stand now: the whole piece, or the bars of the current step (fingered as they are in the whole piece). */
 function onStand(full) {
@@ -285,16 +310,45 @@ function onStand(full) {
 }
 /* From the start of a chosen lesson, or else where you left off. */
 const planFor = (full) => (full.names ? runPlan(full) : full.chart ? chordPlan(full) : coachPlan(full, full.style === "exercise" ? undefined : tabFor(full)));
-function coachStart(full, lesson) {
+function coachFor(full, lesson) {
   const plan = planFor(full),
     L = S.songs.learn[full.id] || {},
     n = lesson ? plan.findIndex((st) => st.lesson === lesson) : L.stars ? 0 : Math.min(L.n || 0, plan.length - 1);
-  coach = { id: full.id, plan, i: Math.max(0, n), passed: false, done: false, rest: 0 };
+  return { id: full.id, plan, i: Math.max(0, n), passed: false, done: false, rest: 0 };
+}
+function coachStart(full, lesson) {
+  coach = coachFor(full, lesson);
   res = null;
   render();
 }
+/* Work on one stretch, then go back to what you were doing. solo: "fix" | "speed" */
+function soloCoach(solo, full, plan, prior) {
+  const st = plan[0];
+  return { id: full.id, plan, i: 0, passed: false, done: false, rest: 0, solo, prior, climb: st.kind === "climb" ? climbStart(st) : null };
+}
+function speedCoach(full, from, to) {
+  const whole = from === 0 && to === full.barLens.length - 1,
+    key = whole ? full.id : `${full.id}@${from}-${to}`;
+  return { ...soloCoach("speed", full, speedPlan(full, from, to, S.songs.top[key] || 0), null), key };
+}
+/* What a step of today's practice opens on: { id, kind, ... } */
+let queued = null;
+function coachOf(full, it) {
+  const end = full.barLens.length - 1;
+  if (it.kind === "replay") return replayCoach(full);
+  if (it.kind === "encore") {
+    const c = replayCoach(full);
+    c.plan = [{ ...c.plan[0], lessonName: "Finish with this", title: "Play it for fun", say: "Something you already have, for the pleasure of it. The score doesn't matter." }];
+    return { ...c, encore: true };
+  }
+  if (it.kind === "fix") return it.to > end ? coachFor(full) : soloCoach("fix", full, fixPlan(full, it.from, it.to, it.pitch), null);
+  if (it.kind === "climb") {
+    const p = full.id.includes(":") ? { from: 0, to: end } : hardPart(full);
+    return speedCoach(full, p.from, p.to);
+  }
+  return coachFor(full);
+}
 /* One play-through of a finished piece: all it takes to keep it. */
-let replaying = null;
 function replayCoach(full) {
   const end = full.barLens.length - 1,
     step = { lesson: 1, lessons: 1, lessonName: "Keep it alive", parts: 0, part: 0, from: 0, to: end, kind: "full", mode: "along", pct: 100, title: "Play it through", say: "Once, start to finish, at full speed. No warm-up needed." };
@@ -307,11 +361,36 @@ function coachPass(score = 1) {
   coach.score = score;
   coach.passed = score >= want;
 }
+/* A worked stretch: on to its next step, or done. What it reached is kept for next time. */
+function soloNext(skipped) {
+  const P = S.songs,
+    c = coach.climb;
+  if (c) coach.won = c;
+  S.xp += skipped ? 0 : 2;
+  res = null;
+  coach.note = "";
+  if (coach.i < coach.plan.length - 1) {
+    coach.i++;
+    coach.passed = false;
+    coach.score = undefined;
+    const st = coach.plan[coach.i];
+    coach.climb = st.kind === "climb" ? climbStart(st) : null;
+  } else {
+    const won = coach.won;
+    coach.done = true;
+    coach.climb = null;
+    if (coach.solo === "speed" && won?.best) P.top[coach.key] = Math.max(P.top[coach.key] || 0, won.best);
+    if (coach.solo === "fix" && won?.best >= 90) delete P.weak[coach.id];
+  }
+  save();
+  render();
+}
 function coachNext(skipped) {
+  if (coach.solo) return soloNext(skipped);
   if (coach.replay) {
     const score = Math.round((skipped ? 0.8 : coach.score ?? 0.8) * 100);
     coach.score = score / 100;
-    coach.back = recordReplay(S.courses, coach.id, score);
+    if (!coach.encore) coach.back = recordReplay(S.courses, coach.id, score);
     coach.done = true;
     S.xp += skipped ? 2 : 12;
     res = null;
@@ -387,20 +466,51 @@ function suggested(full) {
   return c.names.length < 2 ? "" : `<p class="sc-ch">Chords for this tune: <b>${c.names.map(esc).join(" ")}</b> <button class="rs" data-song-open="ch:${esc(full.id)}">Learn the chords</button></p>`;
 }
 
+/* Today's practice, if this piece is the step it's on. */
+function planStep(full) {
+  const p = ui.learn?.plan,
+    it = p && p.items[p.at];
+  return it && !it.done && it.id === full.id ? p.items.slice(p.at + 1).find((x) => !x.done) || "last" : null;
+}
+/* The way out of a finished stretch: on through today's practice if you're in it, otherwise the button given. */
+function onward(full, otherwise) {
+  const next = planStep(full);
+  return !next ? otherwise : `<button class="go" data-sp="pnext">${next === "last" ? "Finish today's practice" : `Next: ${esc(next.title)} →`}</button>`;
+}
+
+function soloDone(full) {
+  const c = coach.won,
+    best = c?.best || 0,
+    back = coach.prior ? "Back to the piece" : coach.solo === "fix" ? "Back" : "Done",
+    head = coach.solo === "fix" ? (best >= 100 ? "Fixed" : best ? "Getting there" : "Stopped there") : best ? `${Math.round((full.tempo * best) / 100)} beats per minute` : "Stopped there",
+    was = coach.before === undefined ? "" : ` It was ${Math.round(coach.before * 100)}% in that run.`,
+    text = !best ? "Pick it up again whenever you like." : coach.solo === "fix" ? (best >= 100 ? `Clean at full speed.${was}` : `Clean up to ${best}% of full speed.${best < 90 ? " It'll come back in your next practice." : ""}`) : `Clean at ${best}% of full speed.${best >= 100 ? "" : " Next time it starts near here."}`;
+  return `<div class="sc-card" id="sg-coach"><h3>${head}</h3><p>${text}</p><div class="sc-acts">${onward(full, `<button class="go" data-sp="cquit">${back}</button>`)}</div></div>`;
+}
+/* The note under a climb, and how far up it has got. */
+function climbCard(full, st) {
+  const c = coach.climb,
+    pct = Math.round((100 * (c.pct - c.start)) / Math.max(1, c.goal - c.start));
+  return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>${st.lessonName}</span><button class="ln-x" data-sp="cquit" aria-label="Stop">✕</button></div><div class="ln-bar"><i style="width:${pct}%"></i></div><h3>${st.title}<small>${st.from === st.to ? `bar ${st.from + 1}` : `bars ${st.from + 1}–${st.to + 1}`} · ${c.pct}%</small></h3><p role="status">${coach.note || (c.free ? `Play along with the click. It goes up every ${c.need > 1 ? `${c.need} runs` : "run"}.` : st.say)}</p><div class="sc-acts">${c.free ? `<button class="rs" data-sp="cslow">Too fast, slow it down</button>` : `<button class="rs" data-sp="cfree">No microphone? Just step it up with the click</button>`} <button class="rs" data-sp="cskip">That's enough</button></div></div>`;
+}
+
 function coachBar(full) {
   if (coach && coach.rest) {
-    const next = coach.plan[coach.i];
-    return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Lesson ${coach.rest} of ${next.lessons} finished</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${formStrip(full, { from: 0, to: Math.max(...coach.plan.slice(0, coach.i).map((st) => st.to)) })}<h3>Good place to stop</h3><p>Practice sticks better spread over a few days, and the next lesson opens by warming this one up. Or carry on now.</p><div class="sc-acts"><button class="go" data-sp="cgo">Next: ${next.lessonName} →</button></div></div>`;
+    const next = coach.plan[coach.i],
+      more = `<button class="${planStep(full) ? "rs" : "go"}" data-sp="cgo">${planStep(full) ? "Keep going with this piece" : `Next: ${next.lessonName} →`}</button>`;
+    return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>Lesson ${coach.rest} of ${next.lessons} finished</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${formStrip(full, { from: 0, to: Math.max(...coach.plan.slice(0, coach.i).map((st) => st.to)) })}<h3>Good place to stop</h3><p>Practice sticks better spread over a few days, and the next lesson opens by warming this one up. Or carry on now.</p><div class="sc-acts">${onward(full, "")}${more}</div></div>`;
   }
+  if (coach && coach.done && coach.solo) return soloDone(full);
+  if (coach && coach.done && coach.encore) return `<div class="sc-card" id="sg-coach"><h3>That's the way to finish</h3><p>Music you can already play is why any of this is worth doing.</p><div class="sc-acts">${onward(full, `<button class="go" data-sp="cquit">Done</button>`)}</div></div>`;
   if (coach && coach.done && coach.replay) {
     const held = coach.score >= 0.6;
-    return `<div class="sc-card" id="sg-coach"><h3>${coach.score >= 0.8 ? "Still yours" : held ? "Nearly there" : "It's slipped a little"}</h3><p>${coach.score >= 0.8 ? `Solid. It can wait ${coach.back} days now.` : held ? `Good enough to keep. Back in ${coach.back} days.` : "That happens. It'll come back tomorrow, or go through a lesson again now."}</p><div class="sc-acts"><button class="go" data-sp="cquit">Done</button>${held ? "" : ` <button class="rs" data-sp="clesson" data-v="1">Go through the lessons</button>`}</div></div>`;
+    return `<div class="sc-card" id="sg-coach"><h3>${coach.score >= 0.8 ? "Still yours" : held ? "Nearly there" : "It's slipped a little"}</h3><p>${coach.score >= 0.8 ? `Solid. It can wait ${coach.back} days now.` : held ? `Good enough to keep. Back in ${coach.back} days.` : "That happens. It'll come back tomorrow, or go through a lesson again now."}</p><div class="sc-acts">${onward(full, `<button class="go" data-sp="cquit">Done</button>`)}${held ? "" : ` <button class="rs" data-sp="clesson" data-v="1">Go through the lessons</button>`}</div></div>`;
   }
   if (coach && coach.done && full.names)
-    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}<button class="go" data-sp="cquit">Back</button></div>`;
+    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>${esc(full.title)}</h3><p>Back tomorrow, this will feel easier.</p>${changeSongs(full)}${onward(full, `<button class="go" data-sp="cquit">Back</button>`)}</div>`;
   if (coach && coach.done)
-    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p><button class="go" data-sp="cquit">Back to the path</button></div>`;
-  if (full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
+    return `<div class="sc-card" id="sg-coach"><div class="sc-stars">${"★".repeat(coach.stars)}${"☆".repeat(3 - coach.stars)}</div><h3>You learned ${esc(full.title)}</h3><p>It's in your repertoire now, and comes back in your daily plan in ${SONG_DAYS[0]} days, before it fades.</p>${onward(full, `<button class="go" data-sp="cquit">Back to the path</button>`)}</div>`;
+  if (!coach && full.id.includes("@")) return `<div class="sc-card" id="sg-coach"><p>A short drill from this piece. Loop it slowly, then bring it up to speed.</p><button class="go alt" data-song-open="${esc(full.id.split("@")[0])}">Open the whole piece</button></div>`;
   if (!coach) {
     const L = S.songs.learn[full.id],
       plan = planFor(full),
@@ -409,9 +519,10 @@ function coachBar(full) {
       intro = full.names ? (full.names.length === 2 ? "Slow to quick: the same change with less and less time to make it." : "A generated run of chord changes, each one of the size you asked for.") : full.chart ? `${full.chart.names.length} chords and ${full.chart.moves} changes. Drill the changes this song uses, then play it with the tune.${full.chart.capo ? ` Played in ${full.chart.key} for easy shapes. A capo at fret ${full.chart.capo} matches the original key.` : ""} These chords are suggested from the melody.` : `${parts > 1 ? `${parts} phrases to learn, in ${lessons} short lessons` : "Learn it step by step"}. Each one builds on the last until you can play the whole piece.`;
     return `<div class="sc-card" id="sg-coach"><p>${intro}${L && L.stars ? ` Your best: ${"★".repeat(L.stars)}` : ""}</p>${full.chart ? chordBoxes(full, full.chart.names) : formStrip(full)}${fresh ? `<div class="ln-bar"><i style="width:${(100 * L.n) / plan.length}%"></i></div>` : ""}<button class="go" data-sp="cstart">${L && L.stars ? "Learn it again" : fresh ? "Carry on learning" : "Start lesson 1"}</button>${full.names ? changeSongs(full) : lessonList(full, plan, L)}${full.chart ? "" : suggested(full)}</div>`;
   }
-  const st = coach.plan[coach.i],
-    span = lessonsIn(coach.plan).find((x) => x.n === st.lesson),
-    where = `Lesson ${st.lesson} of ${st.lessons} · ${st.lessonName}`,
+  const st = coach.plan[coach.i];
+  if (coach.climb) return climbCard(full, st);
+  const span = lessonsIn(coach.plan).find((x) => x.n === st.lesson),
+    where = st.lessons > 1 ? `Lesson ${st.lesson} of ${st.lessons} · ${st.lessonName}` : st.lessonName,
     pct = st.mode === "along" && coach.score !== undefined ? ` ${Math.round(coach.score * 100)}%` : "",
     note = coach.passed ? `<b class="good">${st.mode === "along" ? `Nice.${pct}` : "Got it."}</b>` : coach.score !== undefined ? `<b class="badm">${pct.trim()}. Aim for ${PASS_MARK * 100}%, then move on.</b>` : st.say;
   return `<div class="sc-card" id="sg-coach"><div class="sc-top"><span>${where}</span><button class="ln-x" data-sp="cquit" aria-label="Stop learning">✕</button></div>${st.chords ? chordBoxes(full, st.chords) : st.def ? "" : formStrip(full, st)}<div class="sc-steps">${coach.plan.slice(span.first, span.last + 1).map((_, k) => `<i class="${k + span.first < coach.i ? "d" : k + span.first === coach.i ? "n" : ""}"></i>`).join("")}</div><h3>${st.title}<small>${st.def && !st.chartStep ? "" : st.from === st.to ? `bar ${st.from + 1}` : `bars ${st.from + 1}–${st.to + 1}`}${st.mode === "along" ? ` · ${st.pct}%` : ""}</small></h3><p role="status">${note}</p><div class="sc-acts">${coach.passed ? `<button class="go" data-sp="cnext">Next step →</button>` : `<button class="rs" data-sp="cskip">${st.mode === "along" ? "No microphone? I played it, move on" : "Skip this step"}</button>`}</div></div>`;
@@ -494,9 +605,9 @@ function renderPlayer() {
     return;
   }
   if (coach && coach.id !== full.id) coach = null;
-  if (replaying === full.id) {
-    replaying = null;
-    coach = replayCoach(full);
+  if (queued?.id === full.id) {
+    coach = coachOf(full, queued);
+    queued = null;
   }
   const s = onStand(full),
     run = songRunning(),
@@ -511,8 +622,8 @@ function renderPlayer() {
     <div class="beats" aria-label="Beat">${beats}</div>
     ${mode === "hear" ? "" : modeBlock(s)}
     <div class="pr-ctl">
-      <button class="go pr-play" data-sp="play">${run || wait ? "■ Stop" : songBusy() ? "…" : mode === "hear" ? "▶ Play" : mode === "along" ? "▶ Start (count-in, then play)" : "▶ Start"}</button>
-      ${coach ? "" : `<div class="chips pr-opts">${SPEEDS.map((v) => `<button data-sp="pct" data-v="${v}" class="${P.pct === v ? "a" : ""}">${v}%</button>`).join("")}</div>`}
+      <button class="go pr-play" data-sp="play">${run || wait || again ? "■ Stop" : songBusy() ? "…" : mode === "hear" ? "▶ Play" : mode === "along" ? "▶ Start (count-in, then play)" : "▶ Start"}</button>
+      ${coach ? "" : `<div class="chips pr-opts">${SPEEDS.map((v) => `<button data-sp="pct" data-v="${v}" class="${P.pct === v ? "a" : ""}">${v}%</button>`).join("")}<button data-sp="climb">Speed trainer</button></div>`}
     </div>
     <small class="sg-bpm">${Math.round((s.tempo * P.pct) / 100)} beats per minute</small>
     <div class="chips pr-opts">${tog("click", "Click", P.click)}${tog("notes", "Notes", P.notes)}${tog("countIn", "1-bar count-in", P.countIn)}${tog("loop", "Loop", P.loop)}${hasWords ? tog("lyrics", "Words", P.lyrics) : ""}${s.style === "exercise" || s.style === "chords" ? "" : tog("names", "Chords", P.names)}${s.style === "exercise" ? "" : tog("done", P.done[s.id] ? "✓ Learned" : "Mark as learned", !!P.done[s.id])}</div>
@@ -586,6 +697,10 @@ let along = null, // a play-along in progress: { song, heard, off, clock }
   res = null, // the last play-along's result: { song, g }
   wait = null; // wait-for-me in progress: { song, i, wrong, off, msg, done, quietUntil }
 const bar = (s, i) => (s.pickup ? s.sounding[i].bar || "pick-up" : s.sounding[i].bar + 1);
+/* Where the music on the stand starts in the piece, in bars. */
+const standAt = () => (coach && !coach.done ? coach.plan[coach.i].from : 0);
+/* Fix it can run on the bars of a tune, but not on a drill that isn't part of the piece. */
+const fixable = () => !coach || (!coach.solo && !coach.done && !coach.plan[coach.i].def);
 const allOf = (n) => n.pitches.map((p) => p.midi);
 
 function modeBlock(s) {
@@ -614,8 +729,10 @@ function resultBlock(s, g) {
     spots = ["wrong", "miss", "late", "early"].map((st) => [st, p(st)]).filter(([, b]) => b.length),
     name = { wrong: "wrong note", miss: "missed", late: "late", early: "early" },
     b = g.bias,
+    w = fixable() && worstBars(s, g.notes),
+    fix = w ? `<button class="${coach?.passed === false || !coach ? "go" : "rs"}" data-sp="fix">Fix ${barsWord(s, w.from, w.to)}</button>` : "",
     biasText = Math.abs(b) < 15 ? "Right on the click." : b > 0 ? `You land about ${Math.round(b)} ms behind the click on average.` : `You land about ${Math.round(-b)} ms ahead of the click on average.`;
-  return `<div class="rh-result sg-res"><div class="rh-acc">${Math.round(g.accuracy * 100)}% · ${c.ok} of ${n} notes right on time</div><p>${biasText}${g.extras.length ? ` ${g.extras.length} extra note${g.extras.length > 1 ? "s" : ""}.` : ""}</p>${spots.length ? `<p>${spots.map(([st, bs]) => `<b>${name[st]}</b> in bar ${bs.slice(0, 6).join(", ")}`).join(" · ")}</p>` : "<p>No trouble spots.</p>"}<div class="sg-key"><i class="res-ok">on time</i><i class="res-early">early</i><i class="res-late">late</i><i class="res-wrong">wrong note</i><i class="res-miss">missed</i></div></div>`;
+  return `<div class="rh-result sg-res"><div class="rh-acc">${Math.round(g.accuracy * 100)}% · ${c.ok} of ${n} notes right on time</div><p>${biasText}${g.extras.length ? ` ${g.extras.length} extra note${g.extras.length > 1 ? "s" : ""}.` : ""}</p>${spots.length ? `<p>${spots.map(([st, bs]) => `<b>${name[st]}</b> in bar ${bs.slice(0, 6).join(", ")}`).join(" · ")}</p>` : "<p>No trouble spots.</p>"}<div class="sg-key"><i class="res-ok">on time</i><i class="res-early">early</i><i class="res-late">late</i><i class="res-wrong">wrong note</i><i class="res-miss">missed</i></div>${fix}</div>`;
 }
 /* put the marks on the notes after a redraw */
 function paint(s) {
@@ -651,7 +768,10 @@ function onWait(e) {
       wait.done = true;
       clearHot();
       followEnd();
-      if (coach) (coachPass(), render());
+      if (coach) {
+        coachPass();
+        coach.solo ? soloOn() : render();
+      }
     } else {
       markNote(wait.i);
       S.songs.scroll === "lane" ? laneTo(wait.i) : followLine(wait.i);
@@ -695,11 +815,65 @@ function finishAlong(s) {
         from = a.clock.due[0] - Math.min(0.3, beatSec * 0.45),
         heard = a.heard.filter((e) => e.t >= from),
         exp = a.clock.due.map((t, i) => ({ t, m: s.sounding[i].midi, ms: allOf(s.sounding[i]), shift: shiftOf(s, i) }));
-      res = { song: s.id, g: gradeRun(exp, heard, { sr: ctx.sampleRate }) };
-      coachPass(res.g.accuracy);
+      graded(s, gradeRun(exp, heard, { sr: ctx.sampleRate }));
     }
   }
   if (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane")) render();
+}
+function graded(s, g) {
+  res = { song: s.id, g };
+  noteWeak(byId[S.songs.cur], s, g);
+  if (coach?.climb) climbAfter(s, g.accuracy);
+  else coachPass(g.accuracy);
+}
+/* Remember what went worst in a real run through, for your next practice. A clean run clears it. First goes at new bars don't count. */
+function noteWeak(full, s, g) {
+  const P = S.songs,
+    id = full.id,
+    st = coach && !coach.done ? coach.plan[coach.i] : null;
+  if (/[@:]/.test(id) || coach?.solo || st?.def || (st && !["join", "run", "full"].includes(st.kind))) return;
+  const at = standAt(),
+    was = P.weak[id];
+  if (was && g.accuracy >= 0.9 && was.from >= at && was.to <= at + s.barLens.length - 1) delete P.weak[id];
+  const w = g.accuracy >= 0.4 && opts().pct >= 75 && worstBars(s, g.notes);
+  if (!w) return;
+  P.weak[id] = { from: w.from + at, to: w.to + at, at: barsWord(full, w.from + at, w.to + at), pitch: w.pitch, s: w.score, d: dayKey(), t: full.title };
+  Object.entries(P.weak).sort((a, b) => (a[1].d < b[1].d ? 1 : -1)).slice(WEAK_KEPT).forEach(([k]) => delete P.weak[k]);
+  save();
+}
+
+/* ----- loops that run by themselves, so the hands can stay on the guitar ----- */
+let again = 0; // the next run is on its way
+const goAgain = () => {
+  again = setTimeout(() => {
+    again = 0;
+    togglePlay();
+  }, AGAIN_MS);
+};
+/* The stretch moves on by itself, unless that was the end of it. */
+function soloOn() {
+  coachNext(false);
+  if (!coach.done) goAgain();
+}
+function climbAfter(s, score) {
+  const c = coach.climb,
+    moved = climbPass(c, score),
+    got = c.free ? "" : `${Math.round(score * 100)}%. `;
+  coach.score = score;
+  coach.note = `${got}${moved === "up" ? `Up to ${c.pct}%.` : moved === "down" ? `Back down to ${c.pct}%. Slow is how it gets fast.` : c.over ? "" : c.clean ? `Clean. ${c.need - c.clean} more at this speed.` : "Again at this speed."}`;
+  if (c.over) return soloOn();
+  goAgain();
+}
+function fixStart() {
+  const full = byId[S.songs.cur],
+    s = onStand(full),
+    w = res && res.song === s.id && worstBars(s, res.g.notes),
+    at = standAt();
+  if (!w) return;
+  coach = { ...soloCoach("fix", full, fixPlan(full, w.from + at, w.to + at, w.pitch), coach), before: w.score };
+  res = null;
+  render();
+  togglePlay();
 }
 
 /* ----- playing ----- */
@@ -724,11 +898,17 @@ const hooks = (s) => ({
     songStop();
     clearHot();
     followEnd();
-    if (coach && opts().mode === "hear") coachPass();
+    if (coach?.climb) climbAfter(s, 1);
+    else if (coach && opts().mode === "hear") {
+      coachPass();
+      if (coach.solo) return soloOn();
+    }
     if (document.querySelector("#sg-wrap") || document.querySelector("#sg-lane")) render();
   },
 });
 export function stopSongs() {
+  clearTimeout(again);
+  again = 0;
   if (along) (along.off(), (along = null));
   if (wait) (wait.off(), (wait = null));
   followEnd();
@@ -739,7 +919,7 @@ export function stopSongs() {
 function togglePlay() {
   const s = byId[S.songs.cur] && onStand(byId[S.songs.cur]);
   if (!s) return;
-  if (songBusy() || wait) {
+  if (songBusy() || wait || again) {
     stopSongs();
     return render();
   }
@@ -764,7 +944,35 @@ function change(k, v) {
     }
     return;
   }
+  if (k === "cslow") {
+    const c = coach.climb;
+    c.pct = Math.max(c.floor, c.pct - c.step);
+    c.clean = 0;
+    coach.note = `Down to ${c.pct}%.`;
+    const e = document.querySelector("#sg-coach [role=status]");
+    if (e) e.textContent = coach.note; // the run in progress keeps playing
+    return;
+  }
   stopSongs();
+  if (k === "pnext") {
+    coach = null;
+    res = null;
+    P.cur = null;
+    return emit("plan-next");
+  }
+  if (k === "fix") return fixStart();
+  if (k === "climb") {
+    coach = speedCoach(byId[P.cur], 0, byId[P.cur].barLens.length - 1);
+    res = null;
+    return render();
+  }
+  if (k === "cfree") {
+    coach.climb.free = true;
+    coach.note = "";
+    res = null;
+    render();
+    return togglePlay();
+  }
   if (k === "cstart") return coachStart(byId[P.cur]);
   if (k === "clesson") return coachStart(byId[P.cur], +v);
   if (k === "cgo") {
@@ -775,6 +983,11 @@ function change(k, v) {
   if (k === "cskip") return coachNext(true);
   if (k === "cquit") {
     const wasReplay = coach?.replay;
+    if (coach?.prior) {
+      coach = { ...coach.prior, passed: false, score: undefined };
+      res = null;
+      return render();
+    }
     coach = null;
     res = null;
     if (String(P.cur).startsWith("chg:") || wasReplay) P.cur = null; // a drill goes back to the list it came from
@@ -808,7 +1021,7 @@ function pick(k, v) {
   if (k === "csize") P.size = v;
   if (k === "replay") {
     P.cur = v;
-    replaying = v;
+    queued = { id: v, kind: "replay" };
     coach = null;
     res = null;
     save();
@@ -838,9 +1051,10 @@ function pick(k, v) {
 
 export function mountSongs() {
   screen("songs", () => (S.songs.cur ? renderPlayer() : renderList()));
-  on("open-song", (id, replay) => {
+  on("open-song", (id, step) => {
+    stopSongs();
     S.songs.cur = id;
-    replaying = replay ? id : null;
+    queued = step ? { ...step, id } : null;
     S.songs.style = "path";
     coach = null;
     res = null;
@@ -888,4 +1102,16 @@ export function mountSongs() {
 export const songsActive = () => songBusy() || !!wait;
 
 /* For the browser tests (reached through ?debug). */
-export const songsDebug = () => ({ res, along, wait });
+export const songsDebug = () => ({
+  res,
+  along,
+  wait,
+  coach,
+  /* A graded run with no microphone: a state for each note on the stand. */
+  run(state) {
+    const s = onStand(byId[S.songs.cur]),
+      notes = s.sounding.map((_, i) => ({ state: state(i, s), dt: 0 }));
+    graded(s, { notes, extras: [], ...summary(notes, []) });
+    render();
+  },
+});

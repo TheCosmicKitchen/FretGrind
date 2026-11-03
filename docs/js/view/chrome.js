@@ -58,11 +58,21 @@ export function paintFrame() {
   nav.innerHTML = frame();
 }
 
+/* Where you are in today's practice, on every page, so it can always be picked up or left. */
+function planStrip() {
+  const p = ui.learn?.plan,
+    it = p && !p.closed && p.session && p.items[p.at];
+  if (!it || p.items.every((x) => x.done)) return "";
+  const n = p.items.filter((x) => x.done).length,
+    here = ui.page === "songs" ? S.songs.cur === it.id : ui.page === "learn" && ["lesson", "quiz"].includes(ui.learn.view);
+  return `<div class="ss-strip"><span>Today's practice · ${n + 1} of ${p.items.length}</span>${here ? "" : "<button data-ln-plannext>Carry on</button>"}<button data-ln-planskip>Skip this</button><button data-ln-planend>End</button></div>`;
+}
+
 /* The top of every page: the area's sub-tabs (the sidebar shows them on wide screens). */
 export const header = () => {
   const a = areaOf(ui.page),
     tabs = a.pages.length < 2 ? "" : `<div class="subnav">${a.pages.map(([id, label]) => `<button data-page="${id}" class="${ui.page === id ? "on" : ""}">${label}</button>`).join("")}</div>`;
-  return tabs + (TITLED[ui.page] ? `<h1 class="ptitle">${TITLED[ui.page]}</h1>` : "");
+  return planStrip() + tabs + (TITLED[ui.page] ? `<h1 class="ptitle">${TITLED[ui.page]}</h1>` : "");
 };
 export const soundToggle = (long) =>
   `<button class="sound-toggle" data-snd>${S.mute ? "Sound off" + (long ? " · click to enable" : "") : "Sound on" + (long ? " · click to mute" : "")}</button>`;

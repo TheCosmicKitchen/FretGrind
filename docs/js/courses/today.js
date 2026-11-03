@@ -24,7 +24,7 @@ export function makePlan(p, mins, today, learn = {}) {
     maxRev = mins <= 5 ? 2 : mins <= 10 ? 3 : 5;
   for (const d of due.slice(0, maxRev)) if (left >= 2) add({ kind: "review", track: d.track, id: d.id, title: findLesson(d.track, d.id)?.title || d.id }, 2);
   // music you've already learned, before it fades
-  for (const s of dueSongs(p, today).slice(0, mins <= 5 ? 1 : 2)) if (left >= 3) add({ kind: "replay", id: s.id, title: s.title }, 3);
+  if (!p.noGuitar) for (const s of dueSongs(p, today).slice(0, mins <= 5 ? 1 : 2)) if (left >= 3) add({ kind: "replay", id: s.id, title: s.title }, 3);
   // 2. the next lesson: the track you've gone longest without comes first
   const order = TRACKS.map((t) => t.id).sort((a, b) => (lastTouched(p, a) < lastTouched(p, b) ? -1 : 1));
   let lessons = 0;
@@ -40,7 +40,7 @@ export function makePlan(p, mins, today, learn = {}) {
   // 3. the next piece on the song path: playing real music is why anyone is here
   const song = nextPathSong(p.songs || {});
   const on = song && learn[song.id];
-  if (song && left >= 4) add({ kind: "song", id: song.id, title: on?.lessons ? `${song.title}, lesson ${on.lesson} of ${on.lessons}` : song.title }, 5);
+  if (song && left >= 4 && !p.noGuitar) add({ kind: "song", id: song.id, title: on?.lessons ? `${song.title}, lesson ${on.lesson} of ${on.lessons}` : song.title }, 5);
   // 4. a drill for your weakest finished lesson
   if (left >= 3) {
     const weak = TRACKS.flatMap((t) => Object.entries(p[t.id].les).map(([id, v]) => ({ track: t.id, id, b: v.b, f: v.f })))

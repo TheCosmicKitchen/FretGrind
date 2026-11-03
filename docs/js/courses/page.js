@@ -1,7 +1,7 @@
 /* The Learn tab: home (daily plan, two tracks), a track's path map, the lesson player, tests, reviews and the progress code.
    Everything the player needs lives in ui.learn; everything saved lives in S.courses (see progress.js). */
-import { S, ui, save } from "../core/store.js";
-import { action, render, screen, emit } from "../core/bus.js";
+import { S, backupCode, readBackup, restoreBackup, ui, save } from "../core/store.js";
+import { action, on, render, screen, emit } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { play } from "../core/audio.js";
 import { shuf } from "../core/theory.js";
@@ -12,13 +12,14 @@ import {
 } from "./curriculum.js";
 import { addMine, isMine, toggleMine } from "../cards/mine.js";
 import { next as nextCard } from "../cards/scheduler.js";
-import { PASS_LESSON, addDays, clearPending, dayKey, dueReviews, exportCode, importCode, pendingPractice, recordLesson, recordReview, recordTest, recordTestedOut, sanitize, streakNow, touch } from "./progress.js";
+import { PASS_LESSON, addDays, clearPending, dayKey, dueReviews, importCode, pendingPractice, recordLesson, recordReview, recordTest, recordTestedOut, sanitize, streakNow, touch } from "./progress.js";
 import { figure } from "./figures.js";
 import { DRILLS, drillById, drillGroups, drillQuestions } from "./drills.js";
 import { motionAfter, motionStop, motionView, mountMotion } from "./motion-view.js";
 import { mapSvg } from "./map.js";
 import { advance, answer, cur, finished, newRun, questionHtml, score } from "./runner.js";
 import { drillSpecs, lessonMinutes, makePlan, miniSpecs, needsGuitar } from "./today.js";
+import { PLAN_WORDS, SONG_KINDS, makeSession } from "../songs/session.js";
 
 /* Tidy S.courses after loading. Returns true when something changed so the caller can save. */
 export function sanitizeCourses() {
@@ -33,6 +34,7 @@ const nice = (key) => {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const bar = (a, b) => `<div class="ln-bar"><i style="width:${b ? Math.round((100 * a) / b) : 0}%"></i></div>`;
 const xp = (n) => (S.xp = (S.xp || 0) + n);
 const go = (view) => {
@@ -54,11 +56,12 @@ function home() {
     t = dayKey(),
     streak = streakNow(c, t),
     d = c.days[t] || { les: 0, tst: 0, rev: 0, q: 0 },
-    items = makePlan(c, c.min, t, S.songs?.learn),
-    did = d.les + d.tst + d.rev;
-  const kinds = { review: "Review", lesson: "Lesson", drill: "Weak-spot drill", mini: "Mixed quiz", song: "Song", replay: "Keep it alive" };
+    running = planRunning(),
+    items = running ? running.items : planItems(),
+    did = d.les + d.tst + d.rev,
+    finished = LN().wrap;
   const planList = items.length
-    ? `<ol class="ln-plan">${items.map((i) => `<li><b>${kinds[i.kind]}</b> ${i.title ? "· " + i.title : ""}<small>${i.cost} min</small></li>`).join("")}</ol>`
+    ? `<ol class="ln-plan">${items.map((i) => `<li class="${i.done ? "done" : ""}"><b>${PLAN_WORDS[i.kind]}</b> ${i.title ? "· " + esc(i.title) : ""}<small>${i.cost} min</small></li>`).join("")}</ol>`
     : "<p class='ln-sub'>Nothing to plan yet.</p>";
   const tracks = TRACKS.map((tr) => {
     const total = lessonsOf(tr.id).length,
@@ -74,14 +77,14 @@ function home() {
   const drills = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">DRILLS</div><p class="ln-sub">Endless practice: ear training, spelling, reading, capo maths.</p></div><button data-ln-drills>Open →</button></div></section>`;
   const mineN = (S.mine || []).length,
     deck = `<section class="card ln-deck"><div class="ln-row between"><div><div class="tag">★ MY REVIEW DECK</div><p class="ln-sub">${mineN ? `${mineN} saved card${mineN > 1 ? "s" : ""} and lesson question${mineN > 1 ? "s" : ""}.` : "Save any question with ☆ during a lesson or on a card, and it will wait for you here."}</p></div><button ${mineN ? "" : "disabled"} data-ln-mydeck>Review →</button></div></section>`;
-  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>Daily plan</h2></div><div class="ln-streak" title="Days in a row">${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${did ? `${did} done today. Nice.` : "Nothing yet today."} Study a little every day.</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">No guitar with me</button></div>${planList}<button class="go" data-ln-plan data-ln-go ${items.length ? "" : "disabled"}>Start today's plan</button></section>${tracks}${drills}${deck}${q}${backup()}`;
+  return `${header()}<section class="card ln-today"><div class="ln-row between"><div><div class="tag">TODAY</div><h2>${c.noGuitar ? "Daily plan" : "Today's practice"}</h2></div><div class="ln-streak" title="Days in a row">${streak}<small>best ${c.streak.best}</small></div></div><p class="ln-sub">${finished ? `That's today's practice, ${finished} minute${finished === 1 ? "" : "s"}. Nice work.` : did ? `${did} done today${d.min ? `, ${d.min} minutes of practice` : ""}. Nice.` : c.noGuitar ? "Nothing yet today. Study a little every day." : "One button. It takes you through everything, in order."}</p><div class="chips" role="group" aria-label="Minutes">${[5, 10, 20, 30].map((m) => `<button data-ln-min="${m}" class="${c.min === m ? "a" : ""}">${m} min</button>`).join("")}<button data-ln-noguitar class="${c.noGuitar ? "a" : ""}" title="Guitar steps are saved for when you are back at home">No guitar with me</button></div>${planList}<button class="go" ${running ? "data-ln-plannext" : "data-ln-plan"} data-ln-go ${items.length ? "" : "disabled"}>${running ? "Carry on" : c.noGuitar ? "Start today's plan" : "Start practising"}</button></section>${tracks}${drills}${deck}${q}${backup()}`;
 }
 
 function backup() {
   const open = LN().note === "backup";
   return `<section class="card ln-backup"><button class="ln-link" data-ln-backup>${open ? "▾" : "▸"} Save or restore your progress</button>${
     open
-      ? `<p class="ln-sub">Progress is stored in this browser only. Copy the code to keep a backup or move to another device, then paste it here to restore.</p><textarea readonly rows="3" class="ln-code" id="ln-save">${exportCode(C())}</textarea><div class="ln-btns"><button data-ln-copy>Copy code</button></div><textarea rows="3" class="ln-code" id="ln-restore" placeholder="Paste a code here…"></textarea>${LN().err ? `<p class="msg badm" role="alert">${LN().err}</p>` : ""}<div class="ln-btns"><button data-ln-restore>Restore from code</button><button data-ln-reset>${LN().confirm === "reset" ? "Tap again to erase course progress" : "Erase course progress"}</button></div>`
+      ? `<p class="ln-sub">Progress is stored in this browser only. This code holds all of it: songs, lessons, repertoire, cards and settings. Copy it to keep a backup or move to another device, then paste it here to restore.</p><textarea readonly rows="3" class="ln-code" id="ln-save">${backupCode()}</textarea><div class="ln-btns"><button data-ln-copy>Copy code</button></div><textarea rows="3" class="ln-code" id="ln-restore" placeholder="Paste a code here…"></textarea>${LN().err ? `<p class="msg badm" role="alert">${LN().err}</p>` : ""}<div class="ln-btns"><button data-ln-restore>Restore from code</button><button data-ln-reset>${LN().confirm === "reset" ? "Tap again to erase course progress" : "Erase course progress"}</button></div>`
       : ""
   }</section>`;
 }
@@ -194,7 +197,7 @@ function commitLesson(s, weak) {
   s.xp = 20;
   xp(20);
   const L = LN();
-  if (s.planIdx != null && L.plan && L.plan.items[s.planIdx]) L.plan.items[s.planIdx].done = true;
+  if (s.planIdx != null) planDone(s.planIdx);
   save();
 }
 
@@ -333,8 +336,7 @@ function finishQuiz(z) {
     touch(c, t, { q: sc.total });
     xp(5 + (z.kind === "dr" && sc.pct >= 90 ? 5 : 0));
   }
-  const L = LN();
-  if (z.planIdx != null && L.plan && L.plan.items[z.planIdx]) L.plan.items[z.planIdx].done = true;
+  if (z.planIdx != null) planDone(z.planIdx);
   save();
 }
 function quizView() {
@@ -358,22 +360,47 @@ function quizView() {
 }
 
 /* ---------- Today's plan ---------- */
+const planItems = () => (C().noGuitar ? makePlan(C(), C().min, dayKey(), S.songs?.learn) : makeSession(C(), C().min, dayKey(), S.songs));
+const planRunning = () => {
+  const p = LN().plan;
+  return p && !p.closed && p.items.some((x) => !x.done) ? p : null;
+};
+/* Today's practice is over: count the minutes (a tab left open overnight doesn't count them all). */
+function planClose() {
+  const L = LN(),
+    p = L.plan;
+  if (!p || p.closed) return;
+  p.closed = true;
+  if (!p.items.some((x) => x.done)) return;
+  const min = Math.max(1, Math.round(Math.min(Date.now() - p.t0, 2 * 3600e3) / 60000));
+  L.wrap = min;
+  touch(C(), dayKey(), { min });
+  save();
+}
+function planDone(i) {
+  const p = LN().plan;
+  if (!p || !p.items[i]) return;
+  p.items[i].done = true;
+  if (!p.items.some((x) => !x.done)) planClose();
+}
 function runItem(i) {
   const L = LN(),
     it = L.plan.items[i];
   if (!it) return;
+  L.plan.at = i;
+  if (SONG_KINDS.includes(it.kind)) return emit("open-song", it.id, it);
+  emit("open-page", "learn");
   if (it.kind === "lesson") startLesson(it.track, it.id, i);
   else if (it.kind === "review") startReview(it.track, it.id, i, "review");
   else if (it.kind === "drill") startReview(it.track, it.id, i, "drill");
-  else if (it.kind === "song") emit("open-song", it.id);
-  else if (it.kind === "replay") emit("open-song", it.id, true);
   else startMini(i);
 }
 function planNext() {
   const L = LN(),
     i = L.plan ? L.plan.items.findIndex((x) => !x.done) : -1;
-  if (i < 0) return go("home");
-  runItem(i);
+  if (i >= 0) return runItem(i);
+  emit("open-page", "learn");
+  go("home");
 }
 
 /* ---------- Screens and clicks ---------- */
@@ -462,12 +489,27 @@ export function mountLearn() {
     render();
   });
   action("lnPlan", live((D, el, L) => {
-    const items = makePlan(C(), C().min, dayKey());
+    const items = planItems();
     if (!items.length) return;
-    L.plan = { items };
+    L.plan = { items, at: 0, session: !C().noGuitar, t0: Date.now() };
+    L.wrap = 0;
     runItem(0);
   }));
   action("lnPlannext", () => planNext());
+  action("lnPlanskip", live((D, el, L) => {
+    planDone(L.plan.at);
+    planNext();
+  }));
+  action("lnPlanend", live((D, el, L) => {
+    planClose();
+    L.plan = null;
+    emit("open-page", "learn");
+    go("home");
+  }));
+  on("plan-next", () => {
+    planDone(LN().plan.at);
+    planNext();
+  });
   action("lnSong", (D) => emit("open-song", D.lnSong));
   action("lnPracticed", (D) => {
     const [t, id] = D.lnPracticed.split(":");
@@ -642,13 +684,18 @@ export function mountLearn() {
   });
   action("lnRestore", live((D, el, L) => {
     const v = document.getElementById("ln-restore").value,
-      got = importCode(v, validIds());
-    if (!got) {
-      L.err = "That code did not work. Copy the whole code, starting with FG1.";
+      all = readBackup(v),
+      got = !all && importCode(v, validIds()); // an older code held only the courses
+    if (!all && !got) {
+      L.err = "That code did not work. Copy the whole code, starting with FG.";
       return render();
     }
     L.err = "";
-    S.courses = got;
+    L.plan = null;
+    if (all) {
+      restoreBackup(all);
+      emit("restored");
+    } else S.courses = got;
     save();
     render();
   }));

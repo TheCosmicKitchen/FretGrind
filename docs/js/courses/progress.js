@@ -7,8 +7,8 @@
      songs       { id: best % } pieces learned on the song path
      rep         { id: { t: title, n: next review day, s: review stage, b: best %, r: reviews done } } finished pieces, kept alive by playing them again
      streak      { last: day, n: days in a row, best }
-     days        { "2026-10-24": { les, tst, rev, q } }   what was done on each day (last 60 days kept)
-     min         minutes picked for the daily plan (5, 10 or 20)
+     days        { "2026-10-24": { les, tst, rev, q, min } }   what was done on each day (last 60 days kept), min = minutes of guided practice
+     min         minutes picked for the daily plan (5, 10, 20 or 30)
      noGuitar    1 = studying away from the guitar: play steps are saved for later
    Days are local-calendar strings "YYYY-MM-DD", so reviews are due on a real calendar day. */
 
@@ -78,8 +78,9 @@ export function sanitize(raw, valid) {
   for (const k of keys) {
     const d = obj(r.days[k]);
     c.days[k] = { les: d.les | 0, tst: d.tst | 0, rev: d.rev | 0, q: d.q | 0 };
+    if (d.min > 0) c.days[k].min = Math.min(1440, d.min | 0);
   }
-  c.min = [5, 10, 20].includes(r.min) ? r.min : 10;
+  c.min = [5, 10, 20, 30].includes(r.min) ? r.min : 10;
   c.noGuitar = r.noGuitar ? 1 : 0;
   return c;
 }

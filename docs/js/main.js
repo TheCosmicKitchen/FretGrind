@@ -20,18 +20,21 @@ import { mountSongs, sanitizeSongs, songKey, songsDebug, stopSongs } from "./son
 import { mountPiano, pianoAllOff, pianoKey, sanitizePiano } from "./piano/page.js";
 import { mountTuner, sanitizeTuner } from "./tuner/page.js";
 import { mountTabs } from "./tabs/page.js";
+import { stayAwake } from "./core/awake.js";
 
 /* Saved state: read it, then let each feature tidy its own part. */
-const found = load(),
-  tidied = sanitizeCards();
-sanitizeLibrary();
-sanitizeRhythm();
-sanitizeSongs();
-sanitizeListen();
-sanitizePiano();
-sanitizeTuner();
-const coursesTidied = sanitizeCourses();
-if (!found || tidied || coursesTidied) save();
+function tidyAll() {
+  const cards = sanitizeCards();
+  sanitizeLibrary();
+  sanitizeRhythm();
+  sanitizeSongs();
+  sanitizeListen();
+  sanitizePiano();
+  sanitizeTuner();
+  return sanitizeCourses() || cards;
+}
+const found = load();
+if (tidyAll() || !found) save();
 
 /* Switching tabs ends whatever the old tab had running (microphone, metronome, a game). */
 function openPage(id) {
@@ -50,7 +53,7 @@ function openPage(id) {
   // a soft cross-fade between pages where the browser has it; it runs a frame later, so the page is set for the caller now
   if (id === ui.page || !document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) return swap();
   ui.page = id;
-  document.startViewTransition(swap);
+  document.startViewTransition(swap).ready.catch(() => {}); // a second tap skips the fade, not the page
 }
 
 mountLearn();
@@ -78,6 +81,11 @@ action("themeToggle", () => {
   paintFrame();
 });
 on("drawn", paintFrame);
+on("restored", tidyAll);
+on("open-page", openPage);
+/* The screen stays on wherever you might be playing with both hands busy. */
+const HANDS = ["practice", "piano", "tuner", "tabs"];
+on("drawn", () => stayAwake(HANDS.includes(ui.page) || (ui.page === "songs" && !!S.songs.cur) || (ui.page === "learn" && ["lesson", "motion"].includes(ui.learn?.view))));
 mountClicks(document.body); // the frame sits outside #app
 
 document.addEventListener("keydown", (e) => {

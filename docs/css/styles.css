@@ -2115,6 +2115,12 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sp-t { font-weight: 550; overflow-wrap: anywhere; }
 .sp-song small { grid-row: 2; }
 .sp-s { grid-column: 2; grid-row: 1 / 3; color: var(--ac); font-size: 13px; white-space: nowrap; }
+.ss-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 10px; padding: 8px 12px; border-radius: var(--r-m); background: var(--raise); font-size: 14px; }
+.ss-strip span { flex: 1 1 auto; color: var(--mu); }
+.ss-strip button { min-height: 32px; padding: 0 4px; border: 0; background: none; color: var(--ac); font: inherit; font-weight: 600; cursor: pointer; }
+.ln-plan li.done { color: var(--mu); text-decoration: line-through; }
+.sg-res .go { margin-top: 10px; }
+.sg-res .rs { display: block; margin: 8px 0 0; padding-left: 0; color: var(--ac); font-weight: 600; }
 .sc-card { margin: 12px 0; padding: 14px 16px; border-radius: var(--r-m); background: var(--raise); }
 .sc-card h3 { margin-top: 8px; }
 .sc-card p { margin: 4px 0 0; color: var(--mu); }
