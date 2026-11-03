@@ -1,29 +1,31 @@
 /* Level work: what each stage of the path asks for besides its pieces. Graded exams build every grade from the same strands
    (pieces, technique at a set tempo, sight-reading something never seen, and an ear test), so a level means a balanced
    player and not just a longer list of tunes. Pure, so Node can test it.
-   Technique and reading are generated drills (exercises.js, groove.js); the ear test is an echo round: the app plays a few
-   notes and you play them back by ear. ids: "eo:2:41" = an echo round for stage 3, round 41. */
+   Technique drills are generated (exercises.js, groove.js); the sight-read is the stage's level of the reading ladder
+   (ladder.js); the ear test is an echo round: the app plays a few notes and you play them back by ear.
+   ids: "eo:2:41" = an echo round for stage 3, round 41. */
 import { positionNotes } from "./exercises.js";
 import { rng, takeless } from "./groove.js";
+import { isLadder, ladderLevel } from "./ladder.js";
 
 export const EAR_ROUND = 8; // phrases in an echo round
 export const LEVEL_PASS = 0.7; // the same mark a piece needs
 const STRING_NAMES = ["low E", "A", "D", "G", "B", "high E"];
 
 /* One entry per stage, in path order. tech: drills to play cleanly at their own tempo ("*" = any take of a groove);
-   read: a groove to sight-read, a new take each time; ear: the notes an echo round draws on (top = strings, n = notes
+   ear: the notes an echo round draws on (top = strings, n = notes
    in a phrase, leap = the widest jump, in scale steps). */
 export const LEVEL_WORK = [
-  { tech: [], read: "gx:s:C:major:0:even:steps:4:60:*:2", ear: { tonic: "C", scale: "major", pos: 0, top: 2, n: 2, leap: 2 } },
-  { tech: [{ id: "ex:s:C:major:straight:0:q:72", name: "C major scale" }], read: "gx:s:C:major:0:even:steps:4:66:*", ear: { tonic: "C", scale: "major", pos: 0, top: 3, n: 3, leap: 2 } },
-  { tech: [{ id: "gx:c:G:folk:A:open:strum:even:take:bar:4:60:*", name: "G, C, D and Em, a chord a bar" }], read: "gx:s:G:major:0:even:steps:4:66:*", ear: { tonic: "G", scale: "major", pos: 0, top: 3, n: 3, leap: 2 } },
-  { tech: [{ id: "ex:s:G:major:straight:0:e:72", name: "G major scale in eighths" }, { id: "gx:c:G:folk:AH:open:strum:even:phrase:bar:8:72:*", name: "Strumming in G" }], read: "gx:s:G:major:0:even:skips:8:72:*", ear: { tonic: "G", scale: "major", pos: 0, top: 4, n: 3, leap: 2 } },
-  { tech: [{ id: "ex:s:D:major:thirds:2:e:72", name: "D major in thirds" }], read: "gx:s:D:major:2:mixed:skips:8:72:*", ear: { tonic: "D", scale: "major", pos: 2, top: 4, n: 4, leap: 2 } },
-  { tech: [{ id: "gx:c:G:folk:APH:open:bass:even:phrase:half:8:76:*", name: "Bass and strum, two chords a bar" }, { id: "ex:s:A:minor:straight:0:e:80", name: "A minor scale" }], read: "gx:s:A:minor:0:mixed:skips:8:76:*", ear: { tonic: "A", scale: "minor", pos: 0, top: 6, n: 4, leap: 2 } },
-  { tech: [{ id: "gx:c:G:folk:AHD:open:pick:even:phrase:bar:8:66:*", name: "Picked chords in G" }, { id: "ex:s:E:minor:triads:0:e:72", name: "E minor in broken triads" }], read: "gx:s:E:minor:0:mixed:seq:8:76:*", ear: { tonic: "E", scale: "minor", pos: 0, top: 6, n: 4, leap: 3 } },
-  { tech: [{ id: "gx:c:A:maj:APHD:barre:strum:sync:phrase:mix:8:80:*", name: "Barre chords in A, syncopated" }, { id: "ex:s:A:major:straight:5:e:88", name: "A major scale, fifth position" }], read: "gx:s:A:major:5:mixed:skips:8:80:*", ear: { tonic: "A", scale: "major", pos: 5, top: 6, n: 5, leap: 3 } },
-  { tech: [{ id: "ex:s:G:major:threes:2:s:72", name: "G major in threes, sixteenths" }, { id: "gx:s:A:minpent:5:busy:seq:8:88:*", name: "A minor pentatonic sequences" }], read: "gx:s:E:minor:7:sync:skips:8:88:*", ear: { tonic: "A", scale: "minpent", pos: 5, top: 6, n: 5, leap: 2 } },
-  { tech: [{ id: "gx:c:A:min:AHD:any:pick:sync:bar:push:8:84:*", name: "Minor key, pushed changes, picked" }, { id: "ex:s:C:major:triads:7:t:72", name: "C major broken triads in triplets" }], read: "gx:s:D:dorian:5:sync:seq:16:92:*", ear: { tonic: "G", scale: "major", pos: 7, top: 6, n: 6, leap: 3 } },
+  { tech: [], ear: { tonic: "C", scale: "major", pos: 0, top: 2, n: 2, leap: 2 } },
+  { tech: [{ id: "ex:s:C:major:straight:0:q:72", name: "C major scale" }], ear: { tonic: "C", scale: "major", pos: 0, top: 3, n: 3, leap: 2 } },
+  { tech: [{ id: "gx:c:G:folk:A:open:strum:even:take:bar:4:60:*", name: "G, C, D and Em, a chord a bar" }], ear: { tonic: "G", scale: "major", pos: 0, top: 3, n: 3, leap: 2 } },
+  { tech: [{ id: "ex:s:G:major:straight:0:e:72", name: "G major scale in eighths" }, { id: "gx:c:G:folk:AH:open:strum:even:phrase:bar:8:72:*", name: "Strumming in G" }], ear: { tonic: "G", scale: "major", pos: 0, top: 4, n: 3, leap: 2 } },
+  { tech: [{ id: "ex:s:D:major:thirds:2:e:72", name: "D major in thirds" }], ear: { tonic: "D", scale: "major", pos: 2, top: 4, n: 4, leap: 2 } },
+  { tech: [{ id: "gx:c:G:folk:APH:open:bass:even:phrase:half:8:76:*", name: "Bass and strum, two chords a bar" }, { id: "ex:s:A:minor:straight:0:e:80", name: "A minor scale" }], ear: { tonic: "A", scale: "minor", pos: 0, top: 6, n: 4, leap: 2 } },
+  { tech: [{ id: "gx:c:G:folk:AHD:open:pick:even:phrase:bar:8:66:*", name: "Picked chords in G" }, { id: "ex:s:E:minor:triads:0:e:72", name: "E minor in broken triads" }], ear: { tonic: "E", scale: "minor", pos: 0, top: 6, n: 4, leap: 3 } },
+  { tech: [{ id: "gx:c:A:maj:APHD:barre:strum:sync:phrase:mix:8:80:*", name: "Barre chords in A, syncopated" }, { id: "ex:s:A:major:straight:5:e:88", name: "A major scale, fifth position" }], ear: { tonic: "A", scale: "major", pos: 5, top: 6, n: 5, leap: 3 } },
+  { tech: [{ id: "ex:s:G:major:threes:2:s:72", name: "G major in threes, sixteenths" }, { id: "gx:s:A:minpent:5:busy:seq:8:88:*", name: "A minor pentatonic sequences" }], ear: { tonic: "A", scale: "minpent", pos: 5, top: 6, n: 5, leap: 2 } },
+  { tech: [{ id: "gx:c:A:min:AHD:any:pick:sync:bar:push:8:84:*", name: "Minor key, pushed changes, picked" }, { id: "ex:s:C:major:triads:7:t:72", name: "C major broken triads in triplets" }], ear: { tonic: "G", scale: "major", pos: 7, top: 6, n: 6, leap: 3 } },
 ];
 
 export const tempoOf = (id) => +String(id).split(":")[String(id).startsWith("ex:") ? 7 : String(id).startsWith("gx:c") ? 11 : 8];
@@ -78,12 +80,14 @@ export function strandOf(id) {
     const k = +String(id).split(":")[1];
     return LEVEL_WORK[k] ? { k, kind: "ear" } : null;
   }
+  if (isLadder(id)) {
+    const k = ladderLevel(id) - 1; // a stage's sight-read is the reading ladder's level for it
+    return LEVEL_WORK[k] ? { k, kind: "read" } : null;
+  }
   const t = takeless(id);
   for (let k = 0; k < LEVEL_WORK.length; k++) {
-    const w = LEVEL_WORK[k],
-      i = w.tech.findIndex((x) => x.id === t);
+    const i = LEVEL_WORK[k].tech.findIndex((x) => x.id === t);
     if (i >= 0) return { k, kind: "tech", i };
-    if (w.read === t) return { k, kind: "read" };
   }
   return null;
 }
@@ -95,7 +99,7 @@ export function levelState(k, got = {}) {
     row = (kind, i, name, best) => ({ kind, i, name, best: best || 0, pass: (best || 0) >= LEVEL_PASS });
   return [
     ...w.tech.map((x, i) => row("tech", i, `${x.name} · ${tempoOf(x.id)} bpm`, got.t?.[i])),
-    row("read", 0, `Sight-read · ${tempoOf(w.read)} bpm`, got.r),
+    row("read", 0, `Sight-read · reading level ${k + 1}`, got.r),
     row("ear", 0, `Echo ${w.ear.n} notes by ear`, got.e),
   ];
 }

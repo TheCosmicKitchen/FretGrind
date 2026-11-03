@@ -13,33 +13,30 @@ test("one stage of level work for every stage of the path", () => {
   assert.equal(LEVEL_WORK.length, GUITAR_PATH.length);
 });
 
-test("every technique drill and every sight-read opens, keeps whole bars, and is known again as that stage's work", () => {
+test("every technique drill opens, keeps whole bars, and is known again as that stage's work", () => {
   LEVEL_WORK.forEach((w, k) => {
-    for (const [id, kind, i] of [...w.tech.map((x, i) => [x.id, "tech", i]), [w.read, "read", undefined]])
+    for (const [id, kind, i] of w.tech.map((x, i) => [x.id, "tech", i]))
       for (const take of [1, 2, 77]) {
         const d = open(id, take);
         assert.ok(d, `stage ${k + 1}: ${id} doesn't open`);
         const s = build(d);
         assert.deepEqual(check(s), [], d.id);
         assert.equal(s.tempo, tempoOf(id), d.id);
-        assert.deepEqual(strandOf(d.id), kind === "tech" ? { k, kind, i } : { k, kind }, d.id);
+        assert.deepEqual(strandOf(d.id), { k, kind, i }, d.id);
       }
+    // the sight-read is the reading ladder's level for the stage
+    assert.deepEqual(strandOf(`rd:${k + 1}:5`), { k, kind: "read" });
   });
+  assert.equal(strandOf(`rd:${LEVEL_WORK.length + 1}:5`), null);
 });
 
-test("the work gets harder stage by stage: reading speeds up and echo phrases get longer", () => {
-  const reads = LEVEL_WORK.map((w) => tempoOf(w.read)),
-    notes = LEVEL_WORK.map((w) => w.ear.n);
-  reads.slice(1).forEach((t, k) => assert.ok(t >= reads[k], `stage ${k + 2} reads slower than stage ${k + 1}`));
+test("the work gets harder stage by stage: echo phrases get longer", () => {
+  const notes = LEVEL_WORK.map((w) => w.ear.n);
   notes.slice(1).forEach((n, k) => assert.ok(n >= notes[k]));
   assert.ok(notes[0] <= 2 && notes.at(-1) >= 5);
 });
 
-test("the first stage keeps to the top two strings, the strings its tunes use", () => {
-  for (let take = 1; take <= 20; take++) {
-    const s = build(open(LEVEL_WORK[0].read, take));
-    assert.ok(s.sounding.every((n) => n.pitches[0].fix[0] >= 4), `take ${take} left the top strings`);
-  }
+test("the first stage's ear test keeps to the top two strings, the strings its tunes use", () => {
   assert.ok(earPool(LEVEL_WORK[0].ear).every((x) => x.s >= 4));
 });
 
@@ -84,11 +81,11 @@ test("a stage is done when its pieces are learned and each strand has passed", (
 });
 
 test("a groove on the top strings keeps that in its id, and its takes move on", () => {
-  const id = withTake(LEVEL_WORK[0].read, 41);
+  const id = withTake("gx:s:C:major:0:even:steps:4:60:*:2", 41);
   assert.equal(id, "gx:s:C:major:0:even:steps:4:60:41:2");
   assert.equal(grooveById(id)?.id, id);
   assert.equal(nextTake(id), "gx:s:C:major:0:even:steps:4:60:42:2");
-  assert.equal(takeless(id), LEVEL_WORK[0].read);
+  assert.equal(takeless(id), "gx:s:C:major:0:even:steps:4:60:*:2");
   assert.equal(nextTake("gx:c:G:folk:A:open:strum:even:take:bar:4:60:9"), "gx:c:G:folk:A:open:strum:even:take:bar:4:60:10");
   for (const bad of ["gx:s:C:major:0:even:steps:4:60:41:1", "gx:s:C:major:0:even:steps:4:60:41:6", "gx:s:C:major:0:even:steps:4:60:41:x"]) assert.equal(grooveById(bad), null, bad);
 });

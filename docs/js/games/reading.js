@@ -43,6 +43,29 @@ function fitsAt(cell, u, bar, beat) {
   return u === 0;
 }
 
+/* The rhythm of a line at a level: { time, bars: [[length, ...]] } with each length a string in sixteenths ("4", "4/3") or a
+   rest ("r4"). Every bar has a note in it, and the line starts with a note on the downbeat. */
+export function rhythmBars(level, r, count = READ_BARS) {
+  const L = READ_LEVELS.find((l) => l.id === level),
+    pick = (a) => a[Math.floor(r() * a.length)],
+    time = pick(L.times),
+    bar = BAR[time],
+    beat = BEAT[time],
+    bars = [];
+  while (bars.length < count) {
+    const lens = [];
+    let u = 0;
+    while (u < bar) {
+      const c = pick(L.cells.filter((c) => fitsAt(c, u, bar, beat)));
+      c.forEach((x) => lens.push(String(x)));
+      u += spanOf(c);
+    }
+    if (!lens.some((x) => !x.startsWith("r")) || (!bars.length && lens[0].startsWith("r"))) continue;
+    bars.push(lens);
+  }
+  return { time, bars };
+}
+
 export const isReading = (id) => /^rr:\d+:\d+$/.test(String(id));
 /* One line to read: a song definition, or null for a bad id. */
 export function readLine(id) {
@@ -50,23 +73,7 @@ export function readLine(id) {
   const [, lv, seed] = String(id).split(":").map(Number),
     L = READ_LEVELS.find((l) => l.id === lv);
   if (!L || seed < 1) return null;
-  const r = rng(seed * 97 + lv),
-    pick = (a) => a[Math.floor(r() * a.length)],
-    time = pick(L.times),
-    bar = BAR[time],
-    beat = BEAT[time],
-    bars = [];
-  while (bars.length < READ_BARS) {
-    const toks = [];
-    let u = 0;
-    while (u < bar) {
-      const c = pick(L.cells.filter((c) => fitsAt(c, u, bar, beat)));
-      c.forEach((x) => toks.push(String(x).startsWith("r") ? `r:${String(x).slice(1)}` : `${PITCH}:${x}`));
-      u += spanOf(c);
-    }
-    // every bar has something to play, and the line starts with a note on the downbeat
-    if (!toks.some((t) => !t.startsWith("r")) || (!bars.length && toks[0].startsWith("r"))) continue;
-    bars.push(toks.join(" "));
-  }
-  return { id, title: `${L.name}, line ${seed}`, by: L.hint, level: lv, style: "exercise", key: "C", time, tempo: L.tempo, tags: [], bars: bars.join(" | "), source: "A generated reading line: every one is new.", reviewed: true };
+  const { time, bars } = rhythmBars(lv, rng(seed * 97 + lv)),
+    tok = (x) => (x.startsWith("r") ? `r:${x.slice(1)}` : `${PITCH}:${x}`);
+  return { id, title: `${L.name}, line ${seed}`, by: L.hint, level: lv, style: "exercise", key: "C", time, tempo: L.tempo, tags: [], bars: bars.map((b) => b.map(tok).join(" ")).join(" | "), source: "A generated reading line: every one is new.", reviewed: true };
 }
