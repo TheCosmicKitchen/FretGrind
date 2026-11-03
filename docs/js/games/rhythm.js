@@ -44,7 +44,7 @@ export function stopRhythm() {
 }
 
 /* ---- clock: audio time <-> the browser's tap time stamps ---- */
-function syncClock() {
+export function syncClock() {
   let ts = null;
   try {
     ts = ctx.getOutputTimestamp && ctx.getOutputTimestamp();

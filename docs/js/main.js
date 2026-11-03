@@ -14,6 +14,7 @@ import { motionKey, motionStop } from "./courses/motion-view.js";
 import { next } from "./cards/scheduler.js";
 import { mountGames, stopGames } from "./games/page.js";
 import { rhythmDebug, rhythmKey, sanitizeRhythm, stopRhythm } from "./games/rhythm.js";
+import { readDebug, readKey, sanitizeRead, stopRead } from "./games/read.js";
 import { mountLibrary, sanitizeLibrary, togglePlay } from "./library/pages.js";
 import { metBusy, metStop } from "./library/metronome.js";
 import { mountSongs, sanitizeSongs, songKey, songsDebug, stopSongs } from "./songs/page.js";
@@ -27,6 +28,7 @@ function tidyAll() {
   const cards = sanitizeCards();
   sanitizeLibrary();
   sanitizeRhythm();
+  sanitizeRead();
   sanitizeSongs();
   sanitizeListen();
   sanitizePiano();
@@ -89,7 +91,7 @@ on("drawn", () => stayAwake(HANDS.includes(ui.page) || (ui.page === "songs" && !
 mountClicks(document.body); // the frame sits outside #app
 
 document.addEventListener("keydown", (e) => {
-  if (rhythmKey(e)) return; // taps in the rhythm game
+  if (rhythmKey(e) || readKey(e)) return; // taps in the rhythm games
   if (ui.page === "songs" && songKey(e)) return;
   if (ui.page === "piano") return void pianoKey(e); // computer keys play the piano
   if (ui.page === "learn") {
@@ -116,12 +118,13 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopRhythm();
+    stopRead();
     stopSongs();
     if (ui.page === "games" || ui.page === "songs") render();
   }
 });
 
-if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug, songsDebug, audioCtx: () => ctx };
+if (new URLSearchParams(location.search).has("debug")) window.__fg = { S, ui, render, next, openPage, rhythmDebug, readDebug, songsDebug, audioCtx: () => ctx };
 
 ui.page = "learn"; // the app opens on the Learn tab
 next(); // draws the first card

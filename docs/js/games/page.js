@@ -4,21 +4,25 @@ import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
 import { mountScore, renderScore, scoreActive, scoreMenu, stopScore } from "./score.js";
 import { mountRhythm, renderRhythm, rhythmActive, rhythmMenu, stopRhythm } from "./rhythm.js";
+import { mountRead, readActive, readMenu, renderRead, stopRead } from "./read.js";
 
 function renderGames() {
   if (scoreActive()) return renderScore();
   if (rhythmActive()) return renderRhythm();
-  app.innerHTML = header() + rhythmMenu() + scoreMenu();
+  if (readActive()) return renderRead();
+  app.innerHTML = header() + readMenu() + rhythmMenu() + scoreMenu();
 }
 
 export function mountGames() {
   screen("games", renderGames);
   mountScore();
   mountRhythm();
+  mountRead();
 }
 
 /* Leaving the Games tab ends any game in progress. */
 export function stopGames() {
   stopScore();
   stopRhythm();
+  stopRead();
 }
