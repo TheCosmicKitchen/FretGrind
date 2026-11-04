@@ -6,7 +6,7 @@ import { audioReady, click, ctx, tone } from "../core/audio.js";
 import { action, render } from "../core/bus.js";
 import { app } from "../core/dom.js";
 import { header } from "../view/chrome.js";
-import { listen, listenStart, onNote } from "../core/listen-io.js";
+import { listen, listenStart, onNote, quietInput } from "../core/listen-io.js";
 import { listenPanel } from "../core/listen-ui.js";
 import { LEVELS, bias, gradeTaps, onsets, parse, pickPattern, stars, windowFor } from "./rhythm-patterns.js";
 import { rhythmSvg, slotX } from "./rhythm-view.js";
@@ -63,7 +63,7 @@ function schedule() {
     bar = 4 * spb,
     segs = [];
   let t = ctx.currentTime + (P.countIn || P.listen ? 0.25 : 1);
-  const quiet = run.mic && !S.listen.phones; // on speakers the click would be heard by the microphone
+  const quiet = run.mic && !quietInput(); // on speakers the click would be heard by the microphone
   const beatClicks = (from, playing) => {
     if (P.click && !(playing && quiet)) for (let i = 0; i < 4; i++) click(from + i * spb, i === 0);
   };
@@ -146,7 +146,7 @@ function flashPad() {
 /* A note heard by the microphone (e.t = when it was played, on the audio clock, with the device delay taken off). */
 function heardAt(e) {
   if (!run || run.result || !run.mic || !run.segs) return;
-  const early = S.listen.phones ? run.spb * 0.45 : Math.min(0.2, run.spb * 0.3), // on speakers, keep clear of the listen bar's tail
+  const early = quietInput() ? run.spb * 0.45 : Math.min(0.2, run.spb * 0.3), // on speakers, keep clear of the listen bar's tail
     ms = e.t * 1000;
   if (e.t < run.playStart - early || e.t > run.playEnd + 0.25) return;
   run.taps.push(ms);

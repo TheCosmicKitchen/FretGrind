@@ -7,6 +7,7 @@ import { audioReady, ctx, tone } from "./audio.js";
 import { Listener } from "./listen.js";
 import { emit } from "./bus.js";
 import { mic, micStop } from "./mic.js";
+import { openInput, refreshInputs } from "./inputs.js";
 
 export const listen = { on: false, starting: false, err: "" };
 let stream, src, node, sink, listener, subs = [], recent = [], inLat = 0, fallbackFrame = 0;
@@ -17,6 +18,8 @@ export function sanitizeListen() {
     sens: Number.isFinite(l.sens) ? Math.max(1, Math.min(5, Math.round(l.sens))) : 3,
     latency: Number.isFinite(l.latency) ? Math.max(0, Math.min(600, Math.round(l.latency))) : null, // measured or set by hand, ms
     phones: l.phones === true, // headphones on: the click can keep sounding while you play
+    input: typeof l.input === "string" && l.input && l.input.length < 300 ? l.input : null, // the chosen input's id, or null for the default microphone
+    plugged: l.plugged === true, // that input is a guitar lead, not a microphone: it can't hear the speakers
   };
 }
 
@@ -27,6 +30,8 @@ export function latencyMs() {
     base = (ctx && ctx.baseLatency) || 0.01;
   return Math.round((out + base + inLat + 0.01) * 1000);
 }
+/* Can the input hear the speakers? Not through headphones, and not down a guitar lead. If it can't, the click can play on. */
+export const quietInput = () => S.listen.phones || (!!S.listen.input && S.listen.plugged);
 export const listenLevel = () => (listener ? { db: listener.level, floor: listener.floor } : { db: -90, floor: -90 });
 export const heard = () => recent;
 export function onNote(fn) {
@@ -56,7 +61,8 @@ export async function listenStart() {
   try {
     if (mic.on) micStop(); // only one thing listens at a time
     await audioReady();
-    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    stream = await openInput();
+    refreshInputs().then(() => emit("inputs-changed"), () => {});
     const track = stream.getAudioTracks()[0],
       st = (track && track.getSettings && track.getSettings()) || {};
     inLat = Number.isFinite(st.latency) ? st.latency : 0.01;
@@ -88,7 +94,9 @@ export async function listenStart() {
     listen.err =
       e && e.name === "NotAllowedError"
         ? "Microphone blocked. Allow mic access in your browser’s site settings, then try again."
-        : "Could not start the microphone.";
+        : e && e.name === "NotReadableError" && S.listen.input
+          ? "That input is busy: close any other program using it (a game, a DAW), then try again."
+          : "Could not start the microphone.";
     return false;
   } finally {
     listen.starting = false;
@@ -118,6 +126,7 @@ export const setSensitivity = (v) => {
 /* Measure the device delay: play six beeps, listen for them, and keep the typical gap. Needs speakers (headphones
    do not reach the microphone). Returns { ms, n } or { err }. */
 export async function calibrate() {
+  if (S.listen.input && S.listen.plugged) return { err: "A plugged-in guitar can't hear the beeps. Set the delay by hand: if Play along marks you late when you know you were on the click, raise it." };
   if (!(await listenStart())) return { err: listen.err || "Could not start the microphone." };
   await new Promise((r) => setTimeout(r, 450)); // let the listener learn the room first
   const t0 = ctx.currentTime + 0.5,

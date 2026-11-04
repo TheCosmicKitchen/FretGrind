@@ -7,6 +7,7 @@ import { header } from "../view/chrome.js";
 import { NAMES, OPEN } from "../core/theory.js";
 import { STRING_NAMES, nearestString, sampleReading, saneTuning, steady, writtenPitch } from "../core/pitch.js";
 import { MIC_MIN_RMS, mic, micHooks, micRead, toggleMic } from "../core/mic.js";
+import { inputPicker } from "../core/inputs.js";
 
 const ATTACK = 4, // readings to skip after a pluck, which starts out sharp (~200ms)
   WINDOW = 10, // readings to take the median of, so the needle doesn't jitter
@@ -112,7 +113,7 @@ function draw() {
     sampling = step !== null;
   app.innerHTML =
     header() +
-    `<div class="card tuner"><div class="tag">TUNER</div><h2>Your guitar</h2><p>No need to be perfectly in tune. Sample your open strings and Fret Grind treats however they sound as correct, then judges every fret relative to that. Or start the tuner to tune up as usual.</p>${mic.err ? `<div class="msg badm" role="alert">${mic.err}</div>` : ""}<div class="tn-read"><b id="tn-note">${sampling ? stringName(step) : mic.on ? "♪" : "–"}</b><div class="tn-dial" aria-hidden="true"><i id="tn-needle"></i></div><span id="tn-cents" role="status">${sampling ? `Pluck your open ${STRING_NAMES[step]} string (${step + 1} of ${OPEN.length})` : mic.on ? "Pluck a string…" : "Tuner is off"}</span></div><div class="tn-strings">${OPEN.map((_, s) => `<span id="tn-s${s}"><b>${stringName(s)}</b><small></small></span>`).join("")}</div>${sampling ? "" : `<button class="go" data-tuner-sample>Sample my strings</button>`}<button class="${sampling ? "go" : "go alt"}" data-mic>${mic.on ? "Stop" : "Start tuner"}</button>${heard && !sampling ? `<button class="rs" data-tuner-clear>Forget this guitar’s tuning</button>` : ""}</div>`;
+    `<div class="card tuner"><div class="tag">TUNER</div><h2>Your guitar</h2><p>No need to be perfectly in tune. Sample your open strings and Fret Grind treats however they sound as correct, then judges every fret relative to that. Or start the tuner to tune up as usual.</p>${mic.err ? `<div class="msg badm" role="alert">${mic.err}</div>` : ""}<div class="tn-read"><b id="tn-note">${sampling ? stringName(step) : mic.on ? "♪" : "–"}</b><div class="tn-dial" aria-hidden="true"><i id="tn-needle"></i></div><span id="tn-cents" role="status">${sampling ? `Pluck your open ${STRING_NAMES[step]} string (${step + 1} of ${OPEN.length})` : mic.on ? "Pluck a string…" : "Tuner is off"}</span></div>${mic.on ? `<div class="ls-panel tn-in">${inputPicker()}</div>` : ""}<div class="tn-strings">${OPEN.map((_, s) => `<span id="tn-s${s}"><b>${stringName(s)}</b><small></small></span>`).join("")}</div>${sampling ? "" : `<button class="go" data-tuner-sample>Sample my strings</button>`}<button class="${sampling ? "go" : "go alt"}" data-mic>${mic.on ? "Stop" : "Start tuner"}</button>${heard && !sampling ? `<button class="rs" data-tuner-clear>Forget this guitar’s tuning</button>` : ""}</div>`;
   OPEN.forEach((_, s) => paintString(s));
 }
 

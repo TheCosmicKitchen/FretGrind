@@ -2095,6 +2095,9 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .cd-opts[open] summary small::after { content: " ▴"; }
 .cd-opts[open] { padding-bottom: 6px; }
 .cd-opts > :not(summary) { margin-inline: 14px; }
+.ls-in { display: flex; flex: 1 1 240px; align-items: center; gap: 8px; min-width: 0; }
+.ls-in select { flex: 1; min-width: 0; min-height: 36px; padding: 4px 8px; border: 1px solid var(--ln); border-radius: var(--r-m); background: var(--card); color: var(--tx); font: inherit; }
+.tn-in:empty { display: none; }
 .cd-staff { display: flex; justify-content: center; }
 .cd-staff .sg-svg { max-width: 100%; height: auto; }
 .chips.cd-live { justify-content: center; margin-top: 14px; }

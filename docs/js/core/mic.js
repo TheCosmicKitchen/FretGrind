@@ -7,6 +7,7 @@ import { S, ui } from "./store.js";
 import { ctx, audioReady } from "./audio.js";
 import { render } from "./bus.js";
 import { listenStop } from "./listen-io.js";
+import { openInput, refreshInputs } from "./inputs.js";
 import { matchNote, pitchClassGap, writtenPitch, yinPitch } from "./pitch.js";
 
 export const mic = { on: false, err: "" }; // read by the cards page
@@ -136,9 +137,8 @@ export async function toggleMic() {
   }
   try {
     await audioReady();
-    micStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-    });
+    micStream = await openInput();
+    refreshInputs().then(() => render(), () => {});
     micSrc = ctx.createMediaStreamSource(micStream);
     micAn = ctx.createAnalyser();
     micAn.fftSize = 4096;

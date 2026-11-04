@@ -29,7 +29,7 @@ import { KEYS, pretty } from "../library/catalog.js";
 import { NAMES } from "../core/theory.js";
 import { stringOffsets } from "../core/pitch.js";
 import { audioReady, ctx, tone } from "../core/audio.js";
-import { listen, listenStart, onNote } from "../core/listen-io.js";
+import { listen, listenStart, onNote, quietInput } from "../core/listen-io.js";
 import { listenPanel } from "../core/listen-ui.js";
 
 const OWN = SONGS.map(build),
@@ -839,7 +839,7 @@ function modeBlock(s) {
       ? `<p class="sg-say" id="sg-say">Count-in, then play the melody. Notes are marked when it ends.</p>`
       : res && res.song === s.id
         ? resultBlock(s, res.g)
-        : `<p class="sg-say">The click counts you in, then you play the melody on your guitar. Every note is marked for pitch and for timing (${S.listen.phones ? "the click keeps going because you wear headphones" : "the click stops after the count-in so the microphone only hears you"}).</p>`;
+        : `<p class="sg-say">The click counts you in, then you play the melody on your guitar. Every note is marked for pitch and for timing (${quietInput() ? (S.listen.phones ? "the click keeps going because you wear headphones" : "the click keeps going because your guitar is plugged in") : "the click stops after the count-in so the microphone only hears you"}).</p>`;
   } else if (wait)
     h += `<p class="sg-say" id="sg-say">${waitSay(s)}</p><div class="chips"><button data-sp="hearNote">Hear this note</button></div>`;
   else h += `<p class="sg-say">The song waits for you. Play each note as it lights up and the song moves on. No clock, so take your time.</p>`;
@@ -919,7 +919,7 @@ async function startListening(s) {
   along = { song: s.id, heard: [], clock: null };
   along.off = onNote((e) => along && along.heard.push(e));
   const h = hooks(s);
-  songStart(s, { ...P, click: P.click && S.listen.phones, clickIn: true, notes: false, countIn: true, loop: false }, {
+  songStart(s, { ...P, click: P.click && quietInput(), clickIn: true, notes: false, countIn: true, loop: false }, {
     ...h,
     started: () => {
       if (along) along.clock = songClock(s);
