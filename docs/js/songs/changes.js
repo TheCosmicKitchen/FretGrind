@@ -62,7 +62,8 @@ export const SIZES = [
 const VOCAB = ["Em", "Am", "C", "G", "D", "A", "E", "Dm", "E7", "A7", "D7", "G7", "B7", "F"];
 const named = new Map();
 export const namedShape = (name) => {
-  if (!named.has(name)) named.set(name, allShapes().filter((sh) => sh.name === name).sort((a, b) => b.open - a.open || a.barre - b.barre || a.pos - b.pos)[0] || null);
+  // the open shape if there is one, otherwise the lowest on the neck (a Bm barre at the 2nd fret, not a shape at the 10th)
+  if (!named.has(name)) named.set(name, allShapes().filter((sh) => sh.name === name).sort((a, b) => b.open - a.open || a.pos - b.pos || a.barre - b.barre)[0] || null);
   return named.get(name);
 };
 export const changeKey = (a, b) => [a, b].sort().join(">");

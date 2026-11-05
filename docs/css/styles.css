@@ -2192,6 +2192,15 @@ figure.fg figcaption { font-size: 13px; color: var(--mu); margin-top: 4px; line-
 .sp-drills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; border-top: 1px solid var(--ln); }
 .sp-drills small { width: 100%; }
 .sp-drills button { min-height: 32px; padding: 4px 12px; border-radius: 99px; background: none; font-size: 14px; font-weight: 500; }
+.cp-body { display: grid; gap: 4px; padding: 0 16px 16px; }
+.cp-nums { margin: 6px 0 0; font-weight: 600; letter-spacing: 0.02em; }
+.cp-nums small { display: block; color: var(--mu); font-weight: 400; letter-spacing: 0; }
+.cp-line { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.cp-line span { display: grid; min-width: 56px; padding: 6px 10px; border: 1px solid var(--ln); border-radius: var(--r-m); background: var(--raise); text-align: center; }
+.cp-line b { font-size: 20px; }
+.cp-line small, .cp-pal small { color: var(--mu); font-size: 12px; }
+.cp-pal button { display: grid; justify-items: center; line-height: 1.2; }
+.cp-empty { margin: 8px 0; }
 .sp-read { grid-template-rows: auto auto auto; cursor: default; }
 .sp-read:hover { background: none; }
 .sp-read .sp-two { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; }

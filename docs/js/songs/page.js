@@ -13,6 +13,7 @@ import { LIMITS, demandsOf } from "./demands.js";
 import { chordChart } from "./harmony.js";
 import { SIZES, changeKey, chartFor, chordId, chordPlan, chordSong, generateRun, recommendChanges, runById, runPlan, shapeOf } from "./changes.js";
 import { CHANGE_USE } from "./changes-data.js";
+import { CLASSICS, MAJOR_KEYS, MINOR_KEYS, NUMERALS, PALETTE, chordsIn, easiestKey, keyText, makeProgression, numeralText, randomProgression, runId, shapesIn } from "./classics.js";
 import { boxView } from "../library/draw.js";
 import { SKILLS } from "./moments-data.js";
 import { SONG_DAYS, dayKey, dueSongs, recordReplay, recordSong } from "../courses/progress.js";
@@ -120,6 +121,21 @@ function tidyLv(raw) {
   return out;
 }
 
+/* The progressions on the Chord changes tab: the classic picked and its key (-1 = the easiest), and your own in numerals. */
+function tidyCls(raw) {
+  const c = raw && typeof raw === "object" ? raw : {},
+    key = (v, d) => (Number.isInteger(v) && v >= 0 && v < 12 ? v : d),
+    ownMinor = c.ownMinor === true,
+    pal = PALETTE[ownMinor ? "minor" : "major"];
+  return {
+    id: CLASSICS.some((x) => x.id === c.id) ? c.id : CLASSICS[0].id,
+    key: key(c.key, -1),
+    ownMinor,
+    ownKey: key(c.ownKey, ownMinor ? 9 : 7),
+    own: Array.isArray(c.own) ? c.own.filter((n) => pal.includes(n)).slice(0, 8) : [],
+  };
+}
+
 export function sanitizeSongs() {
   const p = S.songs && typeof S.songs === "object" ? S.songs : {},
     ok = (v, a, d) => (a.includes(v) ? v : d),
@@ -147,6 +163,7 @@ export function sanitizeSongs() {
     top: tidyTop(p.top),
     weak: tidyWeak(p.weak, isId),
     lv: tidyLv(p.lv),
+    cls: tidyCls(p.cls),
     done,
     style: ok(p.style, STYLE_TABS.map((t) => t[0]), "path"),
     learn: tidyLearn(p.learn, isId),
@@ -212,7 +229,27 @@ function changesHtml() {
     top = list[0],
     pairId = (c) => `chg:${c.a},${c.b}:4:66`,
     row = (c) => `<button class="sp-song" data-song-open="${esc(pairId(c))}"><span class="sp-t">${esc(c.a)} to ${esc(c.b)}</span><small>${c.n ? `In ${c.n} piece${c.n === 1 ? "" : "s"}` : "Not common in this library"}${c.songs[0] ? `, like ${esc(c.songs[0].title)}` : ""}</small><span class="sp-s">${c.best >= 0.7 ? `✓ ${Math.round(c.best * 100)}%` : ""}</span></button>`;
-  return `${chipRow("csize", SIZES.map((x) => [x.id, x.name]), size.id)}<div class="sp-next"><small>${esc(size.blurb)}</small><h3>Recommended: ${esc(top.a)} to ${esc(top.b)}</h3><p>${esc(top.tip)}</p><div class="sc-acts"><button class="go" data-song-open="${esc(pairId(top))}">Practise this change</button> <button class="rs" data-sl="genrun">Generate a run of ${size.word} changes</button></div></div><section class="sp-stage"><header><div><h3>More ${size.word} changes</h3><p>The ones real songs use most come first, and changes you've mastered drop down.</p></div></header><div class="sp-list">${list.slice(1, 11).map(row).join("")}</div></section>`;
+  return `${chipRow("csize", SIZES.map((x) => [x.id, x.name]), size.id)}<div class="sp-next"><small>${esc(size.blurb)}</small><h3>Recommended: ${esc(top.a)} to ${esc(top.b)}</h3><p>${esc(top.tip)}</p><div class="sc-acts"><button class="go" data-song-open="${esc(pairId(top))}">Practise this change</button> <button class="rs" data-sl="genrun">Generate a run of ${size.word} changes</button></div></div><section class="sp-stage"><header><div><h3>More ${size.word} changes</h3><p>The ones real songs use most come first, and changes you've mastered drop down.</p></div></header><div class="sp-list">${list.slice(1, 11).map(row).join("")}</div></section>${progressionsHtml()}`;
+}
+
+/* Classic progressions in any key, and your own made up on the spot: both play as a run of changes. Keys whose chords
+   need a barre are marked, once there are chords to judge. */
+const keyChips = (key, minor, nums, val) =>
+  chipRow(key, (minor ? MINOR_KEYS : MAJOR_KEYS).map((k) => [k, `${keyText(k, minor).replace("m", " minor")}${!nums.length || shapesIn(chordsIn(nums, k)).open ? "" : " · barre"}`]), val);
+const chordLine = (nums, names) => `<div class="cp-line">${names.map((n, i) => `<span><b>${esc(n)}</b><small>${numeralText(nums[i])}</small></span>`).join("")}</div>`;
+function progressionsHtml() {
+  const P = S.songs,
+    c = CLASSICS.find((x) => x.id === P.cls.id),
+    ck = P.cls.key < 0 ? easiestKey(c.nums, c.minor) : P.cls.key,
+    names = chordsIn(c.nums, ck),
+    hard = shapesIn(names).hard,
+    own = P.cls.own,
+    ownNames = chordsIn(own, P.cls.ownKey),
+    ownHard = shapesIn(ownNames).hard,
+    palette = PALETTE[P.cls.ownMinor ? "minor" : "major"];
+  const classic = `<section class="sp-stage"><header><div><h3>Classic progressions</h3><p>The changes whole songs are built on, in any key. Pick one and a key, then drill it slow to quick.</p></div></header><div class="cp-body">${chipRow("clsid", CLASSICS.map((x) => [x.id, x.nick]), c.id)}<p class="cp-nums">${c.nums.map(numeralText).join(" – ")}<small>Heard in ${c.heard}.</small></p>${keyChips("clskey", c.minor, c.nums, ck)}${chordLine(c.nums, names)}${hard.length ? `<p class="pr-sub">Needs a barre or a shape up the neck: ${hard.map(esc).join(", ")}. The keys without “barre” keep to open chords.</p>` : ""}<div class="sc-acts"><button class="go" data-song-open="${esc(runId(names))}">Practise these changes</button> <button class="rs" data-sl="rndgo">Or practise a random progression</button></div></div></section>`;
+  const mine = `<section class="sp-stage"><header><div><h3>Make your own</h3><p>Tap chords to build a progression, or let the app make one up. It loops, so the last chord leads back to the first.</p></div></header><div class="cp-body">${chipRow("ownmode", [["major", "Major key"], ["minor", "Minor key"]], P.cls.ownMinor ? "minor" : "major")}${keyChips("ownkey", P.cls.ownMinor, own, P.cls.ownKey)}<div class="chips pr-opts cp-pal">${palette.map((n) => `<button data-sl="ownadd" data-v="${n}" ${own.length >= 8 ? "disabled" : ""}>${chordsIn([n], P.cls.ownKey)[0]}<small>${numeralText(n)}</small></button>`).join("")}</div>${own.length ? chordLine(own, ownNames) : `<p class="pr-sub cp-empty">No chords yet: tap some above, up to eight.</p>`}${ownHard.length ? `<p class="pr-sub">Needs a barre or a shape up the neck: ${ownHard.map(esc).join(", ")}.</p>` : ""}<div class="sc-acts"><button class="go" data-song-open="${esc(runId(ownNames))}" ${own.length < 2 ? "disabled" : ""}>Practise these changes</button> <button class="rs" data-sl="ownmake">Make one up</button>${own.length ? ` <button class="rs" data-sl="ownpop">Undo</button> <button class="rs" data-sl="ownclear">Clear</button>` : ""}</div></div></section>`;
+  return classic + mine;
 }
 
 /* What you can already play, and when each piece is next due back. */
@@ -563,7 +600,7 @@ function coachBar(full) {
       plan = planFor(full),
       { parts, lessons } = plan[0],
       fresh = L && L.n && !L.stars,
-      intro = full.names ? (full.names.length === 2 ? "Slow to quick: the same change with less and less time to make it." : "A generated run of chord changes, each one of the size you asked for.") : full.chart ? `${full.chart.names.length} chords and ${full.chart.moves} changes. Drill the changes this song uses, then play it with the tune.${full.chart.capo ? ` Played in ${full.chart.key} for easy shapes. A capo at fret ${full.chart.capo} matches the original key.` : ""} These chords are suggested from the melody.` : `${parts > 1 ? `${parts} phrases to learn, in ${lessons} short lessons` : "Learn it step by step"}. Each one builds on the last until you can play the whole piece.`;
+      intro = full.names ? (full.names.length === 2 ? "Slow to quick: the same change with less and less time to make it." : "A run of chord changes, slow to quick: find the shapes, then a bar each, two beats each, and every beat.") : full.chart ? `${full.chart.names.length} chords and ${full.chart.moves} changes. Drill the changes this song uses, then play it with the tune.${full.chart.capo ? ` Played in ${full.chart.key} for easy shapes. A capo at fret ${full.chart.capo} matches the original key.` : ""} These chords are suggested from the melody.` : `${parts > 1 ? `${parts} phrases to learn, in ${lessons} short lessons` : "Learn it step by step"}. Each one builds on the last until you can play the whole piece.`;
     return `<div class="sc-card" id="sg-coach"><p>${intro}${L && L.stars ? ` Your best: ${"★".repeat(L.stars)}` : ""}</p>${full.chart ? chordBoxes(full, full.chart.names) : formStrip(full)}${fresh ? `<div class="ln-bar"><i style="width:${(100 * L.n) / plan.length}%"></i></div>` : ""}<button class="go" data-sp="cstart">${L && L.stars ? "Learn it again" : fresh ? "Carry on learning" : "Start lesson 1"}</button>${full.names ? changeSongs(full) : lessonList(full, plan, L)}${full.chart ? "" : suggested(full)}</div>`;
   }
   const st = coach.plan[coach.i];
@@ -1331,6 +1368,33 @@ function pick(k, v) {
     save();
     render();
     return window.scrollTo(0, 0);
+  }
+  if (k === "rndgo") {
+    // made up and opened at once; it also lands in Make your own, to tweak or keep
+    const x = randomProgression(Math.random);
+    Object.assign(P.cls, { own: x.nums, ownMinor: x.minor, ownKey: x.key });
+    P.cur = runId(chordsIn(x.nums, x.key));
+    coach = null;
+    res = null;
+    save();
+    render();
+    return window.scrollTo(0, 0);
+  }
+  if (["clsid", "clskey", "ownmode", "ownkey", "ownadd", "ownpop", "ownclear", "ownmake"].includes(k)) {
+    const c = P.cls;
+    if (k === "clsid") ((c.id = v), (c.key = -1));
+    else if (k === "clskey") c.key = +v;
+    else if (k === "ownmode") {
+      c.ownMinor = v === "minor";
+      c.ownKey = c.ownMinor ? 9 : 7;
+      c.own = [];
+    } else if (k === "ownkey") c.ownKey = +v;
+    else if (k === "ownadd" && c.own.length < 8 && NUMERALS[v]) c.own.push(v);
+    else if (k === "ownpop") c.own.pop();
+    else if (k === "ownclear") c.own = [];
+    else if (k === "ownmake") c.own = makeProgression(c.ownMinor, Math.random); // in the key you picked
+    save();
+    return render();
   }
   if (k === "rxopen") {
     const open = () => {
