@@ -1,6 +1,7 @@
 /* The flash-card decks (every card is a string "deck:id") and the fretboard regions. */
 import { S } from "./store.js";
 import { OPEN, SH, CQ, RT, SQ, rng, posAll } from "./theory.js";
+import { staffSetOf } from "./readtips.js";
 
 export const DN = {
   interval: "Intervals",
@@ -100,10 +101,12 @@ export const regionSpan = () => {
 };
 // Does card k fall inside the regions being practised?
 export function cardInRegion(k) {
-  if (!activeRegions().length) return true;
   const i = k.indexOf(":"),
     d = k.slice(0, i),
     id = k.slice(i + 1);
+  // the sets of staff notes being learned, if only some are
+  if ((d === "staff" || d === "staffFret") && S.staffSets && S.staffSets.length && !S.staffSets.includes(staffSetOf(+id))) return false;
+  if (!activeRegions().length) return true;
   if (d === "fretNote") return fretOk(+id.split(".")[1]);
   if (d === "findFret") {
     const [p, s] = id.split(".").map(Number);

@@ -98,10 +98,10 @@ export function fin(ok, tp) {
     n = Date.now();
   it.seen = 1;
   if (ok) {
-    S.xp += 10;
+    S.xp += cur.hint ? 4 : 10;
     S.st++;
     S.best = Math.max(S.best, S.st);
-    if (!cur.prac) {
+    if (!cur.prac && !cur.hint) { // found with the hint: right, but not known yet
       it.s = Math.min(9, it.s + 1);
       it.due = n + IV[it.s];
     }
@@ -116,5 +116,5 @@ export function fin(ok, tp) {
   save();
   render();
   if (!(mic.on && ok && cur.q.mic)) play(cur.q);
-  if (ok) ui.tm = setTimeout(next, 900);
+  if (ok && !cur.hint) ui.tm = setTimeout(next, 900); // after the hint, the reasoning stays up until Next
 }

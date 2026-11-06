@@ -2,6 +2,7 @@
 import { S, ui, save, resetProgress } from "../core/store.js";
 import { LET, LSEM, NAMES } from "../core/theory.js";
 import { DK, GR, REGIONS, activeRegions, cardInRegion, deckKeys } from "../core/decks.js";
+import { STAFF_SETS } from "../core/readtips.js";
 import { play } from "../core/audio.js";
 import { mic, micBox, micHooks, toggleMic } from "../core/mic.js";
 import { midiBox, midiReady } from "../piano/midi.js";
@@ -21,6 +22,8 @@ export function sanitizeCards() {
   S.act = act.length ? act : ["staff", "fretNote"];
   // Board regions being practised (ids from REGIONS); empty means the whole board.
   S.regions = (Array.isArray(S.regions) ? S.regions : []).filter((id) => REGIONS.some((r) => r.id === id));
+  // Sets of notes on the staff being learned (ids from STAFF_SETS); empty means all of them.
+  S.staffSets = (Array.isArray(S.staffSets) ? S.staffSets : []).filter((id) => STAFF_SETS.some((x) => x.id === id));
   if (![80, 100, 120].includes(S.tempo)) S.tempo = 100;
   // "bag" = shuffle bag, every card equally likely (default); "srs" = spaced repetition
   if (S.mode !== "bag" && S.mode !== "srs") S.mode = "bag";
@@ -55,6 +58,13 @@ function answers(q) {
   return "";
 }
 
+/* "Notes" chips: learn the staff a set at a time, in the order teachers use: lines, spaces, below, above, then accidentals. */
+function staffSetChips() {
+  if (S.onlyMine || !S.act.some((d) => d === "staff" || d === "staffFret")) return "";
+  const on = S.staffSets;
+  return `<h3 class="sg-lv">Notes on the staff</h3><p class="pr-sub">Learn them a set at a time, in this order. Each card has a hint, and a miss explains how to read it.</p><div class="chips regions" role="group" aria-label="Practise some of the notes on the staff"><button data-staff-set="all" class="${on.length ? "" : "a"}" aria-pressed="${!on.length}">All</button>${STAFF_SETS.map((x, i) => `<button data-staff-set="${x.id}" class="${on.includes(x.id) ? "a" : ""}" aria-pressed="${on.includes(x.id)}" title="${x.blurb}">${i + 1}. ${x.name} <small>${x.blurb}</small></button>`).join("")}</div>`;
+}
+
 // "Board" chips: limit practice (and the part of the neck that is drawn) to some 6-fret regions.
 function regionChips() {
   if (S.onlyMine || !S.act.some((d) => ["staff", "staffFret", "fretNote", "findFret", "tapAll"].includes(d))) return "";
@@ -69,11 +79,13 @@ function card() {
     d = cur.done,
     tag = S.onlyMine ? "MY DECK" : cur.lesson ? "NEW · TAKE A GUESS" : cur.bag ? `SHUFFLE · ${bag.cards.length} LEFT IN BAG` : cur.prac ? "FREE GRIND" : GN[grp(S.it[cur.k].s)].toUpperCase();
   let h = `<div class="card"><div class="tag">${q.n.toUpperCase()} · ${tag}</div><div class="prompt">${q.p}</div>${q.vis(d, cur.tp)}`;
+  if (q.hint && !d) h += cur.hint ? `<p class="cd-hint">${q.hint}</p>` : `<button class="rs cd-hintb" data-hint>Hint: how do I read it?</button>`;
   h += answers(q);
   if (mic.err) h += `<div class="msg badm" role="alert">${mic.err}</div>`;
   if (mic.on && !d && q.mic) h += micBox();
   else if (midiReady() && !d && q.mic) h += midiBox(); // a connected MIDI keyboard answers too (piano/page.js)
-  if (d) h += cur.ok ? '<div class="msg good" role="status">✓ Correct</div>' : `<div class="msg badm" role="status">✗ ${q.rev}</div><button class="go" data-next>Next →</button>`;
+  // the reasoning shows after a miss, and after an answer found with the hint (that one waits for Next, so there's time to read it)
+  if (d) h += cur.ok ? `<div class="msg good" role="status">✓ Correct${cur.hint ? " (with the hint)" : ""}</div>${cur.hint && q.tip ? `<p class="cd-tip">${q.tip}</p><button class="go" data-next>Next →</button>` : ""}` : `<div class="msg badm" role="status">✗ ${q.rev}</div>${q.tip ? `<p class="cd-tip">${q.tip}</p>` : ""}<button class="go" data-next>Next →</button>`;
   return h + tools(cur) + "</div>";
 }
 
@@ -115,7 +127,7 @@ function cardHome() {
       .join("")}</div>
     ${S.mine.length ? `<button class="cd-deck${S.onlyMine ? " on-deck" : ""}" data-mine-mode><span class="cd-tick">${S.onlyMine ? "✓" : ""}</span><span class="cd-name"><b>★ My deck</b><small>Cards and lesson questions you saved</small></span><small>${S.mine.length}</small></button>` : ""}
     <h3 class="sg-lv">How to study</h3><div class="chips"><button data-rand class="${S.mode === "bag" ? "a" : ""}">Shuffle bag</button><button data-rand class="${S.mode === "bag" ? "" : "a"}">Spaced repetition</button></div><p class="pr-sub">${S.mode === "bag" ? "Every card once per round, in random order." : "Cards come back when you are about to forget them."}</p>
-    ${regionChips()}
+    ${staffSetChips()}${regionChips()}
     <button class="rs" data-reset>${ui.rs ? "Tap again to erase all progress" : "Reset progress"}</button></div>`;
 }
 
@@ -212,6 +224,22 @@ export function mountCards() {
     bag.cards = [];
     save();
     next();
+  });
+  action("hint", open((D, cur) => {
+    cur.hint = 1;
+    render();
+  }));
+  action("staffSet", (D) => {
+    if (D.staffSet === "all") S.staffSets = [];
+    else {
+      const on = new Set(S.staffSets);
+      on.has(D.staffSet) ? on.delete(D.staffSet) : on.add(D.staffSet);
+      S.staffSets = STAFF_SETS.filter((x) => on.has(x.id)).map((x) => x.id);
+      if (S.staffSets.length === STAFF_SETS.length) S.staffSets = [];
+    }
+    bag.cards = [];
+    save();
+    render();
   });
   action("micskip", live(() => fin(false)));
   action("next", live(() => next()));

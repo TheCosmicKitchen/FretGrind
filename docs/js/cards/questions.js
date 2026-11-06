@@ -6,6 +6,7 @@ import { AC, BAD, OK, board, dots, staff } from "../view/notation.js";
 import { specOfKey } from "../courses/curriculum.js";
 import { figure } from "../courses/figures.js";
 import { build } from "../songs/format.js";
+import { noteHint, noteTip } from "../core/readtips.js";
 import { songSvg } from "../songs/draw.js";
 
 // A bar of music drawn on the staff, for the reading cards.
@@ -122,6 +123,8 @@ export function Q(k) {
     const m = +id,
       g = posAll(m).filter(([, f]) => fretOk(f)),
       nm = STAFF_NOTE[m % 12][0];
+    // how to read it: a hint before answering, the reasoning after
+    const read = { hint: noteHint(m), tip: noteTip(m) };
     q =
       d == "staff"
         ? {
@@ -131,8 +134,9 @@ export function Q(k) {
             vis: () => staff(m),
             ok: (a) => a === m % 12,
             mic: (x) => x % 12 === m % 12,
-            rev: `${nm} — e.g. ${pt(g[0])}`,
+            rev: nm, // the tip says where it is on the guitar
             snd: [m],
+            ...read,
           }
         : {
             p: activeRegions().length ? "Tap one matching position in the lit part of the fretboard" : "Tap one matching position anywhere on the fretboard",
@@ -142,6 +146,7 @@ export function Q(k) {
             mic: (x) => (m >= OPEN[0] && m <= OPEN[5] + 24 ? x === m : x % 12 === m % 12),
             rev: `${nm}: ${g.map(pt).join(" / ")}`,
             snd: [m],
+            ...read,
           };
   } else if (d == "fretNote") {
     const [s, f] = id.split(".").map(Number),
